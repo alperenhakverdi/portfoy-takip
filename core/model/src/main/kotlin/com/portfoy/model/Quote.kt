@@ -5,7 +5,7 @@ import java.time.Instant
 import java.time.LocalDate
 
 /** Fiyat kaynaklarının kimliği. Fiyat kaydında hangi verinin nereden geldiği bununla izlenir. */
-enum class SourceId { FINNHUB, TWELVE_DATA, YAHOO, TEFAS, TCMB_EVDS, TCMB_HOURLY, TRUNCGIL, MANUEL, FAKE }
+enum class SourceId { FINNHUB, TWELVE_DATA, YAHOO, TEFAS, TCMB_EVDS, TCMB_HOURLY, TCMB_DAILY, TRUNCGIL, MANUEL, FAKE }
 
 /**
  * Kaynağa fiyat sorarken varlığı tarif eder. [category] `null` ise varlık değil kurdur (USD/TRY).
@@ -28,3 +28,14 @@ data class Quote(
 
 /** Günlük kapanış. */
 data class Candle(val date: LocalDate, val close: BigDecimal)
+
+/** Arama listesine (katalog) girecek bir enstrüman. */
+data class AssetInfo(
+    val code: String,
+    val name: String,
+    val category: Category,
+    val currency: String,
+    val exchange: String? = null,
+    /** Fon türü (YAT, BYF...). Yalnızca fonlar için. */
+    val fundKind: String? = null,
+)
