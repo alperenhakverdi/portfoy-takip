@@ -86,6 +86,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE assetId = :assetId ORDER BY tradeDate, id")
     fun observeForAsset(assetId: Long): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY tradeDate, id")
+    suspend fun getAll(): List<TransactionEntity>
+
     @Query("SELECT MIN(tradeDate) FROM transactions")
     suspend fun oldestTradeDate(): LocalDate?
 }
@@ -108,6 +111,10 @@ interface PriceQuoteDao {
         """,
     )
     fun observeLatest(): Flow<List<PriceQuoteEntity>>
+
+    /** Bir varlığın tüm fiyat kayıtları (elle girilen fiyatlar zamanla bir seri oluşturur). */
+    @Query("SELECT * FROM price_quote WHERE assetId = :assetId ORDER BY timestamp, id")
+    suspend fun forAsset(assetId: Long): List<PriceQuoteEntity>
 
     @Query("DELETE FROM price_quote WHERE assetId = :assetId")
     suspend fun deleteForAsset(assetId: Long)
