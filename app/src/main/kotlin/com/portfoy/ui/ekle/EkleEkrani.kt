@@ -192,6 +192,11 @@ private fun FormGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
     val durum = remember(varlik.id) { AlimFormDurumu(tarih = bugun) }
     val nakit = varlik.category == Category.NAKIT
 
+    // ABD varlığında USD fiyat, alış tarihindeki kurla çevrilir: tarih değişince kur yeniden bulunur.
+    LaunchedEffect(durum.tarih, varlik.id) {
+        if (varlik.category == Category.ABD) vm.kurGuncelle(durum.tarih)
+    }
+
     // Taze fiyat gelince, kullanıcı henüz yazmadıysa alış fiyatı olarak önerilir.
     LaunchedEffect(secili.onerilenFiyat) {
         val oneri = secili.onerilenFiyat

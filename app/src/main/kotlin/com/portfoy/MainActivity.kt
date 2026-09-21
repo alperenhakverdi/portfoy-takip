@@ -13,6 +13,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var tazeleme: TazelemeYoneticisi
+    @Inject lateinit var gecmis: GecmisYoneticisi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,5 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         // Uygulama öne geldiğinde son çekimin üzerinden 15 dakika geçmişse fiyatlar tazelenir.
         tazeleme.onForeground()
+        // Eksik geçmiş fiyat serileri (yeni eklenen varlıklar, bir süre açılmadıysa yeni günler) arka planda tamamlanır.
+        gecmis.tamamla()
     }
 }

@@ -99,7 +99,7 @@ fun AlimFormAlanlari(
                         Text("Fiyatı USD olarak gir", style = MaterialTheme.typography.bodyMedium)
                         Text(
                             if (kur == null) "Kur bilgisi yok, önce fiyatlar güncellenmeli"
-                            else "Güncel kurla TL'ye çevrilir (kur: ${TrFormat.money(kur)})",
+                            else "Alış tarihindeki kurla TL'ye çevrilir (kur: ${TrFormat.money(kur)})",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

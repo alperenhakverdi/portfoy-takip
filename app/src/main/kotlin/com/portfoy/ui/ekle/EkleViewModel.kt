@@ -2,6 +2,7 @@ package com.portfoy.ui.ekle
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.portfoy.GecmisYoneticisi
 import com.portfoy.TazelemeYoneticisi
 import com.portfoy.calc.AlimDegerleri
 import com.portfoy.data.db.AssetDao
@@ -11,7 +12,9 @@ import com.portfoy.data.repository.SearchHit
 import com.portfoy.model.Asset
 import com.portfoy.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.portfoy.di.UygulamaZamanDilimi
 import java.math.BigDecimal
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -71,6 +74,7 @@ class EkleViewModel @Inject constructor(
     private val fiyatDeposu: PriceRepository,
     private val assetDao: AssetDao,
     private val yonetici: TazelemeYoneticisi,
+    private val gecmis: GecmisYoneticisi,
 ) : ViewModel() {
 
     private val ic = MutableStateFlow(EkleIc())
@@ -141,6 +145,19 @@ class EkleViewModel @Inject constructor(
         }
     }
 
+    /**
+     * ABD varlığında fiyat USD girilirken, alış tarihindeki kuru bulur. Tarih birkaç günden eskiyse o güne ait kur serisi
+     * önce tamamlanır; ağ yoksa son bilinen kur kullanılır.
+     */
+    fun kurGuncelle(tarih: LocalDate) {
+        viewModelScope.launch {
+            val bugun = LocalDate.now(UygulamaZamanDilimi)
+            if (tarih.isBefore(bugun.minusDays(3))) gecmis.kurGecmisiniHazirla(tarih, UygulamaZamanDilimi)
+            val kur = depo.usdTryOn(tarih)
+            ic.update { it.copy(kur = kur) }
+        }
+    }
+
     fun secimiKapat() = ic.update { it.copy(secili = null) }
 
     fun manuelAc() = ic.update { it.copy(manuelAcik = true) }
@@ -155,6 +172,7 @@ class EkleViewModel @Inject constructor(
         viewModelScope.launch {
             depo.addPurchase(secili.varlik.id, degerler.adet, degerler.fiyat, degerler.komisyon, degerler.tarih, not)
             yonetici.simdiTazele()
+            gecmis.tamamla() // yeni alış için geçmiş fiyat serisi arka planda çekilir
             ic.update { it.copy(secili = null, sorgu = "") }
             olayKanali.send(EkleOlayi.Kaydedildi)
         }

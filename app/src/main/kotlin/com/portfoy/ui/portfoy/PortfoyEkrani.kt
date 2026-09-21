@@ -54,7 +54,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.portfoy.calc.AssetResult
 import com.portfoy.calc.CategoryResult
 import com.portfoy.calc.PortfolioSummary
-import com.portfoy.calc.chartWindow
 import com.portfoy.calc.format.TrFormat
 import com.portfoy.calc.parseDecimal
 import com.portfoy.di.UygulamaZamanDilimi
@@ -69,13 +68,11 @@ import com.portfoy.ui.bilesenler.DilimIsareti
 import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.DonutGrafik
 import com.portfoy.ui.bilesenler.Kutu
-import com.portfoy.ui.bilesenler.OrnekSeri
 import com.portfoy.ui.bilesenler.etiket
 import com.portfoy.ui.bilesenler.tr
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -204,7 +201,7 @@ private fun PortfoyIcerigi(
                         Spacer(Modifier.height(12.dp))
                         HorizontalDivider()
                         Spacer(Modifier.height(12.dp))
-                        DegerGrafigi(ozet, ekran, bugun, vm)
+                        DegerGrafigi(ekran, vm)
                     }
                 }
             }
@@ -261,38 +258,40 @@ private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?
 }
 
 /**
- * Toplam portföy değerinin zaman grafiği (TL). Performans sekmesindeki grafik ise getiri yüzdesini gösterir;
- * ikisi farklı şeyleri anlatır. Wireframe fazında seri örnektir, gerçek seri M6'da bağlanır.
+ * Toplam portföy değerinin zaman grafiği (TL), saklanan geçmiş fiyat serilerinden geriye dönük hesaplanır. Performans
+ * sekmesindeki grafik ise getiri yüzdesini gösterir; ikisi farklı şeyleri anlatır ve karıştırılmamalıdır.
  */
 @Composable
-private fun DegerGrafigi(ozet: PortfolioSummary, ekran: PortfoyEkranVerisi, bugun: LocalDate, vm: PortfoyViewModel) {
-    val donem = ekran.durum.donem
-    val enEski = ekran.enEskiIslem ?: bugun
-    val istenen = donem.baslangic(bugun, ekran.enEskiIslem)
-    val pencere = chartWindow(istenen, enEski, bugun)
-    val toplam = ozet.totalValue.toDouble()
+private fun DegerGrafigi(ekran: PortfoyEkranVerisi, vm: PortfoyViewModel) {
+    val grafik by vm.grafik.collectAsState()
+    val veri = grafik.veri
 
-    DonemSecici(donem, vm::donemSec)
+    DonemSecici(ekran.durum.donem, vm::donemSec)
     Spacer(Modifier.height(10.dp))
 
-    val tumSeri = remember(toplam, donem) { OrnekSeri.deger("deger-${donem.name}", toplam) }
-    val periyotGun = ChronoUnit.DAYS.between(istenen, bugun).coerceAtLeast(1)
-    val gorunenGun = ChronoUnit.DAYS.between(pencere.start, bugun).coerceAtLeast(1)
-    val nokta = if (pencere.truncated) (tumSeri.size * gorunenGun / periyotGun).toInt().coerceIn(2, tumSeri.size) else tumSeri.size
-    val seri = tumSeri.takeLast(nokta)
-
-    CizgiGrafik(
-        degerler = seri,
-        etiket = { i ->
-            val gun = ChronoUnit.DAYS.between(pencere.start, pencere.end) * i / (seri.size - 1).coerceAtLeast(1)
-            "${pencere.start.plusDays(gun).tr()} • ${TrFormat.money(BigDecimal(seri[i]))}"
-        },
-    )
-    if (pencere.truncated) {
-        Spacer(Modifier.height(6.dp))
-        Text("portföy geçmişi ${pencere.portfolioDays} gün", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+    if (veri == null || veri.noktalar.size < 2) {
+        Text(
+            if (grafik.gecmisYukleniyor) "Geçmiş fiyatlar yükleniyor…" else "Grafik için en az iki günlük veri gerekir.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    } else {
+        CizgiGrafik(
+            degerler = veri.noktalar.map { it.valueTl.toDouble() },
+            etiket = { i -> "${veri.noktalar[i].date.tr()} • ${TrFormat.money(veri.noktalar[i].valueTl)}" },
+        )
     }
-    Text("Örnek veri (wireframe)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    // Portföy seçilen dönemden gençse grafik yalnızca mevcut veri kadar çizilir.
+    if (veri?.pencere?.truncated == true) {
+        Spacer(Modifier.height(6.dp))
+        Text("portföy geçmişi ${veri.pencere.portfolioDays} gün", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+    }
+    if (veri?.tahmini == true) {
+        Text(
+            if (grafik.gecmisYukleniyor) "Bazı fiyat geçmişleri yükleniyor…" else "Bazı günler için fiyat geçmişi yok; o günler maliyetle gösteriliyor.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable

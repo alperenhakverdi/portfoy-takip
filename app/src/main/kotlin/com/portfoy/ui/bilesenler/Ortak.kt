@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.portfoy.calc.Donem
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlin.math.sin
-import kotlin.random.Random
 
 private val TarihBicimi: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
@@ -64,39 +62,3 @@ fun DonemSecici(secili: Donem, onSec: (Donem) -> Unit, modifier: Modifier = Modi
     }
 }
 
-/**
- * Wireframe için örnek seri üreticisi. Aynı anahtar her zaman aynı seriyi verir; gerçek geçmiş
- * seriler M6'da bağlanana kadar grafikler bununla çizilir.
- */
-object OrnekSeri {
-    private const val NOKTA = 40
-
-    /** [sonDeger]'de biten, geriye doğru rastgele yürüyen değer serisi. */
-    fun deger(anahtar: String, sonDeger: Double, oynaklik: Double = 0.025): List<Double> {
-        val r = Random(anahtar.hashCode())
-        var d = sonDeger
-        val geri = mutableListOf(d)
-        repeat(NOKTA - 1) {
-            d /= 1.0 + (r.nextDouble() - 0.46) * oynaklik
-            geri += d
-        }
-        return geri.reversed()
-    }
-
-    /** 0'dan başlayıp [sonYuzde]'de biten getiri (yüzde) serisi. */
-    fun yuzde(anahtar: String, sonYuzde: Double): List<Double> {
-        val r = Random(anahtar.hashCode())
-        val gurultu = (0 until NOKTA).map { sin(it / 4.0) * 2.0 + (r.nextDouble() - 0.5) * 3.0 }
-        return (0 until NOKTA).map { i ->
-            val t = i.toDouble() / (NOKTA - 1)
-            val kopru = gurultu[i] - t * gurultu.last() - (1 - t) * gurultu.first()
-            sonYuzde * t + kopru * 0.6
-        }
-    }
-
-    /** Serinin [i]. noktasına karşılık gelen tarih. */
-    fun tarih(baslangic: LocalDate, bitis: LocalDate, i: Int): LocalDate {
-        val gun = java.time.temporal.ChronoUnit.DAYS.between(baslangic, bitis)
-        return baslangic.plusDays(gun * i / (NOKTA - 1))
-    }
-}
