@@ -3,18 +3,30 @@ package com.portfoy
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.activity.enableEdgeToEdge
+import com.portfoy.ui.Uygulama
+import com.portfoy.ui.tema.PortfoyTemasi
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var tazeleme: TazelemeYoneticisi
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            MaterialTheme {
-                Text("Portföy")
+            PortfoyTemasi {
+                Uygulama()
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Uygulama öne geldiğinde son çekimin üzerinden 15 dakika geçmişse fiyatlar tazelenir.
+        tazeleme.onForeground()
     }
 }
