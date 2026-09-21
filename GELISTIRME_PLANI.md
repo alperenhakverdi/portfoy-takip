@@ -13,7 +13,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M3 | Kaynak katmanı | ✅ Bitti | Yönlendirici, bütçe, takvim, zamanlayıcı, fiyat deposu |
 | M4 | Ekranlar (W1–W11) | ✅ Bitti | Emülatörde elle gezildi; grafikler M6 ile gerçek veriye bağlandı |
 | M5 | Gerçek kaynaklar | 🟡 Büyük kısmı bitti | 7 adaptör, 89 fixture testi, 8 canlı test geçti, uygulamaya bağlı. Kalan: aşağıya bak |
-| M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
+| M6 | Geçmiş seriler, snapshot, gerçek grafikler | Geriye dönük hesaplanan grafikler, günlük snapshot | M |
 | M7 | Kenar durumlar, çevrimdışı | ⏳ | |
 | M8 | Sertleştirme, APK | ⏳ | |
 
@@ -65,6 +65,7 @@ ilk günden başlatılır.
 | M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
 | M7 | Kenar durumlar ve çevrimdışı | Bölüm 14'ün tamamı | M |
 | M8 | Sertleştirme ve teslim | Test kapsamı, APK, kabul testi | S |
+| M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
 
 **Süre tahmini yok, bilinçli olarak:** tek kişilik kişisel proje, deadline yok. Boyutlar göreli (S küçük, M orta, L büyük). En belirsiz kalem M5 — kaynak denemeleri önce yapılırsa netleşir.
 
@@ -521,6 +522,50 @@ manuel kabul adımı var.
 - Yaz/kış saati geçiş tarihlerinde piyasa saati hesabının doğrulanması.
 - Release APK imzalanıp doğrudan kurulum (Play Store yayını sonraki fazın işi).
 - Tek hedef Android sürümünde doğrulama; geniş cihaz uyumluluğu kapsam dışı (13/4).
+
+---
+
+## M9 — Güncelleme paketi 1 (kullanıcı geri bildirimi, 2026-09-22) — ✅ Bitti
+
+Üç istek: **(1)** + sekmesi doğrudan aramayla değil kategorilerle açılsın, **(2)** yeni bir **Döviz**
+kategorisi olsun (şimdilik USD/TRY ve EUR/TRY), **(3)** Performans sekmesindeki liste kategori
+kırılımlı olsun, kategoriye tıklayınca altındaki varlıklar açılsın.
+
+### M9.1 — Döviz kategorisi
+
+- `Category.DOVIZ` eklenir; `UnitType.BIRIM` ile miktar "birim" olarak tutulur, ekranda varlığın
+  para birimi yazılır ("1.000,00 USD"). Fiyat = TL karşılığı, yani kurun kendisi.
+- `USDTRY` ve `EURTRY` her kurulumda bulunan sabit varlıklardır (gram altın/gümüş gibi); katalog
+  indirmesi gerekmez, internetsiz de listede görünürler.
+- Fiyat yönlendirmesi mevcut **FX rotası**na bağlanır. Bugüne kadar yalnız USD/TRY'ye bakan kaynaklar
+  (Yahoo, Truncgil, TCMB, EVDS) para birimiyle parametrik hâle getirilir:
+  `USDTRY=X`/`EURTRY=X`, Truncgil `USD`/`EUR`, TCMB `Kod="USD"`/`Kod="EUR"`,
+  EVDS `TP.DK.USD.A.YTL`/`TP.DK.EUR.A.YTL`. `AssetRef.EURTRY` eklenir.
+- Geçmiş seri `GecmisAnahtari.KUR` zincirinden (EVDS → Yahoo) gelir. USD/TRY zaten çevrim için
+  `FX_USDTRY_ID` altında tek sefer çekiliyor; portföye USD eklenirse **aynı seri kopyalanır**,
+  ikinci kez ağdan çekilmez.
+- Tazeleme: `RefreshGroup.FX` grubuna bağlanır (09–19 arası saatlik).
+
+### M9.2 — Ekleme akışı: önce kategori
+
+- + sekmesi açılınca klavye değil **kategori listesi** gelir: ABD, BIST, Fon, Emtia, Döviz, Nakit TL.
+  Altında "Son eklenenler" kısayolu kalır (sık yapılan iş hızlı olsun).
+- Kategoriye girilince arama yalnız o kategoride yapılır. Varlık sayısı azsa (Emtia, Döviz, BIST)
+  liste doğrudan gösterilir, aramaya gerek kalmaz; ABD ve Fon'da arama şart (27 bin / 2 bin kayıt).
+- Nakit TL'ye basınca ara adım yok, doğrudan alım formu açılır.
+- Geri tuşu: form → kategori listesi → sekmenin kendisi.
+- Manuel ekleme (W10) girilen kategoriyle açılır; kategori seçimi formda tekrar sorulmaz.
+
+### M9.3 — Performans: kategori kırılımı
+
+- W6 listesi düz varlık listesi yerine **akordeon** olur (Portföy sekmesindeki gibi):
+  kategori satırında o kategorinin dönem getirisi (% ve ₺), tıklayınca altında varlıkları.
+- Kategori getirisi, varlık yüzdelerinin ortalaması değil; kategorinin varlıkları birlikte
+  değerlenip aynı basit Dietz formülüyle hesaplanır. Böylece kategori toplamları portföy
+  toplamıyla tutarlı kalır.
+- "Sırala: Yüzde / TL" seçimi hem kategorileri hem de içlerindeki varlıkları sıralar.
+- `GrafikDeposu.varlikGetirileri` tek geçişte kategori + varlık kırılımı döndürecek şekilde
+  genişletilir; veri yalnızca bir kez yüklenir.
 
 ---
 

@@ -328,3 +328,37 @@ tek varlıkta tüketebilir.
 **Karar.** Geçmiş seri çekimi **5 yılla** sınırlanır. Daha eski alış tarihinde kayıt kabul edilir,
 maliyet ve toplam getiri doğru hesaplanır, grafik 5 yıl öncesinden başlar ve
 "grafik son 5 yılı gösteriyor" notu yazılır — 7.1/4'teki "portföy geçmişi X gün" notuyla aynı mekanizma.
+
+---
+
+## 21. Döviz ayrı bir kategori, nakit değil
+
+**Sorun.** Portföyde tutulan USD/EUR nereye yazılacak? Nakit kategorisi TL'ye özgü (fiyatı sabit 1,00 ₺,
+her dönemde %0 getiri); dövizi oraya koymak getiriyi yok sayardı. ABD kategorisine koymak da yanlış:
+orası hisse, fiyatı USD gelip TL'ye çevriliyor.
+
+**Karar.** `Category.DOVIZ` eklendi. Miktar para biriminin kendisidir (`UnitType.BIRIM`, ekranda "USD"),
+fiyatı kurun TL karşılığıdır — yani kurun kendisi. Böylece kâr/zarar diğer varlıklarla aynı formülden
+çıkar. `USDTRY` ve `EURTRY` her kurulumda bulunan sabit varlıklardır, katalog indirmesi gerektirmez.
+
+Kaynaklar para birimine göre parametrik hâle getirildi (Yahoo `EURTRY=X`, Truncgil `EUR`, TCMB `Kod="EUR"`,
+EVDS `TP.DK.EUR.A.YTL`), yani yeni bir kur eklemek için kod değil yalnız varlık kaydı gerekir.
+Portföye USD eklenirse çevrim için zaten çekilen `FX_USDTRY_ID` serisi kopyalanır, ağdan ikinci kez istenmez.
+
+## 22. Ekleme akışı kategoriden başlar
+
+**Sorun.** + sekmesi doğrudan arama kutusu ve klavyeyle açılıyordu. Kullanıcı ne aradığını bilmiyorsa
+(ör. "hangi emtialar var?") listeyi göremiyordu; ayrıca 30 bin kayıtlık tek bir havuzda arama yapılıyordu.
+
+**Karar.** Önce kategori seçilir, arama o kategorinin içinde yapılır. Kayıt sayısı 600'ün altındaki
+kategoriler (BIST, emtia, döviz) doğrudan listelenir; ABD (27 bin) ve fonda (2 bin) arama şarttır ve
+klavye yalnız orada kendiliğinden açılır. Nakit TL ara adım olmadan forma gider.
+"Son eklenenler" kısayolu kategori ekranında kalır: aynı varlığa tekrar alım girmek kısa yoldur.
+
+## 23. Performans listesi kategori kırılımlı
+
+**Sorun.** Varlık listesi düzdü; 20 varlıklı bir portföyde "ABD toplamda ne durumda?" sorusunun cevabı yoktu.
+
+**Karar.** Liste akordeona çevrildi: kategori satırında dönem getirisi (% ve ₺), dokununca altında
+varlıkları. Kategori yüzdesi varlık yüzdelerinin ortalaması **değildir** — kategorinin varlıkları birlikte
+değerlenip aynı basit Dietz formülünden geçer, böylece kategori toplamları portföy toplamıyla tutarlı kalır.
