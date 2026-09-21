@@ -202,8 +202,10 @@ Doküman bölüm 12'deki beş tablo:
 - Çevrimdışı arama (4.1/6) için normalize `arama_adi` sütunu: küçük harfe indirilmiş, Türkçe
   karakterleri katlanmış (ı/i, ü/u, ş/s, ğ/g, ö/o, ç/c) hali. 4.1/3'ü `LIKE` ile SQL tarafında karşılar.
 
-**Kabul kriteri:** DAO testleri in-memory Room üzerinde geçiyor; v1→v2 sahte bir migration testi
-yazılmış ve geçiyor (migration altyapısının kurulu olduğunu kanıtlar).
+**Kabul kriteri:** DAO testleri in-memory Room üzerinde (Robolectric, Android 35) geçiyor — 16 test.
+Migration altyapısı hazır: `exportSchema = true`, şema `core/data/schemas/.../1.json` olarak commitli.
+**Migration testi henüz yazılmadı:** ikinci bir şema sürümü yok, sahte bir sürüm uydurmak yerine ilk gerçek
+şema değişikliğinde (`MigrationTestHelper` ile v1→v2) yazılacak.
 
 ---
 
