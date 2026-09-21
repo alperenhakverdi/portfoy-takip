@@ -67,9 +67,11 @@ class VeritabaniTest {
         VarsayilanVarliklar.ekle(db.assetDao())
         VarsayilanVarliklar.ekle(db.assetDao())
 
-        assertEquals(3, db.assetDao().count())
+        assertEquals(5, db.assetDao().count())
         assertNotNull(db.assetDao().getByCode(VarsayilanVarliklar.NAKIT_KODU, Category.NAKIT))
         assertNotNull(db.assetDao().getByCode(VarsayilanVarliklar.ALTIN_KODU, Category.EMTIA))
+        assertNotNull(db.assetDao().getByCode(VarsayilanVarliklar.DOLAR_KODU, Category.DOVIZ))
+        assertNotNull(db.assetDao().getByCode(VarsayilanVarliklar.EURO_KODU, Category.DOVIZ))
     }
 
     @Test

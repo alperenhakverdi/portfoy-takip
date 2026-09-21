@@ -39,7 +39,7 @@ enum class GecmisAnahtari { KUR, ABD, BIST, FON, ONS_ALTIN, ONS_GUMUS }
  *
  * | Tür | Zincir |
  * |---|---|
- * | USD/TRY | EVDS → Yahoo |
+ * | Döviz (USD/TRY, EUR/TRY) | EVDS → Yahoo |
  * | ABD | Twelve Data → Yahoo |
  * | BIST | Yahoo |
  * | Fon | TEFAS |
@@ -52,7 +52,7 @@ class HistoryRouter(
     private val sayac: GunlukSayac,
 ) {
     suspend fun getHistory(asset: AssetRef, from: LocalDate, to: LocalDate): Result<List<Candle>> = when {
-        asset == AssetRef.USDTRY -> zincir(GecmisAnahtari.KUR, asset, from, to)
+        asset.fxCurrency != null -> zincir(GecmisAnahtari.KUR, asset, from, to)
         asset.category == Category.ABD -> zincir(GecmisAnahtari.ABD, asset, from, to)
         asset.category == Category.BIST -> zincir(GecmisAnahtari.BIST, asset, from, to)
         asset.category == Category.FON -> zincir(GecmisAnahtari.FON, asset, from, to)

@@ -5,6 +5,7 @@ import com.portfoy.data.db.AssetEntity
 import com.portfoy.data.db.FX_USDTRY_ID
 import com.portfoy.data.db.PriceHistoryDao
 import com.portfoy.data.db.PriceHistoryEntity
+import com.portfoy.data.db.VarsayilanVarliklar
 import com.portfoy.model.AssetRef
 import com.portfoy.model.Candle
 import com.portfoy.model.Category
@@ -26,7 +27,8 @@ data class GecmisSonucu(val eklenen: Int, val hata: Throwable? = null) {
  * - Zaten saklanan günler tekrar çekilmez: yalnızca eksik başlangıç ve son günler istenir. Bu yüzden her açılışta
  *   yeniden çekim olmaz (doküman 9.3/2).
  * - ABD fiyatları **o günün kuruyla** TL'ye çevrilir; bugünkü kurla çarpmak TL'nin değer kaybı yüzünden geçmiş değerleri
- *   olduğundan yüksek gösterirdi. USD/TRY serisi tek sefer çekilir ([FX_USDTRY_ID]) ve tüm varlıklarca paylaşılır.
+ *   olduğundan yüksek gösterirdi. USD/TRY serisi tek sefer çekilir ([FX_USDTRY_ID]) ve tüm varlıklarca paylaşılır;
+ *   portföye döviz olarak USD eklenirse o seri kopyalanır, yeniden çekilmez.
  * - Hafta sonu ve tatil günleri için kayıt yoktur; grafik hesabı son işlem gününün değeriyle düzleştirir.
  */
 class HistoryRepository(
@@ -42,6 +44,14 @@ class HistoryRepository(
         if (asset.category == Category.NAKIT) return GecmisSonucu(0)
         val bugun = bugun()
         val aralik = historyFetchRange(firstBuy, bugun)
+
+        // Portföydeki USD, çevrim için zaten çekilen USD/TRY serisiyle birebir aynıdır: ağdan ikinci kez istenmez.
+        if (asset.category == Category.DOVIZ && asset.code == VarsayilanVarliklar.DOLAR_KODU) {
+            ensureFx(aralik.start, bugun).let { if (!it.basarili) return it }
+            val satirlar = historyDao.range(FX_USDTRY_ID, aralik.start, bugun).map { it.copy(assetId = asset.id) }
+            historyDao.upsertAll(satirlar)
+            return GecmisSonucu(satirlar.size)
+        }
 
         var kur: List<Candle> = emptyList()
         if (asset.category == Category.ABD) {

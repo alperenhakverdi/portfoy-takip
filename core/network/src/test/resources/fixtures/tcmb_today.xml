@@ -13,4 +13,16 @@
 			<CrossRateOther/>
 		
 	</Currency>
+	<Currency CrossOrder="9" Kod="EUR" CurrencyCode="EUR">
+			<Unit>1</Unit>
+			<Isim>EURO</Isim>
+			<CurrencyName>EURO</CurrencyName>
+			<ForexBuying>56.0284</ForexBuying>
+			<ForexSelling>56.1296</ForexSelling>
+			<BanknoteBuying>55.9892</BanknoteBuying>
+			<BanknoteSelling>56.2139</BanknoteSelling>
+			<CrossRateUSD/>
+			<CrossRateOther>1.1500</CrossRateOther>
+		
+	</Currency>
 </Tarih_Date>

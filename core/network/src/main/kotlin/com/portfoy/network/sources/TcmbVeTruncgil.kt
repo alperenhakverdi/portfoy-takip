@@ -30,7 +30,7 @@ private fun ortalama(alis: Double, satis: Double): BigDecimal =
     BigDecimal.valueOf((alis + satis) / 2.0).setScale(4, RoundingMode.HALF_UP)
 
 /**
- * Truncgil Finans ücretsiz API'si (`/v4/today.json`): gram altın, gram gümüş ve USD/TRY **anlık**, tek çağrıda.
+ * Truncgil Finans ücretsiz API'si (`/v4/today.json`): gram altın, gram gümüş ve dövizler **anlık**, tek çağrıda.
  * Geçmiş vermez. Alış ve satış ortalaması alınır. `ONS` alanı sıfır döndürüyor, kullanılmaz.
  */
 class TruncgilSource(
@@ -59,7 +59,7 @@ class TruncgilSource(
         Result.failure(UnsupportedOperationException("Truncgil geçmiş veri vermez"))
 
     private fun anahtar(asset: AssetRef): String? = when {
-        asset == AssetRef.USDTRY -> "USD"
+        asset.fxCurrency != null -> asset.fxCurrency // USD, EUR: Truncgil anahtarları para biriminin kendisidir
         asset.category == Category.EMTIA && asset.code == "XAUGR" -> "GRA"
         asset.category == Category.EMTIA && asset.code == "XAGGR" -> "GUMUS"
         else -> null
@@ -67,7 +67,7 @@ class TruncgilSource(
 }
 
 /**
- * TCMB günlük kur dosyası (`kurlar/today.xml`): resmî USD/TRY, anahtarsız. Günde bir kez yayınlanır;
+ * TCMB günlük kur dosyası (`kurlar/today.xml`): resmî kurlar, anahtarsız. Günde bir kez yayınlanır;
  * gün içi çevrim için Truncgil ana kaynaktır, bu dosya yedektir.
  */
 class TcmbGunlukSource(
@@ -78,14 +78,14 @@ class TcmbGunlukSource(
 
     override suspend fun getQuotes(assets: List<AssetRef>): Result<List<Quote>> = runCatching {
         assets.map { asset ->
-            if (asset != AssetRef.USDTRY) throw UnsupportedOperationException("TCMB günlük kur yalnızca USD/TRY verir")
+            val kur = asset.fxCurrency ?: throw UnsupportedOperationException("TCMB günlük dosyası yalnızca kur verir: ${asset.code}")
             val xml = http.get("$baseUrl/kurlar/today.xml")
-            val blok = Regex("""<Currency [^>]*Kod="USD"[^>]*>(.*?)</Currency>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.groupValues?.get(1)
-                ?: throw BeklenmeyenYanitException("TCMB dosyasında USD yok")
+            val blok = Regex("""<Currency [^>]*Kod="$kur"[^>]*>(.*?)</Currency>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.groupValues?.get(1)
+                ?: throw BeklenmeyenYanitException("TCMB dosyasında $kur yok")
             fun deger(etiket: String) = Regex("<$etiket>([^<]+)</$etiket>").find(blok)?.groupValues?.get(1)?.toDoubleOrNull()
             val alis = deger("ForexBuying")
             val satis = deger("ForexSelling")
-            if (alis == null || satis == null) throw BeklenmeyenYanitException("TCMB USD alış/satış okunamadı")
+            if (alis == null || satis == null) throw BeklenmeyenYanitException("TCMB $kur alış/satış okunamadı")
             Quote(asset.code, ortalama(alis, satis), "TRY", Instant.now(), id)
         }
     }
@@ -95,7 +95,7 @@ class TcmbGunlukSource(
 }
 
 /**
- * TCMB EVDS3: günlük resmî USD/TRY geçmişi (`TP.DK.USD.A.YTL`). Ücretsiz anahtar gerekir ve **HTTP başlığında**
+ * TCMB EVDS3: günlük resmî kur geçmişi (`TP.DK.USD.A.YTL`, `TP.DK.EUR.A.YTL`). Ücretsiz anahtar gerekir ve **HTTP başlığında**
  * (`key`) gönderilir, adreste değil. Parametreler `?` olmadan doğrudan yola eklenir; tarih `GG-AA-YYYY`.
  * Hafta sonu ve tatil günlerinde değer `null` gelir, atlanır. Eski `evds2` adresleri kapandı (doküman 9.4/2).
  */
@@ -110,10 +110,10 @@ class EvdsSource(
         Result.failure(UnsupportedOperationException("EVDS günlük seri verir, anlık fiyat için Truncgil kullanılır"))
 
     override suspend fun getHistory(asset: AssetRef, from: LocalDate, to: LocalDate): Result<List<Candle>> = runCatching {
-        if (asset != AssetRef.USDTRY) throw UnsupportedOperationException("EVDS bu varlığı desteklemiyor: ${asset.code}")
+        val kur = asset.fxCurrency ?: throw UnsupportedOperationException("EVDS bu varlığı desteklemiyor: ${asset.code}")
         val bicim = DateTimeFormatter.ofPattern("dd-MM-yyyy")
         val govde = http.get(
-            "$baseUrl/igmevdsms-dis/series=TP.DK.USD.A.YTL&startDate=${from.format(bicim)}&endDate=${to.format(bicim)}&type=json",
+            "$baseUrl/igmevdsms-dis/series=TP.DK.$kur.A.YTL&startDate=${from.format(bicim)}&endDate=${to.format(bicim)}&type=json",
             mapOf("key" to apiKey),
         )
         val o = try {
@@ -126,7 +126,7 @@ class EvdsSource(
         items.mapNotNull { e ->
             val satir = e.jsonObject
             val tarih = satir["Tarih"]?.jsonPrimitive?.contentOrNull?.let { runCatching { LocalDate.parse(it, bicim) }.getOrNull() }
-            val deger = satir["TP_DK_USD_A_YTL"]?.takeIf { it !is JsonNull }?.jsonPrimitive?.contentOrNull?.let { runCatching { BigDecimal(it) }.getOrNull() }
+            val deger = satir["TP_DK_${kur}_A_YTL"]?.takeIf { it !is JsonNull }?.jsonPrimitive?.contentOrNull?.let { runCatching { BigDecimal(it) }.getOrNull() }
             if (tarih == null || deger == null) null else Candle(tarih, deger)
         }.sortedBy { it.date }
     }

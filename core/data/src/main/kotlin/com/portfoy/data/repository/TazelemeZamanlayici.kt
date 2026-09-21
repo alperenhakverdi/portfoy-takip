@@ -80,7 +80,9 @@ class TazelemeZamanlayici(
 
     private suspend fun tur(grup: RefreshGroup, slot: Slot, grubunku: List<AssetEntity>, rotasyon: Int) {
         if (grup == RefreshGroup.FX) {
+            // Çevrim kuru her turda tazelenir; portföyde döviz varlığı varsa aynı turda o da tazelenir.
             fiyatDeposu.refreshFx(PriceRepository.AUTO_MIN_AGE)
+            if (grubunku.isNotEmpty()) fiyatDeposu.refresh(grubunku, PriceRepository.AUTO_MIN_AGE)
             return
         }
         val secilen = if (slot.kind == RoundKind.INTRADAY && grubunku.size > CallBudget.ROUND_CAP) {
@@ -100,7 +102,7 @@ class TazelemeZamanlayici(
         RefreshGroup.BIST -> Category.BIST
         RefreshGroup.FUND -> Category.FON
         RefreshGroup.GOLD -> Category.EMTIA
-        RefreshGroup.FX -> null
+        RefreshGroup.FX -> Category.DOVIZ
     }
 
     private fun seansDakikasi(market: Market): Int =

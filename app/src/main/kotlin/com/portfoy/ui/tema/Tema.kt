@@ -19,13 +19,14 @@ object Gri {
     val Zemin = Color(0xFFF3F3F3)
     val Vurgu = Color(0xFFE4E4E4)
 
-    /** Dağılım grafiği dilimleri: koyudan açığa. */
+    /** Dağılım grafiği dilimleri: koyudan açığa, kategori sayısı kadar (şu an 6). */
     val Dilimler = listOf(
         Color(0xFF262626),
-        Color(0xFF5C5C5C),
-        Color(0xFF8A8A8A),
-        Color(0xFFB3B3B3),
-        Color(0xFFD5D5D5),
+        Color(0xFF4A4A4A),
+        Color(0xFF6E6E6E),
+        Color(0xFF929292),
+        Color(0xFFB6B6B6),
+        Color(0xFFDADADA),
     )
 }
 

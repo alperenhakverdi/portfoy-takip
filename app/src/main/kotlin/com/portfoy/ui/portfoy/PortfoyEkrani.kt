@@ -68,6 +68,7 @@ import com.portfoy.ui.bilesenler.DilimIsareti
 import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.DonutGrafik
 import com.portfoy.ui.bilesenler.Kutu
+import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.etiket
 import com.portfoy.ui.bilesenler.tr
 import java.math.BigDecimal
@@ -226,6 +227,7 @@ private fun PortfoyIcerigi(
         AlimDuzenleDialog(
             islem = islem,
             birim = varlik.unitType,
+            birimAdi = varlik.birimEtiketi(),
             bugun = bugun,
             onKaydet = { vm.alimGuncelle(it); duzenlenen = null },
             onIptal = { duzenlenen = null },
@@ -358,7 +360,7 @@ private fun VarlikSatiri(
             Text(TrFormat.money(sonuc.currentValue), fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(2.dp))
-        val miktar = if (nakit) "" else "${TrFormat.quantity(sonuc.quantity)} ${sonuc.asset.unitType.etiket()}"
+        val miktar = if (nakit) "" else "${TrFormat.quantity(sonuc.quantity)} ${sonuc.asset.birimEtiketi()}"
         val getiri = if (nakit) "" else "${TrFormat.signedPercent(sonuc.returnPercent)}  ${TrFormat.signedMoney(sonuc.profitLoss)}"
         Text(
             listOf(miktar, getiri).filter { it.isNotBlank() }.joinToString("   •   "),
@@ -426,6 +428,7 @@ private fun BigDecimal.metin(): String = stripTrailingZeros().toPlainString().re
 private fun AlimDuzenleDialog(
     islem: Transaction,
     birim: UnitType,
+    birimAdi: String?,
     bugun: LocalDate,
     onKaydet: (Transaction) -> Unit,
     onIptal: () -> Unit,
@@ -445,7 +448,7 @@ private fun AlimDuzenleDialog(
         title = { Text("Alım kaydını düzenle") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                AlimFormAlanlari(durum, birim, abd = false, kur = null, bugun = bugun)
+                AlimFormAlanlari(durum, birim, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi)
             }
         },
         confirmButton = {

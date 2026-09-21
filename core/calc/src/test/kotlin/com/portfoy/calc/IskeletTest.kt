@@ -6,7 +6,7 @@ import org.junit.Test
 
 class IskeletTest {
     @Test
-    fun `bes kategori tanimli`() {
-        assertEquals(5, Category.entries.size)
+    fun `alti kategori tanimli`() {
+        assertEquals(6, Category.entries.size)
     }
 }

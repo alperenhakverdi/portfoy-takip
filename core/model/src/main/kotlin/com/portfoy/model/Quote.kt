@@ -8,12 +8,24 @@ import java.time.LocalDate
 enum class SourceId { FINNHUB, TWELVE_DATA, YAHOO, TEFAS, TCMB_EVDS, TCMB_HOURLY, TCMB_DAILY, TRUNCGIL, MANUEL, FAKE }
 
 /**
- * Kaynağa fiyat sorarken varlığı tarif eder. [category] `null` ise varlık değil kurdur (USD/TRY).
- * [fundKind] yalnızca fonlar içindir (YAT, EMK, BYF...): TEFAS geçmiş sorgusu türü ister.
+ * Kaynağa fiyat sorarken varlığı tarif eder. [category] `null` ise ham semboldür: kur (`USDTRY`) ya da
+ * kaynağın kendi kodu (`GC=F`). [fundKind] yalnızca fonlar içindir (YAT, EMK, BYF...): TEFAS geçmiş sorgusu türü ister.
  */
 data class AssetRef(val code: String, val category: Category?, val fundKind: String? = null) {
+    /**
+     * Kur varlığının para birimi: `USDTRY` → "USD", `EURTRY` → "EUR". Kur değilse `null`.
+     * Çevrim için kullanılan kur ([USDTRY]) ile portföydeki döviz varlığı aynı kaynaklardan beslenir.
+     */
+    val fxCurrency: String?
+        get() = when {
+            category != null && category != Category.DOVIZ -> null
+            code.length == 6 && code.endsWith("TRY") -> code.take(3)
+            else -> null
+        }
+
     companion object {
         val USDTRY = AssetRef("USDTRY", null)
+        val EURTRY = AssetRef("EURTRY", null)
     }
 }
 

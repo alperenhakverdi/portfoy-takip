@@ -64,7 +64,7 @@ class YahooSource(
 
     /** Sembol eşlemesi. Ons fiyatı için doğrudan sembol kullanılır (kod `GC=F`, `SI=F`). */
     private fun sembol(asset: AssetRef): String? = when {
-        asset == AssetRef.USDTRY -> "USDTRY=X"
+        asset.fxCurrency != null -> "${asset.fxCurrency}TRY=X"
         asset.category == Category.BIST -> "${asset.code}.IS"
         asset.category == Category.ABD -> asset.code.replace('.', '-') // BRK.B → BRK-B
         asset.category == null -> asset.code // ham sembol: GC=F, SI=F

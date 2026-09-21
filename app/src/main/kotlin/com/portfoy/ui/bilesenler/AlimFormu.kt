@@ -84,6 +84,8 @@ fun AlimFormAlanlari(
     kur: BigDecimal?,
     bugun: LocalDate,
     modifier: Modifier = Modifier,
+    /** Dövizde miktar alanının birimi (USD, EUR). Diğer varlıklarda kullanılmaz. */
+    birimAdi: String? = null,
 ) {
     val nakit = birim == UnitType.TL
     val sonuc = durum.dogrula(bugun, nakit, kur)
@@ -123,6 +125,7 @@ fun AlimFormAlanlari(
             UnitType.TL -> "Tutar (₺)"
             UnitType.GRAM -> "Miktar (gram)"
             UnitType.PAY -> "Adet (pay)"
+            UnitType.BIRIM -> "Miktar (${birimAdi ?: "birim"})"
             UnitType.ADET -> "Adet"
         }
         Alan(adetEtiketi, durum.adet, { durum.adet = it }, hatalar?.adet)

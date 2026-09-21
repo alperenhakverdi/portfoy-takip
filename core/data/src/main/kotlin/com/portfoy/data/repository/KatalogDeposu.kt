@@ -98,6 +98,7 @@ class KatalogDeposu(private val db: PortfoyDatabase) {
     private fun birimi(category: Category): UnitType = when (category) {
         Category.FON -> UnitType.PAY
         Category.EMTIA -> UnitType.GRAM
+        Category.DOVIZ -> UnitType.BIRIM
         Category.NAKIT -> UnitType.TL
         else -> UnitType.ADET
     }

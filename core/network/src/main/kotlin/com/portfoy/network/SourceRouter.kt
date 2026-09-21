@@ -17,6 +17,7 @@ enum class RouteKey {
             Category.BIST -> BIST
             Category.FON -> FUND
             Category.EMTIA -> COMMODITY
+            Category.DOVIZ -> FX // döviz varlığı, çevrim kuruyla aynı kaynaklardan gelir
             Category.NAKIT -> null // nakit için kaynak yok, fiyat sabit 1,00 ₺
             null -> FX
         }
