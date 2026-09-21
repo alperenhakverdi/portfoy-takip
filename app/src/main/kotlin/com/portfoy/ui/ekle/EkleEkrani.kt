@@ -89,7 +89,7 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
         OutlinedTextField(
             value = ekran.sorgu,
             onValueChange = vm::sorguDegistir,
-            placeholder = { Text("Kod veya isim ara (NVDA, Türk Hava Yolları)") },
+            placeholder = { Text("Kod veya isim ara", maxLines = 1) },
             singleLine = true,
             trailingIcon = {
                 if (ekran.sorgu.isNotEmpty()) {

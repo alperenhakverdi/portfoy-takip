@@ -1,5 +1,9 @@
 package com.portfoy.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -20,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -53,12 +58,14 @@ fun Uygulama() {
     val scope = rememberCoroutineScope()
     val girdi by nav.currentBackStackEntryAsState()
     val mevcut = girdi?.destination?.route
+    // Klavye açıkken alt bar gizlenir ve içerik klavyenin üstüne oturur; Kaydet düğmesi görünür kalır.
+    val klavyeAcik = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             // Ekranı boydan boya kaplar, 3 ikon eşit aralıklıdır; sistem çubuğuyla çakışmaz (Scaffold/NavigationBar inset'leri).
-            NavigationBar {
+            if (!klavyeAcik) NavigationBar {
                 Sekme.entries.forEach { sekme ->
                     val secili = mevcut == sekme.rota
                     NavigationBarItem(
@@ -74,7 +81,7 @@ fun Uygulama() {
     ) { ic ->
         // Uygulama açıldığında varsayılan sekme 3'tür (Portföy). Sekmeler arası geçmiş tutulmaz: başka sekmede
         // geri tuşu Portföy'e döner, Portföy'de uygulamadan çıkar. Her sekmenin durumu ViewModel'inde korunur.
-        NavHost(nav, startDestination = Sekme.PORTFOY.rota, modifier = Modifier.padding(ic)) {
+        NavHost(nav, startDestination = Sekme.PORTFOY.rota, modifier = Modifier.padding(ic).consumeWindowInsets(ic).imePadding()) {
             composable(Sekme.EKLE.rota) {
                 EkleEkrani(onKaydedildi = {
                     nav.sekmeyeGit(Sekme.PORTFOY.rota)
