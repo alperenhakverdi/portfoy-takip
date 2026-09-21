@@ -230,8 +230,8 @@ Getiri % = ───────────────────────
 ```
 
 Katkı, dönemde kaldığı gün oranınca paydaya girer. Dokümanın düz formülü, son gün yapılan bir alımda
-getiriyi %10 yerine %5 gösteriyordu; Dietz bunu %9,68'e çekiyor ve katkı dönem başındaysa doğru şekilde
-%10'a iniyor. Fonksiyon adı `periodReturn(start, end, contributions)` — sapmanın nerede doğduğu
+getiriyi %10 yerine %5 gösteriyordu; Dietz bunu %9,68'e çekiyor. Katkı dönem başındaysa %5 çıkması doğrudur (para tüm dönem piyasada)
+ve sapma yok. Fonksiyon adı `periodReturn(start, end, contributions)` — sapmanın nerede doğduğu
 kodda görünür olmalı. Payda ≤ 0 ise `null` döner → ekranda `—`.
 
 **Kurallar**

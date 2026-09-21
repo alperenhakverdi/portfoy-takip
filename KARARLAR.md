@@ -54,10 +54,10 @@ Aynı örnek: payda `100.000 + 100.000×(1/30) = 103.333`, getiri **%9,68**.
 
 | Katkı ne zaman | Ağırlık | Sonuç |
 |---|---|---|
-| Dönem başında | 1,00 | %10,00 — erken giren para getiriyi haklı olarak seyreltir |
-| Ortasında | 0,50 | ~%9,5 |
-| Son gün | 0,03 | %9,68 — geç giren para seyreltmez |
-| Katkı yok | — | %10,00 |
+| Dönem başında | 1,00 | %5,00 — para tüm dönem piyasada; 10.000 TL kazanç 200.000 TL üzerinden hesaplanır |
+| Ortasında | 0,50 | ~%6,67 |
+| Son gün | 0,03 | %9,68 — geç giren para neredeyse hiç seyreltmez |
+| Katkı yok | — | %10,00 (para eklenmemiş, 110.000 TL bitişte) |
 
 Ek veri gerekmiyor; katkı tarihleri `transaction.islem_tarihi`'nde, dönem başı değer snapshot'ta.
 Payda ≤ 0 ise `null` → ekranda `—`. 10.4/4'teki "maliyet bazlı yöntem zaman ağırlıklıdan sapar"
@@ -130,7 +130,7 @@ Ayrıntılı tasarım geliştirme planının 2. bölümündedir. Özet:
 
 | Varlık türü | Açılış turu | Gün içi | Kapanış turu |
 |---|---|---|---|
-| ABD hisseleri | Seans + 2 dk | Adaptif, varsayılan 30 dk | Seans − sonrası 15 dk |
+| ABD hisseleri | Seans + 2 dk | Adaptif, varsayılan 30 dk | Seans sonrası 15 dk |
 | BIST hisseleri | Seans + 2 dk | Adaptif, varsayılan 30 dk | Seans sonrası 15 dk |
 | TEFAS fonları | — | — | 21:15, günde 1 |
 | Altın / gümüş | — | 30 dk, Pzt–Cum | — |
