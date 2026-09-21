@@ -181,6 +181,21 @@ class VeritabaniTest {
     }
 
     @Test
+    fun `adinda kelime baslangici eslesen, metnin ortasinda eslesenden once gelir`() = runBlocking {
+        db.assetDao().insertAll(
+            listOf(
+                varlik("GRTRK", "GRAINTURK TARIM A.Ş."),
+                varlik("THYAO", "TÜRK HAVA YOLLARI A.O."),
+                varlik("ALBRK", "ALBARAKA TÜRK KATILIM BANKASI"),
+            ),
+        )
+        assertEquals(
+            listOf("ALBRK", "THYAO", "GRTRK"),
+            db.assetDao().search(normalizeForSearch("turk"), 20).map { it.code },
+        )
+    }
+
+    @Test
     fun `ayni kod farkli kategoride ayri kayit olabilir, ayni kod ve kategori olamaz`() = runBlocking {
         val ilk = db.assetDao().insert(varlik("ABC", "Bir", Category.BIST))
         val ayni = db.assetDao().insert(varlik("ABC", "Yinelenen", Category.BIST))

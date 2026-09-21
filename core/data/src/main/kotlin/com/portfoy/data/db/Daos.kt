@@ -34,7 +34,8 @@ interface AssetDao {
 
     /**
      * Arama: [query] önceden [com.portfoy.calc.normalizeForSearch] ile normalize edilmiş olmalıdır.
-     * Kodu tam eşleşenler, sonra kodla başlayanlar, sonra diğerleri gelir.
+     * Sıra: kodu tam eşleşenler, kodla başlayanlar, adında bir kelimesi aramayla başlayanlar ("turk" →
+     * "Türk Hava Yolları"), en son metnin ortasında geçenler ("GRAINTURK").
      */
     @Query(
         """
@@ -43,7 +44,8 @@ interface AssetDao {
         ORDER BY CASE
             WHEN LOWER(code) = :query THEN 0
             WHEN LOWER(code) LIKE :query || '%' THEN 1
-            ELSE 2
+            WHEN searchText LIKE '% ' || :query || '%' THEN 2
+            ELSE 3
         END, code
         LIMIT :limit
         """,
