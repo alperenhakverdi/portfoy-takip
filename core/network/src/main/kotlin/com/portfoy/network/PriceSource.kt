@@ -31,3 +31,11 @@ class BudgetExceededException(message: String) : Exception(message)
 
 /** Birincil ve yedek kaynak denendi, ikisi de başarısız oldu. */
 class AllSourcesFailedException(message: String, cause: Throwable?) : Exception(message, cause)
+
+/**
+ * Arama listesi (katalog) kaynağı. Fiyat kaynağından ayrıdır: fiyat kaynağı kodu zaten bildiğini varsayar,
+ * "Nvidia → NVDA" eşlemesini bu kaynaklar sağlar. Liste pakete gömülü gelir, buradan ayda bir tazelenir.
+ */
+interface SymbolCatalogSource {
+    suspend fun listSymbols(): Result<List<com.portfoy.model.AssetInfo>>
+}
