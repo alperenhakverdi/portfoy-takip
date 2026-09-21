@@ -60,6 +60,26 @@ interface AssetDao {
     )
     suspend fun search(query: String, limit: Int): List<AssetEntity>
 
+    /** [search] ile aynı sıralama, tek bir kategoriyle sınırlı. Ekle sekmesi kategoriden başladığı için gerekir. */
+    @Query(
+        """
+        SELECT * FROM asset
+        WHERE active = 1 AND category = :category AND searchText LIKE '%' || :query || '%'
+        ORDER BY CASE
+            WHEN LOWER(code) = :query THEN 0
+            WHEN LOWER(code) LIKE :query || '%' THEN 1
+            WHEN searchText LIKE '% ' || :query || '%' THEN 2
+            ELSE 3
+        END, code
+        LIMIT :limit
+        """,
+    )
+    suspend fun searchInCategory(query: String, category: com.portfoy.model.Category, limit: Int): List<AssetEntity>
+
+    /** Kategorinin tüm varlıkları (az sayıda olanlar için: emtia, döviz, BIST). Aramaya gerek kalmadan listelenir. */
+    @Query("SELECT * FROM asset WHERE active = 1 AND category = :category ORDER BY code LIMIT :limit")
+    suspend fun byCategory(category: com.portfoy.model.Category, limit: Int): List<AssetEntity>
+
     /** Portföydeki varlıklar: işlem kaydı olanlar. */
     @Query("SELECT * FROM asset WHERE id IN (SELECT DISTINCT assetId FROM transactions)")
     fun observeHeldAssets(): Flow<List<AssetEntity>>

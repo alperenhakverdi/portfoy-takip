@@ -39,24 +39,29 @@ data class SeciliVarlik(
     val fiyatYukleniyor: Boolean = false,
 )
 
-/** Ekle sekmesinin arama dışındaki durumu. Sekmeden çıkılınca form alanları sıfırlanır, arama korunur. */
+/** Ekle sekmesinin durumu. Sekmeden çıkılınca başa (kategori listesine) döner. */
 private data class EkleIc(
+    val kategori: Category? = null,
     val sorgu: String = "",
     val secili: SeciliVarlik? = null,
     val manuelAcik: Boolean = false,
     val kur: BigDecimal? = null,
     val nakit: Asset? = null,
-    val sikAranan: List<Asset> = emptyList(),
 )
 
 data class EkleEkranVerisi(
+    /** `null` ise kategori listesi gösterilir; doluysa o kategorinin arama/liste ekranı. */
+    val kategori: Category? = null,
     val sorgu: String = "",
     /** Arama yazıldıkça filtrelenir; en az 2 karakter gerekir. */
     val aramaAktif: Boolean = false,
     val sonuclar: List<SearchHit> = emptyList(),
+    /** Kategori az kayıtlıysa (emtia, döviz, BIST) aramaya gerek kalmadan listelenen varlıklar. */
+    val kategoriListesi: List<SearchHit> = emptyList(),
+    /** Kategoride çok kayıt var; kullanıcı arama yazmadan liste gösterilmez (ABD, fon). */
+    val aramaGerekli: Boolean = false,
     val nakit: Asset? = null,
     val sonEklenenler: List<Asset> = emptyList(),
-    val sikAranan: List<Asset> = emptyList(),
     val secili: SeciliVarlik? = null,
     val manuelAcik: Boolean = false,
     val kur: BigDecimal? = null,
@@ -81,21 +86,34 @@ class EkleViewModel @Inject constructor(
     private val olayKanali = Channel<EkleOlayi>(Channel.BUFFERED)
     val olaylar: Flow<EkleOlayi> = olayKanali.receiveAsFlow()
 
-    private val sonuclar: Flow<List<SearchHit>> = ic.map { it.sorgu }
+    private data class Liste(
+        val sonuclar: List<SearchHit> = emptyList(),
+        val kategoriListesi: List<SearchHit> = emptyList(),
+        val aramaGerekli: Boolean = false,
+    )
+
+    private val liste: Flow<Liste> = ic.map { it.kategori to it.sorgu }
         .distinctUntilChanged()
-        .mapLatest { sorgu ->
+        .mapLatest { (kategori, sorgu) ->
+            if (kategori == null) return@mapLatest Liste()
             delay(80) // yazdıkça filtrele, her tuşta sorgu atma
-            depo.search(sorgu)
+            val aramaAktif = sorgu.trim().length >= com.portfoy.calc.MIN_SEARCH_LENGTH
+            if (aramaAktif) return@mapLatest Liste(sonuclar = depo.search(sorgu, category = kategori))
+            // Kayıt sayısı azsa liste doğrudan gelir; çoksa (ABD, fon) arama beklenir.
+            val tumu = if (depo.kategoriSayisi(kategori) <= LISTE_SINIRI) depo.kategoriListesi(kategori, LISTE_SINIRI) else emptyList()
+            Liste(kategoriListesi = tumu, aramaGerekli = tumu.isEmpty())
         }
 
-    val ekran: StateFlow<EkleEkranVerisi> = combine(ic, sonuclar, depo.observeRecentAssets()) { ic, sonuclar, son ->
+    val ekran: StateFlow<EkleEkranVerisi> = combine(ic, liste, depo.observeRecentAssets()) { ic, liste, son ->
         EkleEkranVerisi(
+            kategori = ic.kategori,
             sorgu = ic.sorgu,
             aramaAktif = ic.sorgu.trim().length >= com.portfoy.calc.MIN_SEARCH_LENGTH,
-            sonuclar = sonuclar,
+            sonuclar = liste.sonuclar,
+            kategoriListesi = liste.kategoriListesi,
+            aramaGerekli = liste.aramaGerekli,
             nakit = ic.nakit,
             sonEklenenler = son,
-            sikAranan = ic.sikAranan,
             secili = ic.secili,
             manuelAcik = ic.manuelAcik,
             kur = ic.kur,
@@ -104,22 +122,27 @@ class EkleViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Nakit TL her zaman erişilebilir sabit bir kayıttır; sık aranan kodlar kısayol olarak çözülür.
-            // İlk kurulumda katalog arka planda yükleniyor olabilir; hazır olana kadar birkaç kez denenir.
+            // Nakit TL sabit bir kayıttır; ilk kurulumda varsayılan varlıklar yazılana kadar birkaç kez denenir.
             var nakit = depo.cashAsset()
-            var sik = sikAraniyor()
             var deneme = 0
-            while ((nakit == null || sik.size < SIK_ARANAN.size) && deneme++ < 100) {
+            while (nakit == null && deneme++ < 100) {
                 delay(300)
                 nakit = depo.cashAsset()
-                sik = sikAraniyor()
             }
-            ic.update { it.copy(nakit = nakit, sikAranan = sik) }
+            ic.update { it.copy(nakit = nakit) }
         }
     }
 
-    private suspend fun sikAraniyor(): List<Asset> =
-        SIK_ARANAN.mapNotNull { kod -> depo.search(kod).firstOrNull { it.asset.code == kod }?.asset }
+    /** Kategori seçildi: o kategorinin arama/liste ekranı açılır. Nakit TL doğrudan forma gider. */
+    fun kategoriSec(kategori: Category) {
+        if (kategori == Category.NAKIT) {
+            ic.value.nakit?.let { sec(it) }
+            return
+        }
+        ic.update { it.copy(kategori = kategori, sorgu = "") }
+    }
+
+    fun kategoriyiKapat() = ic.update { it.copy(kategori = null, sorgu = "") }
 
     fun sorguDegistir(sorgu: String) = ic.update { it.copy(sorgu = sorgu) }
 
@@ -164,8 +187,8 @@ class EkleViewModel @Inject constructor(
 
     fun manuelKapat() = ic.update { it.copy(manuelAcik = false) }
 
-    /** Sekmeden çıkılınca çağrılır: girilen değerler kaybolur, arama metni korunur. */
-    fun formuSifirla() = ic.update { it.copy(secili = null, manuelAcik = false) }
+    /** Sekmeden çıkılınca çağrılır: girilen değerler kaybolur, ekran kategori listesine döner. */
+    fun formuSifirla() = ic.update { it.copy(kategori = null, sorgu = "", secili = null, manuelAcik = false) }
 
     fun kaydet(degerler: AlimDegerleri, not: String) {
         val secili = ic.value.secili ?: return
@@ -173,12 +196,12 @@ class EkleViewModel @Inject constructor(
             depo.addPurchase(secili.varlik.id, degerler.adet, degerler.fiyat, degerler.komisyon, degerler.tarih, not)
             yonetici.simdiTazele()
             gecmis.tamamla() // yeni alış için geçmiş fiyat serisi arka planda çekilir
-            ic.update { it.copy(secili = null, sorgu = "") }
+            ic.update { it.copy(kategori = null, secili = null, sorgu = "") }
             olayKanali.send(EkleOlayi.Kaydedildi)
         }
     }
 
-    /** Aramada bulunamayan varlığı kullanıcı tanımlar; ardından alım formu açılır. */
+    /** Aramada bulunamayan varlığı kullanıcı tanımlar; kategori zaten seçilidir. */
     fun manuelKaydet(kod: String, ad: String, kategori: Category, fiyatTl: BigDecimal) {
         viewModelScope.launch {
             val id = depo.addManualAsset(kod, ad, kategori, fiyatTl)
@@ -187,6 +210,7 @@ class EkleViewModel @Inject constructor(
     }
 
     private companion object {
-        val SIK_ARANAN = listOf("AAPL", "NVDA", "THYAO", "ASELS", "XAUGR")
+        /** Bu sayıya kadar olan kategoriler doğrudan listelenir; üstü aramayla bulunur (ABD 27 bin, fon 2 bin). */
+        const val LISTE_SINIRI = 600
     }
 }

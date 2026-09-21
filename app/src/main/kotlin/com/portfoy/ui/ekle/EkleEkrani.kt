@@ -18,16 +18,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -51,17 +50,16 @@ import com.portfoy.data.repository.SearchHit
 import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.model.Asset
 import com.portfoy.model.Category
-import com.portfoy.model.UnitType
 import com.portfoy.ui.bilesenler.AlimFormAlanlari
 import com.portfoy.ui.bilesenler.AlimFormDurumu
 import com.portfoy.ui.bilesenler.Kutu
+import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.etiket
 import java.time.LocalDate
-import java.math.BigDecimal
 
 /**
- * Sekme 1 — Ekle. Tek işi varlık eklemektir; açıldığında doğrudan arama kutusu ve klavye gelir.
- * Akış: Ara → Seç → Fiyat ve adet gir → Kaydet.
+ * Sekme 1 — Ekle. Tek işi varlık eklemektir.
+ * Akış: Kategori seç → Ara ya da listeden seç → Fiyat ve adet gir → Kaydet.
  */
 @Composable
 fun EkleEkrani(onKaydedildi: () -> Unit, vm: EkleViewModel = hiltViewModel()) {
@@ -70,80 +68,135 @@ fun EkleEkrani(onKaydedildi: () -> Unit, vm: EkleViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) {
         vm.olaylar.collect { olay -> if (olay is EkleOlayi.Kaydedildi) onKaydedildi() }
     }
-    // Sekmeden çıkılınca girilen form değerleri kaybolur; uyarı gösterilmez. Arama metni korunur.
+    // Sekmeden çıkılınca girilen form değerleri kaybolur; uyarı gösterilmez. Ekran kategori listesine döner.
     DisposableEffect(Unit) { onDispose { vm.formuSifirla() } }
 
     when {
         ekran.secili != null -> FormGorunumu(ekran, vm)
-        ekran.manuelAcik -> ManuelGorunumu(ekran.sorgu, vm)
+        ekran.manuelAcik -> ManuelGorunumu(ekran.kategori ?: Category.BIST, ekran.sorgu, vm)
+        ekran.kategori == null -> KategoriGorunumu(ekran, vm)
         else -> AramaGorunumu(ekran, vm)
     }
 }
 
+/** Kategori açıklamaları: hangi kategoride ne bulunacağı tek satırda yazar. */
+private fun Category.aciklama(): String = when (this) {
+    Category.BIST -> "Borsa İstanbul hisseleri"
+    Category.ABD -> "ABD borsası hisseleri"
+    Category.FON -> "TEFAS yatırım fonları"
+    Category.EMTIA -> "Gram altın, gram gümüş"
+    Category.DOVIZ -> "USD/TRY, EUR/TRY"
+    Category.NAKIT -> "Türk Lirası nakit (yalnızca tutar)"
+}
+
+private val KATEGORILER = listOf(
+    Category.BIST,
+    Category.ABD,
+    Category.FON,
+    Category.EMTIA,
+    Category.DOVIZ,
+    Category.NAKIT,
+)
+
+/** Ekle sekmesinin ilk ekranı: önce kategori seçilir, arama o kategorinin içinde yapılır. */
+@Composable
+private fun KategoriGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            Text("Ne eklemek istiyorsun?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+        items(KATEGORILER, key = { "kategori-$it" }) { kategori ->
+            Kutu(
+                Modifier.clickable { vm.kategoriSec(kategori) },
+                kalinCerceve = kategori == Category.NAKIT,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (kategori == Category.NAKIT) "Nakit TL" else kategori.etiket(),
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            kategori.aciklama(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                }
+            }
+        }
+
+        // Sık yapılan iş kısa kalsın: aynı varlığa tekrar alım girmek kategori seçmeden de mümkün.
+        if (ekran.sonEklenenler.isNotEmpty()) {
+            item { BolumBasligi("Son eklenenler") }
+            items(ekran.sonEklenenler, key = { "son-${it.id}" }) { KisayolSatiri(it) { vm.sec(it) } }
+        }
+    }
+}
+
+/** Seçilen kategorinin içinde arama ve liste. Az kayıtlı kategorilerde liste doğrudan gelir. */
 @Composable
 private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
+    val kategori = ekran.kategori ?: return
     val odak = remember { FocusRequester() }
-    LaunchedEffect(Unit) { odak.requestFocus() }
+    // Klavye yalnızca aramanın zorunlu olduğu kategorilerde (ABD, fon) kendiliğinden açılır.
+    LaunchedEffect(kategori, ekran.aramaGerekli) { if (ekran.aramaGerekli) odak.requestFocus() }
 
     Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = vm::kategoriyiKapat) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri") }
+            Text(kategori.etiket(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
         OutlinedTextField(
             value = ekran.sorgu,
             onValueChange = vm::sorguDegistir,
-            placeholder = { Text("Kod veya isim ara", maxLines = 1) },
+            placeholder = { Text("${kategori.etiket()} içinde ara", maxLines = 1) },
             singleLine = true,
             trailingIcon = {
                 if (ekran.sorgu.isNotEmpty()) {
                     IconButton(onClick = { vm.sorguDegistir("") }) { Icon(Icons.Filled.Clear, contentDescription = "Temizle") }
                 }
             },
-            modifier = Modifier.fillMaxWidth().padding(16.dp).focusRequester(odak),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).focusRequester(odak),
         )
 
+        val liste = if (ekran.aramaAktif) ekran.sonuclar else ekran.kategoriListesi
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Nakit TL: her zaman erişilebilir sabit kayıt, arama gerektirmez.
-            ekran.nakit?.let { nakit ->
-                item {
-                    Kutu(Modifier.clickable { vm.sec(nakit) }, kalinCerceve = true) {
-                        Text("Nakit TL", fontWeight = FontWeight.Bold)
-                        Text("Türk Lirası nakit ekle (yalnızca tutar)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
+            when {
+                liste.isNotEmpty() -> items(liste, key = { "varlik-${it.asset.id}" }) { SonucSatiri(it) { vm.sec(it.asset) } }
 
-            if (!ekran.aramaAktif) {
-                if (ekran.sonEklenenler.isNotEmpty()) {
-                    item { BolumBasligi("Son eklenenler") }
-                    items(ekran.sonEklenenler, key = { "son-${it.id}" }) { KisayolSatiri(it) { vm.sec(it) } }
-                }
-                if (ekran.sikAranan.isNotEmpty()) {
-                    item { BolumBasligi("Sık aranan") }
-                    items(ekran.sikAranan, key = { "sik-${it.id}" }) { KisayolSatiri(it) { vm.sec(it) } }
-                }
-                item { Text("En az 2 karakter yazınca arama başlar.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            } else if (ekran.sonuclar.isEmpty()) {
-                item {
+                ekran.aramaAktif -> item {
                     Kutu {
                         Text("Aradığın varlık bulunamadı.", fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Kod, ad, kategori ve fiyatı kendin girerek ekleyebilirsin.",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        Text("Kod, ad ve fiyatı kendin girerek ekleyebilirsin.", style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(10.dp))
                         Button(onClick = vm::manuelAc) { Text("Manuel ekle") }
                     }
                 }
-            } else {
-                // Sonuçlar kategoriye göre gruplanır; eşleşmesi güçlü olan grup üstte gelir.
-                val gruplar = ekran.sonuclar.groupBy { it.asset.category }
-                gruplar.forEach { (kategori, sonuclar) ->
-                    item(key = "baslik-$kategori") { BolumBasligi("${kategori.etiket()} (${sonuclar.size})") }
-                    items(sonuclar, key = { "sonuc-${it.asset.id}" }) { SonucSatiri(it) { vm.sec(it.asset) } }
+
+                ekran.aramaGerekli -> item {
+                    Text(
+                        "Bu kategoride çok kayıt var. En az 2 karakter yazınca arama başlar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+
+                else -> item { Text("Yükleniyor…", style = MaterialTheme.typography.bodySmall) }
+            }
+
+            if (liste.isNotEmpty()) {
+                item { TextButton(onClick = vm::manuelAc) { Text("Listede yok mu? Manuel ekle") } }
             }
         }
     }
@@ -154,7 +207,7 @@ private fun BolumBasligi(metin: String) {
     Text(metin, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
 }
 
-/** Sonuç satırı: varlık kodu, tam adı, kategori etiketi, güncel (önbellekteki) fiyat. */
+/** Sonuç satırı: varlık kodu, tam adı, güncel (önbellekteki) fiyat. Kategori başlıkta yazdığı için tekrar edilmez. */
 @Composable
 private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
     Kutu(Modifier.clickable(onClick = sec)) {
@@ -164,10 +217,7 @@ private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
                 Text(sonuc.asset.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.width(12.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(sonuc.asset.category.etiket(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(TrFormat.money(sonuc.lastPriceTl), style = MaterialTheme.typography.bodyMedium)
-            }
+            Text(TrFormat.money(sonuc.lastPriceTl), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -217,7 +267,14 @@ private fun FormGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
             Text("Güncel fiyat alınıyor…", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 16.dp))
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp)) {
-            AlimFormAlanlari(durum, varlik.unitType, abd = varlik.category == Category.ABD, kur = ekran.kur, bugun = bugun)
+            AlimFormAlanlari(
+                durum,
+                varlik.unitType,
+                abd = varlik.category == Category.ABD,
+                kur = ekran.kur,
+                bugun = bugun,
+                birimAdi = varlik.birimEtiketi(),
+            )
         }
         Button(
             onClick = {
@@ -229,12 +286,11 @@ private fun FormGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
     }
 }
 
-/** W10 — Manuel varlık: aramada bulunamayan varlığı kullanıcı kendisi tanımlar. */
+/** W10 — Manuel varlık: aramada bulunamayan varlığı kullanıcı kendisi tanımlar. Kategori seçilen kategoridir. */
 @Composable
-private fun ManuelGorunumu(sorgu: String, vm: EkleViewModel) {
+private fun ManuelGorunumu(kategori: Category, sorgu: String, vm: EkleViewModel) {
     var kod by remember { mutableStateOf(sorgu.trim().uppercase().takeIf { it.length in 2..12 && !it.contains(' ') }.orEmpty()) }
     var ad by remember { mutableStateOf("") }
-    var kategori by remember { mutableStateOf(Category.BIST) }
     var fiyat by remember { mutableStateOf("") }
     var denendi by remember { mutableStateOf(false) }
 
@@ -246,7 +302,7 @@ private fun ManuelGorunumu(sorgu: String, vm: EkleViewModel) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = vm::manuelKapat) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri") }
-            Text("Manuel varlık ekle", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Manuel varlık • ${kategori.etiket()}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
@@ -261,12 +317,6 @@ private fun ManuelGorunumu(sorgu: String, vm: EkleViewModel) {
                 supportingText = if (kodHata) ({ Text("Kod gerekli", fontWeight = FontWeight.Bold) }) else null)
             OutlinedTextField(ad, { ad = it }, label = { Text("Ad") }, isError = adHata, singleLine = true, modifier = Modifier.fillMaxWidth(),
                 supportingText = if (adHata) ({ Text("Ad gerekli", fontWeight = FontWeight.Bold) }) else null)
-            Text("Kategori", style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(Category.ABD, Category.BIST, Category.FON, Category.EMTIA).forEach { k ->
-                    FilterChip(selected = kategori == k, onClick = { kategori = k }, label = { Text(k.etiket()) })
-                }
-            }
             OutlinedTextField(
                 fiyat, { fiyat = it }, label = { Text("Güncel fiyat (₺)") }, isError = fiyatHata, singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),

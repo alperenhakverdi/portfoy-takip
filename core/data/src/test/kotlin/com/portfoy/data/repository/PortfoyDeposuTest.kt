@@ -142,6 +142,27 @@ class PortfoyDeposuTest {
     }
 
     @Test
+    fun `kategoriyle arama baska kategorileri getirmez`() = runBlocking {
+        varlik("THYAO", "Türk Hava Yolları", Category.BIST)
+        varlik("TUR", "Turkey ETF", Category.ABD)
+
+        assertEquals(2, depo.search("tur").size)
+        assertEquals("THYAO", depo.search("tur", category = Category.BIST).single().asset.code)
+        assertEquals("TUR", depo.search("tur", category = Category.ABD).single().asset.code)
+    }
+
+    @Test
+    fun `kategori listesi aramasiz gelir, sayisi bilinir`() = runBlocking {
+        varlik("EREGL", "Ereğli Demir Çelik", Category.BIST)
+        varlik("THYAO", "Türk Hava Yolları", Category.BIST)
+        varlik("AAPL", "Apple", Category.ABD)
+
+        assertEquals(listOf("EREGL", "THYAO"), depo.kategoriListesi(Category.BIST).map { it.asset.code })
+        assertEquals(2, depo.kategoriSayisi(Category.BIST))
+        assertEquals(1, depo.kategoriListesi(Category.BIST, limit = 1).size)
+    }
+
+    @Test
     fun `fiyati olmayan arama sonucu fiyatsiz gelir`() = runBlocking {
         varlik("THYAO", "Türk Hava Yolları", Category.BIST)
         assertNull(depo.search("thyao").single().lastPriceTl)

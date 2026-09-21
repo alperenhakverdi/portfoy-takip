@@ -63,13 +63,28 @@ class PortfolioRepository(
     /** Tazelenecek varlıklar: portföydekiler. */
     fun observeHeldAssetEntities(): Flow<List<AssetEntity>> = assetDao.observeHeldAssets()
 
-    suspend fun search(query: String, limit: Int = 30): List<SearchHit> {
+    /** [category] verilirse arama yalnız o kategoride yapılır (Ekle sekmesi kategoriden başlar). */
+    suspend fun search(query: String, limit: Int = 30, category: Category? = null): List<SearchHit> {
         val normalized = normalizeForSearch(query)
         if (normalized.length < com.portfoy.calc.MIN_SEARCH_LENGTH) return emptyList()
-        return assetDao.search(normalized, limit).map { entity ->
-            val quote = quoteDao.latestFor(entity.id)
-            SearchHit(entity.toModel(), quote?.priceTl, quote?.source)
-        }
+        val sonuclar =
+            if (category == null) assetDao.search(normalized, limit)
+            else assetDao.searchInCategory(normalized, category, limit)
+        return sonuclar.map { it.toHit() }
+    }
+
+    /**
+     * Kategorinin varlıkları, [limit] taneye kadar. Kategoride daha fazlası varsa liste gösterilmez;
+     * [kategoriSayisi] ile karşılaştırılıp aramaya yönlendirilir (ABD 27 bin, fon 2 bin kayıt).
+     */
+    suspend fun kategoriListesi(category: Category, limit: Int = 600): List<SearchHit> =
+        assetDao.byCategory(category, limit).map { it.toHit() }
+
+    suspend fun kategoriSayisi(category: Category): Int = assetDao.countByCategory(category)
+
+    private suspend fun AssetEntity.toHit(): SearchHit {
+        val quote = quoteDao.latestFor(id)
+        return SearchHit(toModel(), quote?.priceTl, quote?.source)
     }
 
     suspend fun asset(id: Long): Asset? = assetDao.getById(id)?.toModel()
@@ -136,6 +151,7 @@ class PortfolioRepository(
         val unit = when (category) {
             Category.FON -> UnitType.PAY
             Category.EMTIA -> UnitType.GRAM
+            Category.DOVIZ -> UnitType.BIRIM
             Category.NAKIT -> UnitType.TL
             else -> UnitType.ADET
         }
