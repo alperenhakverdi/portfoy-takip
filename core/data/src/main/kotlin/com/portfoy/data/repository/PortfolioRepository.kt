@@ -36,6 +36,8 @@ class PortfolioRepository(
     private val transactionDao: TransactionDao,
     private val quoteDao: PriceQuoteDao,
     private val clock: Clock,
+    /** Alış tarihindeki kur için; verilmezse son canlı kur kullanılır. */
+    private val historyDao: com.portfoy.data.db.PriceHistoryDao? = null,
 ) {
     /** Portföyde işlem kaydı olan varlıklar, kayıtları ve son bilinen fiyatlarıyla. */
     fun observePortfolio(): Flow<PortfolioData> = combine(
@@ -76,7 +78,14 @@ class PortfolioRepository(
 
     suspend fun lastPriceTl(assetId: Long): BigDecimal? = quoteDao.latestFor(assetId)?.priceTl
 
-    /** Son bilinen USD/TRY kuru; yoksa `null`. ABD fiyatını USD girmek isteyen form bunu kullanır. */
+    /**
+     * [tarih] gününe ait USD/TRY kuru: saklanan günlük seride o güne kadarki son değer, seri yoksa son canlı kur.
+     * ABD fiyatını USD girmek isteyen form, alış tarihindeki kurla çevirmek için bunu kullanır.
+     */
+    suspend fun usdTryOn(tarih: LocalDate): BigDecimal? =
+        historyDao?.onOrBefore(com.portfoy.data.db.FX_USDTRY_ID, tarih)?.close ?: latestUsdTry()
+
+    /** Son bilinen USD/TRY kuru; yoksa `null`. */
     suspend fun latestUsdTry(): BigDecimal? = quoteDao.latestFor(com.portfoy.data.db.FX_USDTRY_ID)?.priceTl
 
     /** Nakit TL kaydı; arama gerektirmeden erişilir. */

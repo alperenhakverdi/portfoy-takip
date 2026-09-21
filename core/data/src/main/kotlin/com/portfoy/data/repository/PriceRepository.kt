@@ -105,6 +105,27 @@ class PriceRepository(
         return RefreshReport(updated, skipped, failed, limited, fxMissing)
     }
 
+    /**
+     * Yalnızca USD/TRY kurunu tazeler (kur grubunun kendi zamanlaması vardır: saat başı). Kur, ABD varlıklarının TL
+     * karşılığı için gerekir; portföyde ABD varlığı olmasa da geçmiş grafik için güncel tutulur.
+     */
+    suspend fun refreshFx(minAge: Duration = AUTO_MIN_AGE): RefreshReport {
+        val failed = mutableSetOf<RouteKey>()
+        val limited = mutableSetOf<RouteKey>()
+        val son = quoteDao.latestFor(FX_USDTRY_ID)
+        var guncellenen = 0
+        if (son == null || Duration.between(son.timestamp, clock.instant()) >= minAge) {
+            when (val sonuc = router.quotes(RouteKey.FX, listOf(AssetRef.USDTRY))) {
+                is RouteOutcome.Success -> {
+                    sonuc.quotes.forEach { store(FX_USDTRY_ID, it, BigDecimal.ONE) }
+                    guncellenen = sonuc.quotes.size
+                }
+                is RouteOutcome.Failed -> record(sonuc, RouteKey.FX, failed, limited)
+            }
+        }
+        return RefreshReport(updated = guncellenen, failedGroups = failed, budgetLimitedGroups = limited)
+    }
+
     /** Kullanıcının elle girdiği fiyat. Her giriş yeni satırdır; zamanla bir seri oluşturur. */
     suspend fun setManualPrice(assetId: Long, priceTl: BigDecimal) {
         quoteDao.insert(

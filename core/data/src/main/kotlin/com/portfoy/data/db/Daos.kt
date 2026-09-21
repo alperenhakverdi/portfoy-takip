@@ -131,6 +131,10 @@ interface PriceHistoryDao {
     @Query("SELECT MAX(date) FROM price_history WHERE assetId = :assetId")
     suspend fun lastDate(assetId: Long): LocalDate?
 
+    /** Verilen güne kadarki (dahil) son kapanış; kurun alış tarihindeki değeri için. */
+    @Query("SELECT * FROM price_history WHERE assetId = :assetId AND date <= :date ORDER BY date DESC LIMIT 1")
+    suspend fun onOrBefore(assetId: Long, date: LocalDate): PriceHistoryEntity?
+
     @Query("SELECT MIN(date) FROM price_history WHERE assetId = :assetId")
     suspend fun firstDate(assetId: Long): LocalDate?
 
