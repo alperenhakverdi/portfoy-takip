@@ -29,6 +29,14 @@ interface AssetDao {
     @Query("SELECT COUNT(*) FROM asset")
     suspend fun count(): Int
 
+    /** Katalog tazelenirken değişen adları bulmak için: kategorideki tüm kod ve adlar. */
+    @Query("SELECT code, name FROM asset WHERE category = :category")
+    suspend fun codeNames(category: com.portfoy.model.Category): List<CodeName>
+
+    /** Var olan varlığın adını ve arama metnini günceller; kimliği (ve işlem kayıtları) korunur. */
+    @Query("UPDATE asset SET name = :name, searchText = :searchText, exchange = :exchange, fundKind = :fundKind WHERE code = :code AND category = :category")
+    suspend fun updateInfo(code: String, category: com.portfoy.model.Category, name: String, searchText: String, exchange: String?, fundKind: String?): Int
+
     @Query("SELECT COUNT(*) FROM asset WHERE category = :category")
     suspend fun countByCategory(category: com.portfoy.model.Category): Int
 
@@ -138,3 +146,5 @@ interface PortfolioSnapshotDao {
     @Query("SELECT * FROM portfolio_snapshot ORDER BY date DESC LIMIT 1")
     suspend fun latest(): PortfolioSnapshotEntity?
 }
+
+data class CodeName(val code: String, val name: String)
