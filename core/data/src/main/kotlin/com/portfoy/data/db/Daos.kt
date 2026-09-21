@@ -29,6 +29,9 @@ interface AssetDao {
     @Query("SELECT COUNT(*) FROM asset")
     suspend fun count(): Int
 
+    @Query("SELECT COUNT(*) FROM asset WHERE category = :category")
+    suspend fun countByCategory(category: com.portfoy.model.Category): Int
+
     /**
      * Arama: [query] önceden [com.portfoy.calc.normalizeForSearch] ile normalize edilmiş olmalıdır.
      * Kodu tam eşleşenler, sonra kodla başlayanlar, sonra diğerleri gelir.

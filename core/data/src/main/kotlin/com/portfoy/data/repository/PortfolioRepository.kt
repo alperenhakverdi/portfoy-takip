@@ -76,6 +76,9 @@ class PortfolioRepository(
 
     suspend fun lastPriceTl(assetId: Long): BigDecimal? = quoteDao.latestFor(assetId)?.priceTl
 
+    /** Son bilinen USD/TRY kuru; yoksa `null`. ABD fiyatını USD girmek isteyen form bunu kullanır. */
+    suspend fun latestUsdTry(): BigDecimal? = quoteDao.latestFor(com.portfoy.data.db.FX_USDTRY_ID)?.priceTl
+
     /** Nakit TL kaydı; arama gerektirmeden erişilir. */
     suspend fun cashAsset(): Asset? = assetByCode(com.portfoy.data.db.VarsayilanVarliklar.NAKIT_KODU, Category.NAKIT)
 
