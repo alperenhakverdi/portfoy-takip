@@ -3,6 +3,31 @@
 Kaynak: *Portföy Takip Uygulaması — Gereksinim Dokümanı (Faz 1)*, 2026-09-20.
 Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kararlar [KARARLAR.md](KARARLAR.md)'de.
 
+## İlerleme (2026-09-22)
+
+| # | Milestone | Durum | Not |
+|---|---|---|---|
+| M0 | İskelet | ✅ Bitti | Gradle, 5 modül, Compose + Hilt |
+| M1 | Room veritabanı | ✅ Bitti | 5 tablo, 16+ DAO testi. Migration testi ilk şema değişikliğinde |
+| M2 | Hesaplama çekirdeği | ✅ Bitti | Getiri, Dietz, dağılım, biçim, doğrulama: 59 test |
+| M3 | Kaynak katmanı | ✅ Bitti | Yönlendirici, bütçe, takvim, zamanlayıcı, fiyat deposu |
+| M4 | Ekranlar (W1–W11) | ✅ Bitti | Emülatörde elle gezildi; grafik verileri hâlâ **örnek** (M6) |
+| M5 | Gerçek kaynaklar | 🟡 Büyük kısmı bitti | 7 adaptör, 89 fixture testi, 8 canlı test geçti, uygulamaya bağlı. Kalan: aşağıya bak |
+| M6 | Geçmiş seri, snapshot, gerçek grafikler | ⏳ Sırada | |
+| M7 | Kenar durumlar, çevrimdışı | ⏳ | |
+| M8 | Sertleştirme, APK | ⏳ | |
+
+**M5'te kalanlar:** zamanlayıcının (piyasa saati, açılış/kapanış turu, adaptif aralık) tazelemeye bağlanması ve
+WorkManager işleri (M6 ile birlikte); şu an tazeleme uygulama öne gelince ve aşağı çekince çalışıyor.
+
+**Geliştirme ortamı notu:** bu bilgisayardaki Avast antivirüsü HTTPS trafiğini kendi sertifikasıyla yeniden imzalıyor.
+Java araçları için `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT` gerekiyor; emülatörde ise Avast'ın
+kök sertifikası test emülatörünün kullanıcı deposuna kuruldu ve **yalnızca debug** derlemesi kullanıcı sertifikalarına
+güveniyor (`app/src/debug`). Yayın sürümü etkilenmez. Gerçek telefonda bu gerekmez.
+
+**Ölçülen performans (emülatör, yavaş):** ilk açılışta 30 bin kayıtlık katalog yüklemesi 85 sn → 31–38 sn'ye indi
+(hazır SQL ifadesi + 500'lük kısa işlemler). Ekran yükleme sırasında kilitlenmiyor. Gerçek telefonda birkaç saniye beklenir.
+
 Plan, dokümandaki eksik ya da
 kendi içinde çelişen noktaları 20 kararla kapatır (bazıları kapsamı genişletir); kararların gereksinim dokümanına geri işlenmesi gerekir.
 
