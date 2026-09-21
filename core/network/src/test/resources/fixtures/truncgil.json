@@ -1,0 +1,30 @@
+{
+ "Update_Date": "2026-09-22 00:56:02",
+ "USD": {
+  "Buying": 48.7206,
+  "Type": "Currency",
+  "Selling": 48.9146,
+  "Change": 0.05
+ },
+ "GRA": {
+  "Selling": 6817.72,
+  "Type": "Gold",
+  "Name": "GRAMALTIN",
+  "Change": 0.05,
+  "Buying": 6816.89
+ },
+ "GUMUS": {
+  "Selling": 103.68,
+  "Type": "Gold",
+  "Name": "GUMUS",
+  "Change": 0.05,
+  "Buying": 103.59
+ },
+ "ONS": {
+  "Buying": 0,
+  "Type": "Gold",
+  "Name": "ONS",
+  "Selling": 0,
+  "Change": -0.8
+ }
+}

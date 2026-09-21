@@ -1,0 +1,41 @@
+{
+ "errorCode": null,
+ "errorMessage": null,
+ "resultList": [
+  {
+   "fonKodu": "AAL",
+   "fonUnvan": "ATA PORTFÖY PARA PİYASASI (TL) FONU",
+   "tarih": "2026-09-18",
+   "fiyat": 3.58631,
+   "tedPaySayisi": 482217807,
+   "kisiSayisi": 4431,
+   "portfoyBuyukluk": 1729382649.02,
+   "borsaBultenFiyat": null,
+   "rn": 1
+  },
+  {
+   "fonKodu": "AAS",
+   "fonUnvan": "ATA PORTFÖY FON SEPETİ SERBEST FONU",
+   "tarih": "2026-09-18",
+   "fiyat": 12.900187,
+   "tedPaySayisi": 1331419,
+   "kisiSayisi": 147,
+   "portfoyBuyukluk": 17175554.39,
+   "borsaBultenFiyat": null,
+   "rn": 2
+  },
+  {
+   "fonKodu": "AAV",
+   "fonUnvan": "ATA PORTFÖY İKİNCİ HİSSE SENEDİ (TL) FONU (HİSSE SENEDİ YOĞUN FON)",
+   "tarih": "2026-09-18",
+   "fiyat": 62.107862,
+   "tedPaySayisi": 2183733,
+   "kisiSayisi": 1929,
+   "portfoyBuyukluk": 135626988.47,
+   "borsaBultenFiyat": null,
+   "rn": 3
+  }
+ ],
+ "toplamSayi": 2039,
+ "toplamSayfa": 1
+}
