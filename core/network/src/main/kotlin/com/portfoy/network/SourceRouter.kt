@@ -44,6 +44,8 @@ class SourceRouter(
     private val clock: Clock,
     private val retries: Int = 3,
     private val retryDelayMillis: Long = 500,
+    /** Kaynak hataları için isteğe bağlı günlük; kullanıcıya gösterilmez, tanı içindir. */
+    private val hataGunlugu: ((String) -> Unit)? = null,
 ) {
     suspend fun quotes(key: RouteKey, assets: List<AssetRef>): RouteOutcome {
         val route = routes[key] ?: return RouteOutcome.Failed(IllegalStateException("$key için kaynak tanımlı değil"))
@@ -89,6 +91,7 @@ class SourceRouter(
                 return result
             }
             health.recordFailure(source.id, now)
+            hataGunlugu?.invoke("${source.id} başarısız (deneme ${index + 1}/$retries, ${assets.size} varlık): ${result.exceptionOrNull()}")
             last = result
             if (index < retries - 1 && retryDelayMillis > 0) delay(retryDelayMillis)
         }

@@ -105,8 +105,8 @@ class EkleViewModel @Inject constructor(
             var nakit = depo.cashAsset()
             var sik = sikAraniyor()
             var deneme = 0
-            while ((nakit == null || sik.size < SIK_ARANAN.size) && deneme++ < 30) {
-                delay(200)
+            while ((nakit == null || sik.size < SIK_ARANAN.size) && deneme++ < 100) {
+                delay(300)
                 nakit = depo.cashAsset()
                 sik = sikAraniyor()
             }
