@@ -11,9 +11,9 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M1 | Room veritabanı | ✅ Bitti | 5 tablo, 16+ DAO testi. Migration testi ilk şema değişikliğinde |
 | M2 | Hesaplama çekirdeği | ✅ Bitti | Getiri, Dietz, dağılım, biçim, doğrulama: 59 test |
 | M3 | Kaynak katmanı | ✅ Bitti | Yönlendirici, bütçe, takvim, zamanlayıcı, fiyat deposu |
-| M4 | Ekranlar (W1–W11) | ✅ Bitti | Emülatörde elle gezildi; grafik verileri hâlâ **örnek** (M6) |
+| M4 | Ekranlar (W1–W11) | ✅ Bitti | Emülatörde elle gezildi; grafikler M6 ile gerçek veriye bağlandı |
 | M5 | Gerçek kaynaklar | 🟡 Büyük kısmı bitti | 7 adaptör, 89 fixture testi, 8 canlı test geçti, uygulamaya bağlı. Kalan: aşağıya bak |
-| M6 | ✅ Geçmiş seriler, snapshot, gerçek grafikler ve getiri hesabı (emülatörde doğrulandı) |
+| M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
 | M7 | Kenar durumlar, çevrimdışı | ⏳ | |
 | M8 | Sertleştirme, APK | ⏳ | |
 
@@ -62,7 +62,7 @@ ilk günden başlatılır.
 | M3 | Adaptör katmanı, repository, tazeleme zamanlayıcısı | Arayüz, fake adaptör, önbellek, bütçe ve ritim | M |
 | M4 | Wireframe ekranları (W1–W11) | Mock veriyle tüm akış, navigasyon | L |
 | M5 | Gerçek kaynaklar | 6 fiyat adaptörü + sembol listesi + elle giriş yedeği | L |
-| M6 | ✅ Geçmiş seriler, snapshot, gerçek grafikler ve getiri hesabı (emülatörde doğrulandı) |
+| M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
 | M7 | Kenar durumlar ve çevrimdışı | Bölüm 14'ün tamamı | M |
 | M8 | Sertleştirme ve teslim | Test kapsamı, APK, kabul testi | S |
 
