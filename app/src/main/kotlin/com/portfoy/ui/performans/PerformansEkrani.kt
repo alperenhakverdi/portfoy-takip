@@ -1,5 +1,14 @@
 package com.portfoy.ui.performans
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Icon
+import com.portfoy.ui.bilesenler.etiket
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -114,25 +123,54 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
         }
 
         item {
-            Kutu {
-                Row(Modifier.fillMaxWidth()) {
-                    Text("Varlık", Modifier.weight(1.4f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Getiri %", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
-                    Text("Getiri ₺", Modifier.weight(1.1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+                Text("Kategori", Modifier.weight(1.4f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Getiri %", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
+                Text("Getiri ₺", Modifier.weight(1.1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
+            }
+        }
+
+        // Kategori kırılımı: satırda kategorinin toplam getirisi, dokununca altındaki varlıklar açılır.
+        items(ekran.kategoriler, key = { "kategori-${it.kategori}" }) { grup ->
+            val acik = grup.kategori in ekran.secim.acik
+            Kutu(Modifier.clickable { vm.kategoriAcKapa(grup.kategori) }) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(1.4f), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            if (acik) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = if (acik) "Kapat" else "Aç",
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Column {
+                            Text(grup.kategori.etiket(), fontWeight = FontWeight.Bold)
+                            Text(
+                                "${grup.varliklar.size} varlık",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Text(TrFormat.signedPercent(grup.yuzde), Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                    Text(TrFormat.signedMoney(grup.tl), Modifier.weight(1.1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
                 }
-                ekran.satirlar.forEach { satir ->
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1.4f)) {
-                            Text(satir.varlik.code, fontWeight = FontWeight.Bold)
-                            Text(satir.varlik.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            // Dönemin tamamında portföyde olmayan varlıklar listede kalır, yanlarında giriş tarihi yazar.
-                            satir.girisTarihi?.let {
-                                Text("giriş: ${it.tr()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+
+                AnimatedVisibility(acik) {
+                    Column {
+                        grup.varliklar.forEach { satir ->
+                            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1.4f).padding(start = 30.dp)) {
+                                    Text(satir.varlik.code, fontWeight = FontWeight.Bold)
+                                    Text(satir.varlik.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    // Dönemin tamamında portföyde olmayan varlıklar listede kalır, yanlarında giriş tarihi yazar.
+                                    satir.girisTarihi?.let {
+                                        Text("giriş: ${it.tr()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                Text(TrFormat.signedPercent(satir.yuzde), Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
+                                Text(TrFormat.signedMoney(satir.tl), Modifier.weight(1.1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
-                        Text(TrFormat.signedPercent(satir.yuzde), Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
-                        Text(TrFormat.signedMoney(satir.tl), Modifier.weight(1.1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

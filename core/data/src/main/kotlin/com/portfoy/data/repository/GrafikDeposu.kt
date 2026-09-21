@@ -47,6 +47,14 @@ data class VarlikDonemGetirisi(
     val girisTarihi: LocalDate?,
 )
 
+/** Bir kategorinin seçilen dönemdeki getirisi ve altındaki varlıklar (Performans listesi kategori kırılımlıdır). */
+data class KategoriDonemGetirisi(
+    val kategori: Category,
+    val yuzde: BigDecimal?,
+    val tl: BigDecimal,
+    val varliklar: List<VarlikDonemGetirisi>,
+)
+
 /**
  * Grafikleri saklanan geçmiş serilerden hesaplar ("geriye dönük hesaplama"). Grafiğin son noktası, Portföy ekranındaki
  * güncel değerle tutarlı olsun diye son bilinen canlı fiyatı kullanır.
@@ -80,28 +88,59 @@ class GrafikDeposu(
     }
 
     /** Portföydeki her varlığın seçilen dönemdeki getirisi (yüzde ve TL). */
-    suspend fun varlikGetirileri(donem: Donem, bugun: LocalDate): List<VarlikDonemGetirisi> {
+    suspend fun varlikGetirileri(donem: Donem, bugun: LocalDate): List<VarlikDonemGetirisi> =
+        kategoriGetirileri(donem, bugun).flatMap { it.varliklar }
+
+    /**
+     * Kategori kırılımı: her kategorinin dönem getirisi ve altındaki varlıklar. Kategori yüzdesi varlık
+     * yüzdelerinin ortalaması değildir; kategorinin varlıkları birlikte değerlenip aynı basit Dietz
+     * formülüyle hesaplanır, böylece portföy toplamıyla tutarlı kalır.
+     */
+    suspend fun kategoriGetirileri(donem: Donem, bugun: LocalDate): List<KategoriDonemGetirisi> {
         val islemler = transactionDao.getAll()
         if (islemler.isEmpty()) return emptyList()
         val yukleme = yukle(islemler, bugun)
         val enEski = islemler.minOf { it.tradeDate }
         val baslangic = donem.baslangic(bugun, enEski)
 
-        return yukleme.varliklar.map { varlik ->
-            val alimlar = yukleme.alimlar.filter { it.assetId == varlik.id }
-            if (varlik.category == Category.NAKIT) {
-                return@map VarlikDonemGetirisi(varlik, BigDecimal.ZERO, BigDecimal.ZERO, giris(alimlar, baslangic))
+        return yukleme.varliklar.groupBy { it.category }.map { (kategori, varliklar) ->
+            val satirlar = varliklar.map { varlikGetirisi(it, yukleme, baslangic, bugun) }
+            if (kategori == Category.NAKIT) {
+                return@map KategoriDonemGetirisi(kategori, BigDecimal.ZERO, BigDecimal.ZERO, satirlar)
             }
+            val kimlikler = varliklar.map { it.id }.toSet()
+            val alimlar = yukleme.alimlar.filter { it.assetId in kimlikler }
             val noktalar = portfolioSeries(
                 alimlar,
-                yukleme.fiyatlar.filterKeys { it == varlik.id },
+                yukleme.fiyatlar.filterKeys { it in kimlikler },
                 yukleme.kategoriler,
                 baslangic,
                 bugun,
             )
             val katkilar = katkilar(alimlar, noktalar.firstOrNull()?.date ?: baslangic)
-            VarlikDonemGetirisi(varlik, yuzde(noktalar, katkilar), kazanc(noktalar, katkilar), giris(alimlar, baslangic))
+            KategoriDonemGetirisi(kategori, yuzde(noktalar, katkilar), kazanc(noktalar, katkilar), satirlar)
         }
+    }
+
+    private fun varlikGetirisi(
+        varlik: Asset,
+        yukleme: Yukleme,
+        baslangic: LocalDate,
+        bugun: LocalDate,
+    ): VarlikDonemGetirisi {
+        val alimlar = yukleme.alimlar.filter { it.assetId == varlik.id }
+        if (varlik.category == Category.NAKIT) {
+            return VarlikDonemGetirisi(varlik, BigDecimal.ZERO, BigDecimal.ZERO, giris(alimlar, baslangic))
+        }
+        val noktalar = portfolioSeries(
+            alimlar,
+            yukleme.fiyatlar.filterKeys { it == varlik.id },
+            yukleme.kategoriler,
+            baslangic,
+            bugun,
+        )
+        val katkilar = katkilar(alimlar, noktalar.firstOrNull()?.date ?: baslangic)
+        return VarlikDonemGetirisi(varlik, yuzde(noktalar, katkilar), kazanc(noktalar, katkilar), giris(alimlar, baslangic))
     }
 
     private fun giris(alimlar: List<HistoricalPurchase>, donemBasi: LocalDate): LocalDate? =

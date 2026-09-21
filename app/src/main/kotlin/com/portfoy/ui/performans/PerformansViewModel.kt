@@ -8,10 +8,12 @@ import com.portfoy.calc.Donem
 import com.portfoy.calc.PortfolioSummary
 import com.portfoy.calc.summarize
 import com.portfoy.data.repository.GrafikDeposu
+import com.portfoy.data.repository.KategoriDonemGetirisi
 import com.portfoy.data.repository.PortfolioData
 import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.data.repository.VarlikDonemGetirisi
 import com.portfoy.di.UygulamaZamanDilimi
+import com.portfoy.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.math.BigDecimal
 import java.time.Clock
@@ -32,7 +34,12 @@ import kotlinx.coroutines.flow.update
 /** Sıralama ölçütü: kullanıcı yüzde ile TL arasında değiştirebilir. */
 enum class Siralama { YUZDE, TL }
 
-data class PerformansSecimi(val donem: Donem = Donem.VARSAYILAN, val siralama: Siralama = Siralama.YUZDE)
+data class PerformansSecimi(
+    val donem: Donem = Donem.VARSAYILAN,
+    val siralama: Siralama = Siralama.YUZDE,
+    /** Açılmış (içindeki varlıklar görünen) kategoriler. */
+    val acik: Set<Category> = emptySet(),
+)
 
 data class PerformansEkranVerisi(
     val yuklendi: Boolean = false,
@@ -46,12 +53,13 @@ data class PerformansEkranVerisi(
     val pencere: ChartWindow? = null,
     val tahmini: Boolean = false,
     val gecmisYukleniyor: Boolean = false,
-    val satirlar: List<VarlikDonemGetirisi> = emptyList(),
+    /** Kategori kırılımı; her kategorinin altında varlıkları. */
+    val kategoriler: List<KategoriDonemGetirisi> = emptyList(),
 )
 
 /**
- * Performans sekmesinin verisi: portföy ve varlık bazında dönemsel getiri, saklanan geçmiş fiyat serilerinden geriye dönük
- * hesaplanır. Geçmiş seriler arka planda tamamlandıkça ekran kendiliğinden yenilenir.
+ * Performans sekmesinin verisi: portföy, kategori ve varlık bazında dönemsel getiri, saklanan geçmiş fiyat
+ * serilerinden geriye dönük hesaplanır. Geçmiş seriler arka planda tamamlandıkça ekran kendiliğinden yenilenir.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -78,11 +86,14 @@ class PerformansViewModel @Inject constructor(
 
             val bugun = saat.instant().atZone(UygulamaZamanDilimi).toLocalDate()
             val toplam = grafik.hesapla(g.secim.donem, bugun)
-            val satirlar = grafik.varlikGetirileri(g.secim.donem, bugun)
-            val sirali = when (g.secim.siralama) {
-                Siralama.YUZDE -> satirlar.sortedWith(compareByDescending<VarlikDonemGetirisi> { it.yuzde != null }.thenByDescending { it.yuzde })
-                Siralama.TL -> satirlar.sortedByDescending { it.tl }
-            }
+            val kategoriler = grafik.kategoriGetirileri(g.secim.donem, bugun)
+                .map { it.copy(varliklar = sirala(it.varliklar, g.secim.siralama)) }
+                .sortedWith(
+                    when (g.secim.siralama) {
+                        Siralama.YUZDE -> compareByDescending<KategoriDonemGetirisi> { it.yuzde != null }.thenByDescending { it.yuzde }
+                        Siralama.TL -> compareByDescending { it.tl }
+                    },
+                )
             PerformansEkranVerisi(
                 yuklendi = true,
                 ozet = ozet,
@@ -93,13 +104,24 @@ class PerformansViewModel @Inject constructor(
                 pencere = toplam?.pencere,
                 tahmini = toplam?.tahmini == true,
                 gecmisYukleniyor = g.gecmisYukleniyor,
-                satirlar = sirali,
+                kategoriler = kategoriler,
             )
         }
         .flowOn(Dispatchers.Default) // getiri hesabı ana iş parçacığında yapılmaz
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PerformansEkranVerisi())
 
+    private fun sirala(satirlar: List<VarlikDonemGetirisi>, siralama: Siralama): List<VarlikDonemGetirisi> =
+        when (siralama) {
+            Siralama.YUZDE -> satirlar.sortedWith(compareByDescending<VarlikDonemGetirisi> { it.yuzde != null }.thenByDescending { it.yuzde })
+            Siralama.TL -> satirlar.sortedByDescending { it.tl }
+        }
+
     fun donemSec(donem: Donem) = secim.update { it.copy(donem = donem) }
 
     fun siralamaSec(siralama: Siralama) = secim.update { it.copy(siralama = siralama) }
+
+    /** Kategori satırına dokunulunca altındaki varlıklar açılır ya da kapanır. */
+    fun kategoriAcKapa(kategori: Category) = secim.update {
+        it.copy(acik = if (kategori in it.acik) it.acik - kategori else it.acik + kategori)
+    }
 }

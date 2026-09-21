@@ -358,6 +358,55 @@ class GecmisVeGrafikTest {
         assertBd("0", sonuc.tl)
     }
 
+    @Test
+    fun `kategori getirisi varliklarin ortalamasi degil, birlikte degerlenmesidir`() = runBlocking {
+        val a = varlik("AAA", Category.BIST)
+        val b = varlik("BBB", Category.BIST)
+        val n = varlik("TRY", Category.NAKIT)
+        alim(a, 1, "10", "100") // 1000 → 1100
+        alim(b, 1, "1", "1000") // 1000 → 1000 (değişmedi)
+        alim(n, 1, "500", "1")
+        seriYaz(a, 1 to "100", 10 to "110")
+        seriYaz(b, 1 to "1000", 10 to "1000")
+        canli(a, "110")
+        canli(b, "1000")
+
+        val gruplar = grafik().kategoriGetirileri(Donem.BIR_AY, gun(10)).associateBy { it.kategori }
+
+        // BIST: 2000 → 2100, yani %5. Varlık yüzdelerinin ortalaması (%10 ve %0) alınsaydı da %5 çıkardı ama
+        // ağırlıklar eşit olmasaydı ayrışırdı; burada toplam TL kazanç tek ölçüttür.
+        assertBd("100", gruplar.getValue(Category.BIST).tl)
+        assertBd("5", gruplar.getValue(Category.BIST).yuzde!!)
+        assertEquals(listOf("AAA", "BBB"), gruplar.getValue(Category.BIST).varliklar.map { it.varlik.code }.sorted())
+        assertBd("0", gruplar.getValue(Category.NAKIT).yuzde!!)
+        // Varlık listesi kategori kırılımının düzleştirilmiş hâlidir.
+        assertEquals(3, grafik().varlikGetirileri(Donem.BIR_AY, gun(10)).size)
+    }
+
+    @Test
+    fun `portfoydeki dolar kur serisini kopyalar, ikinci kez cekilmez`() = runBlocking {
+        val evds = SahteSeri(SourceId.TCMB_EVDS) { (1..10).map { mum(it, "${40 + it}") } }
+        val usd = varlik("USDTRY", Category.DOVIZ)
+
+        val sonuc = depo(mapOf(GecmisAnahtari.KUR to listOf(evds))).ensure(usd, gun(1))
+
+        assertTrue(sonuc.basarili)
+        assertEquals(1, evds.cagrilar.size) // yalnızca ortak kur serisi çekildi
+        assertEquals(gecmis(FX_USDTRY_ID).map { it.closeTl }, gecmis(usd.id).map { it.closeTl })
+        assertEquals(BigDecimal("41"), gecmis(usd.id).first().closeTl)
+    }
+
+    @Test
+    fun `euro kendi serisiyle cekilir`() = runBlocking {
+        val evds = SahteSeri(SourceId.TCMB_EVDS) { (1..10).map { mum(it, "${55 + it}") } }
+        val eur = varlik("EURTRY", Category.DOVIZ)
+
+        depo(mapOf(GecmisAnahtari.KUR to listOf(evds))).ensure(eur, gun(1))
+
+        assertEquals(AssetRef("EURTRY", Category.DOVIZ, null), evds.cagrilar.single().varlik)
+        assertEquals(BigDecimal("56"), gecmis(eur.id).first().closeTl)
+    }
+
     private fun assertBd(beklenen: String, gercek: BigDecimal) =
         assertEquals(BigDecimal(beklenen).setScale(2), gercek.setScale(2, RoundingMode.HALF_UP))
 }
