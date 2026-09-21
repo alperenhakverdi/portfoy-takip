@@ -19,7 +19,10 @@ class PortfoyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Nakit TL ve gram altın/gümüş her kurulumda bulunur; kayıtlar varsa dokunulmaz.
-        uygulamaKapsami.launch { VarsayilanVarliklar.ekle(assetDao) }
+        uygulamaKapsami.launch {
+            // Nakit TL ve gram altın/gümüş her kurulumda bulunur; kayıtlar varsa dokunulmaz.
+            VarsayilanVarliklar.ekle(assetDao)
+            KatalogYukleyici.yukle(this@PortfoyApp, assetDao)
+        }
     }
 }
