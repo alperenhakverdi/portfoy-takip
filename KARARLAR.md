@@ -362,3 +362,22 @@ klavye yalnız orada kendiliğinden açılır. Nakit TL ara adım olmadan forma 
 **Karar.** Liste akordeona çevrildi: kategori satırında dönem getirisi (% ve ₺), dokununca altında
 varlıkları. Kategori yüzdesi varlık yüzdelerinin ortalaması **değildir** — kategorinin varlıkları birlikte
 değerlenip aynı basit Dietz formülünden geçer, böylece kategori toplamları portföy toplamıyla tutarlı kalır.
+
+---
+
+## 24. Eskilik eşikleri tek yerde: `Tazelik`
+
+**Sorun.** "Elle fiyat 7 günden eski" (karar 9) ve "kur eski, ABD değerleri güvenilmez" kuralları ayrı
+ayrı ekranlara yazılsaydı ikisi zamanla farklı tanımlara kayabilirdi.
+
+**Karar.** `core/calc/Tazelik.kt`: elle fiyat için 7 gün, kur için 2 gün (hafta sonu tatili sorun sayılmaz)
+eşiği tek yerde tanımlı. Hem Portföy ekranı hem ileride başka bir ekran aynı kuralı kullanır.
+
+## 25. Gün içi kapalı bilgisi, zamanlayıcının kendi kuralından okunur
+
+**Sorun.** "Portföy çok büyük, gün içi güncelleme kapalı" notu (bölüm 14) ile zamanlayıcının hangi
+portföy büyüklüğünde gün içi turları kapattığı (`AdaptiveInterval`) iki ayrı yerde tutulursa
+ekrandaki uyarı zamanlayıcının gerçek davranışından sapabilir.
+
+**Karar.** `TazelemeZamanlayici.gunIciKapali(kategori, varlıkSayısı)` companion fonksiyonu eklendi;
+zamanlayıcı ve Portföy ekranı aynı hesaplamayı çağırır.

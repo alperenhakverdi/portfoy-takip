@@ -184,6 +184,15 @@ class FiyatDeposuTest {
     }
 
     @Test
+    fun `gunluk butce dolmasi kullaniciya sorun olarak yansimaz`() {
+        // Doküman 14: "API limiti aşıldı → yedeğe geç; yoksa bir sonraki tura bekle, kullanıcıya hata gösterme".
+        val yalnizButceDoldu = RefreshReport(budgetLimitedGroups = setOf(RouteKey.US, RouteKey.BIST))
+        assertFalse(yalnizButceDoldu.hasProblems)
+        // Gerçek bir kaynak hatası ise gösterilir.
+        assertTrue(RefreshReport(failedGroups = setOf(RouteKey.BIST)).hasProblems)
+    }
+
+    @Test
     fun `kur hic yoksa ABD fiyati yazilmaz ve rapor bildirir`() = runBlocking {
         val aapl = ekle("AAPL", Category.ABD)
         val bozukKur = FakePriceSource(SourceId.TCMB_HOURLY, saat, failWhen = { true })

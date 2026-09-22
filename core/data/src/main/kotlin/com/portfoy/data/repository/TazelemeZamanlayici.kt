@@ -69,14 +69,7 @@ class TazelemeZamanlayici(
     }
 
     /** Gün içi plan; piyasası olmayan gruplarda `null` (aralık sabittir). */
-    fun plan(grup: RefreshGroup, varlikSayisi: Int): com.portfoy.network.market.IntradayPlan? {
-        val (tavan, seans) = when (grup) {
-            RefreshGroup.US -> 500 to seansDakikasi(Market.US)
-            RefreshGroup.BIST -> 300 to seansDakikasi(Market.BIST)
-            else -> return null
-        }
-        return AdaptiveInterval.choose(varlikSayisi, tavan, seans)
-    }
+    fun plan(grup: RefreshGroup, varlikSayisi: Int): com.portfoy.network.market.IntradayPlan? = gunIciPlan(grup, varlikSayisi)
 
     private suspend fun tur(grup: RefreshGroup, slot: Slot, grubunku: List<AssetEntity>, rotasyon: Int) {
         if (grup == RefreshGroup.FX) {
@@ -105,6 +98,31 @@ class TazelemeZamanlayici(
         RefreshGroup.FX -> Category.DOVIZ
     }
 
-    private fun seansDakikasi(market: Market): Int =
-        Duration.between(market.open, market.close).toMinutes().toInt()
+    companion object {
+        /**
+         * Gün içi plan; piyasası olmayan gruplarda `null`. Ekran da aynı kuralla "gün içi güncelleme kapalı" bilgisini gösterir,
+         * bu yüzden kural tek yerde durur.
+         */
+        fun gunIciPlan(grup: RefreshGroup, varlikSayisi: Int): com.portfoy.network.market.IntradayPlan? {
+            val (tavan, seans) = when (grup) {
+                RefreshGroup.US -> 500 to seansDakikasi(Market.US)
+                RefreshGroup.BIST -> 300 to seansDakikasi(Market.BIST)
+                else -> return null
+            }
+            return AdaptiveInterval.choose(varlikSayisi, tavan, seans)
+        }
+
+        /** Bu kategoride, verilen varlık sayısıyla gün içi turlar kapalı mı? Piyasası olmayan kategoride `false`. */
+        fun gunIciKapali(kategori: Category, varlikSayisi: Int): Boolean {
+            val grup = when (kategori) {
+                Category.ABD -> RefreshGroup.US
+                Category.BIST -> RefreshGroup.BIST
+                else -> return false
+            }
+            return gunIciPlan(grup, varlikSayisi)?.let { !it.enabled && varlikSayisi > 0 } == true
+        }
+
+        private fun seansDakikasi(market: Market): Int =
+            Duration.between(market.open, market.close).toMinutes().toInt()
+    }
 }

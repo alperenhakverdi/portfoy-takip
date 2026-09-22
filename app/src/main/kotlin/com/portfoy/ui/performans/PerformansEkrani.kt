@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
+import com.portfoy.calc.Donem
+import com.portfoy.model.Category
 import com.portfoy.ui.bilesenler.etiket
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -154,6 +156,15 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                     Text(TrFormat.signedMoney(grup.tl), Modifier.weight(1.1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
                 }
 
+                // Fon fiyatı günde bir kez, akşam açıklanır; "1 Gün" getirisi bu yüzden %0 görünebilir (doküman 14).
+                if (grup.kategori == Category.FON && donem == Donem.BIR_GUN) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Fon fiyatı günde bir kez, akşam açıklanır; 1 Gün getirisi %0 görünebilir.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 AnimatedVisibility(acik) {
                     Column {
                         grup.varliklar.forEach { satir ->

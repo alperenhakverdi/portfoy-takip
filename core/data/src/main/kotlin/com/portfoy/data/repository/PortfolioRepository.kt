@@ -29,6 +29,10 @@ data class PortfolioData(
     val lastUpdate: Instant?,
     /** Elle fiyat girilen varlıkların kimlikleri (ekranda etiketlenir). */
     val manualPriceAssetIds: Set<Long>,
+    /** Elle girilen fiyatların girilme zamanı; 7 günden eskiyse "güncel değil" uyarısı çıkar. */
+    val manualPriceTimes: Map<Long, Instant> = emptyMap(),
+    /** USD/TRY kurunun son güncellenme zamanı; ABD varlıklarının TL değeri bu kurla hesaplanır. */
+    val fxTime: Instant? = null,
 )
 
 class PortfolioRepository(
@@ -57,6 +61,8 @@ class PortfolioRepository(
             },
             lastUpdate = quotes.filter { it.assetId > 0 }.maxOfOrNull { it.timestamp },
             manualPriceAssetIds = quotes.filter { it.source == "MANUEL" }.map { it.assetId }.toSet(),
+            manualPriceTimes = quotes.filter { it.source == "MANUEL" }.associate { it.assetId to it.timestamp },
+            fxTime = quotes.firstOrNull { it.assetId == com.portfoy.data.db.FX_USDTRY_ID }?.timestamp,
         )
     }
 

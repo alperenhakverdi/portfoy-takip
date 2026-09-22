@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -77,6 +78,23 @@ class ZamanlayiciTest {
         )
         val fiyat = PriceRepository(router, db.priceQuoteDao(), saat)
         return TazelemeZamanlayici(fiyat, flowOf(v.toList()), RefreshSchedule(), son, saat) to son
+    }
+
+    @Test
+    fun `buyuk portfoyde gun ici turlar kapanir, kucukte acik kalir`() {
+        // BIST günlük tavan 300: her varlık açılış + kapanışta 2 çağrı → 150 varlıkta gün içine bütçe kalmaz.
+        assertTrue(TazelemeZamanlayici.gunIciKapali(Category.BIST, 150))
+        assertFalse(TazelemeZamanlayici.gunIciKapali(Category.BIST, 10))
+        // ABD tavanı 500.
+        assertTrue(TazelemeZamanlayici.gunIciKapali(Category.ABD, 250))
+        assertFalse(TazelemeZamanlayici.gunIciKapali(Category.ABD, 20))
+    }
+
+    @Test
+    fun `piyasasi olmayan ya da bos kategoride gun ici kapali bilgisi cikmaz`() {
+        assertFalse(TazelemeZamanlayici.gunIciKapali(Category.FON, 1000))
+        assertFalse(TazelemeZamanlayici.gunIciKapali(Category.EMTIA, 1000))
+        assertFalse(TazelemeZamanlayici.gunIciKapali(Category.BIST, 0))
     }
 
     @Test

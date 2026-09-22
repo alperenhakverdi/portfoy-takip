@@ -142,6 +142,31 @@ class PortfoyDeposuTest {
     }
 
     @Test
+    fun `elle fiyatin girilme zamani ve kurun son guncellemesi portfoy verisiyle gelir`() = runBlocking {
+        val elle = varlik("YENIHISSE", "Yeni Halka Arz", Category.BIST)
+        val abd = varlik("AAPL", "Apple", Category.ABD)
+        depo.addPurchase(elle, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, LocalDate.of(2026, 9, 1), null)
+        depo.addPurchase(abd, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, LocalDate.of(2026, 9, 1), null)
+        fiyat(elle, "12", zaman = "2026-09-10T08:00:00Z", kaynak = "MANUEL")
+        fiyat(abd, "9000", zaman = "2026-09-21T09:30:00Z")
+        fiyat(com.portfoy.data.db.FX_USDTRY_ID, "48.5", zaman = "2026-09-18T15:00:00Z")
+
+        val veri = depo.observePortfolio().first()
+
+        assertEquals(mapOf(elle to Instant.parse("2026-09-10T08:00:00Z")), veri.manualPriceTimes)
+        assertEquals(Instant.parse("2026-09-18T15:00:00Z"), veri.fxTime)
+        // Kur, "son güncelleme" zamanına karışmaz: o yalnızca varlık fiyatlarının en yenisidir.
+        assertEquals(Instant.parse("2026-09-21T09:30:00Z"), veri.lastUpdate)
+    }
+
+    @Test
+    fun `kur hic yoksa kur zamani bos gelir`() = runBlocking {
+        val id = varlik("THYAO", "Türk Hava Yolları", Category.BIST)
+        depo.addPurchase(id, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, LocalDate.of(2026, 9, 1), null)
+        assertNull(depo.observePortfolio().first().fxTime)
+    }
+
+    @Test
     fun `kategoriyle arama baska kategorileri getirmez`() = runBlocking {
         varlik("THYAO", "Türk Hava Yolları", Category.BIST)
         varlik("TUR", "Turkey ETF", Category.ABD)

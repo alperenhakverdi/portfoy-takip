@@ -63,7 +63,7 @@ ilk günden başlatılır.
 | M4 | Wireframe ekranları (W1–W11) | Mock veriyle tüm akış, navigasyon | L |
 | M5 | Gerçek kaynaklar | 6 fiyat adaptörü + sembol listesi + elle giriş yedeği | L |
 | M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
-| M7 | Kenar durumlar ve çevrimdışı | Bölüm 14'ün tamamı | M |
+| M7 | Kenar durumlar ve çevrimdışı | ✅ Bitti | 16 durumun tamamı test veya emülatör kabuluyla doğrulandı |
 | M8 | Sertleştirme ve teslim | Test kapsamı, APK, kabul testi | S |
 | M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
 

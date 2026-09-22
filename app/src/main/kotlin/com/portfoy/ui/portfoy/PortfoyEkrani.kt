@@ -54,6 +54,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.portfoy.calc.AssetResult
 import com.portfoy.calc.CategoryResult
 import com.portfoy.calc.PortfolioSummary
+import com.portfoy.calc.Tazelik
+import com.portfoy.data.repository.TazelemeZamanlayici
 import com.portfoy.calc.format.TrFormat
 import com.portfoy.calc.parseDecimal
 import com.portfoy.di.UygulamaZamanDilimi
@@ -195,7 +197,7 @@ private fun PortfoyIcerigi(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Spacer(Modifier.height(6.dp))
-                GuncellemeBilgisi(ekran, veri.lastUpdate, ozet)
+                GuncellemeBilgisi(ekran, veri.lastUpdate, veri.fxTime, ozet)
 
                 AnimatedVisibility(durum.degerGrafigiAcik) {
                     Column {
@@ -215,6 +217,7 @@ private fun PortfoyIcerigi(
                 acik = kategori.category in durum.acikKategoriler,
                 acikVarlik = durum.acikVarlik,
                 manuelFiyatli = veri.manualPriceAssetIds,
+                manuelZamanlar = veri.manualPriceTimes,
                 vm = vm,
                 sil = sil,
                 duzenle = { islem, varlik -> duzenlenen = islem to varlik },
@@ -243,7 +246,7 @@ private fun PortfoyIcerigi(
 }
 
 @Composable
-private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?, ozet: PortfolioSummary) {
+private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?, kurZamani: Instant?, ozet: PortfolioSummary) {
     val eski = ekran.tazeleme.sonRapor?.hasProblems == true || ozet.categories.any { k -> k.assets.any { it.priceMissing } }
     Text(
         "son güncelleme: " + (sonGuncelleme?.let { TrFormat.lastUpdate(it, Instant.now(), UygulamaZamanDilimi) } ?: "henüz güncellenmedi"),
@@ -255,6 +258,24 @@ private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?
             "veriler güncel değil",
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
+        )
+    }
+    // ABD varlıkları son bilinen kurla çevrilir; kur birkaç günden eskiyse bu belirtilir (hafta sonu tatili sayılmaz).
+    val abdVar = ozet.categories.any { it.category == Category.ABD }
+    if (abdVar && kurZamani != null && Tazelik.kurEskiMi(kurZamani, Instant.now())) {
+        Text(
+            "ABD değerleri ${Tazelik.gunFarki(kurZamani, Instant.now())} gün önceki kurla hesaplandı",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+    // Büyük portföyde gün içi turlar kapanır; açılış ve kapanış turları sürer (bölüm 2.4).
+    val kapali = ozet.categories.filter { TazelemeZamanlayici.gunIciKapali(it.category, it.assets.size) }
+    if (kapali.isNotEmpty()) {
+        Text(
+            kapali.joinToString(", ") { it.category.etiket() } + ": portföy büyük olduğu için gün içi güncelleme kapalı, açılış ve kapanışta güncellenir",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -302,6 +323,7 @@ private fun KategoriSatiri(
     acik: Boolean,
     acikVarlik: Long?,
     manuelFiyatli: Set<Long>,
+    manuelZamanlar: Map<Long, Instant>,
     vm: PortfoyViewModel,
     sil: (Long) -> Unit,
     duzenle: (Transaction, com.portfoy.model.Asset) -> Unit,
@@ -329,6 +351,7 @@ private fun KategoriSatiri(
                         sonuc = varlik,
                         acik = acikVarlik == varlik.asset.id,
                         elleFiyat = varlik.asset.id in manuelFiyatli,
+                        elleFiyatZamani = manuelZamanlar[varlik.asset.id],
                         vm = vm,
                         sil = sil,
                         duzenle = duzenle,
@@ -345,6 +368,7 @@ private fun VarlikSatiri(
     sonuc: AssetResult,
     acik: Boolean,
     elleFiyat: Boolean,
+    elleFiyatZamani: Instant?,
     vm: PortfoyViewModel,
     sil: (Long) -> Unit,
     duzenle: (Transaction, com.portfoy.model.Asset) -> Unit,
@@ -367,7 +391,15 @@ private fun VarlikSatiri(
             style = MaterialTheme.typography.bodySmall,
         )
         if (sonuc.priceMissing) Text("fiyat alınamadı", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-        if (elleFiyat) Text("elle girilen fiyat", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+        if (elleFiyat) {
+            // Elle girilen fiyat otomatik güncellenmez; 7 günü geçtiyse kullanıcı uyarılır (karar 9).
+            val eski = elleFiyatZamani != null && Tazelik.elleFiyatEskiMi(elleFiyatZamani, Instant.now())
+            Text(
+                if (eski) "elle girilen fiyat • ${Tazelik.gunFarki(elleFiyatZamani!!, Instant.now())} gün önce girildi, güncel değil" else "elle girilen fiyat",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
     AnimatedVisibility(acik) {
         VarlikDetayi(sonuc, elleFiyat, vm, sil, duzenle, fiyatGir)
