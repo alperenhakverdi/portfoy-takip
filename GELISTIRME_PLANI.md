@@ -66,6 +66,7 @@ ilk günden başlatılır.
 | M7 | Kenar durumlar ve çevrimdışı | ✅ Bitti | 16 durumun tamamı test veya emülatör kabuluyla doğrulandı |
 | M8 | Sertleştirme ve teslim | Test kapsamı, APK, kabul testi | S |
 | M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
+| M10 | Kategori ikonları | Backlog — Ekle ve Portföy kategori satırlarına ikon | S |
 
 **Süre tahmini yok, bilinçli olarak:** tek kişilik kişisel proje, deadline yok. Boyutlar göreli (S küçük, M orta, L büyük). En belirsiz kalem M5 — kaynak denemeleri önce yapılırsa netleşir.
 
@@ -566,6 +567,27 @@ kırılımlı olsun, kategoriye tıklayınca altındaki varlıklar açılsın.
 - "Sırala: Yüzde / TL" seçimi hem kategorileri hem de içlerindeki varlıkları sıralar.
 - `GrafikDeposu.varlikGetirileri` tek geçişte kategori + varlık kırılımı döndürecek şekilde
   genişletilir; veri yalnızca bir kez yüklenir.
+
+---
+
+## M10 — Kategori ikonları (backlog, 2026-09-22)
+
+Kullanıcı isteği: Ekle sekmesindeki kategori listesinde (ve mümkünse Portföy/Performans kategori
+satırlarında) her kategorinin yanında kendine özgü bir ikon olsun — Nakit TL'de Türk bayrağı, BIST'te
+borsa/grafik simgesi, Emtia'da altın külçesi, Döviz'de dolar işareti, Fon'da fon simgesi, ABD'de
+kendine özgü bir simge (bayrak ya da benzeri).
+
+**Not — wireframe teması ile gerilim.** Uygulamanın kararı (bkz. KARARLAR.md) grinin tonlarıyla
+sınırlı, ikon yerine metin etiketiyle giden bir wireframe estetiği. Renkli bayrak/altın/dolar
+simgeleri bu temayı kırar. İki seçenek var:
+1. İkonlar da tek renkli (gri) tutulur — Material ikon seti üzerinden (`CurrencyLira`, `ShowChart`,
+   `Paid`/külçe benzeri, `AttachMoney`, fon için `PieChart` ya da `AccountBalance`, ABD için
+   `Flag`/`Public`). Wireframe tutarlılığı korunur, iş küçük (S).
+2. Kategori ikonları renkli olur (gerçek bayraklar, altın sarısı, dolar yeşili) — tema burada özel
+   olarak kırılır, diğer her şey gri kalır. Görsel olarak daha "gerçek uygulama" hissi verir ama
+   kararla çelişir, tasarım onayı gerektirir.
+
+Karar kullanıcıya bırakıldı; iş M8'den sonra, teslime yakın küçük bir cila adımı olarak planlandı.
 
 ---
 
