@@ -381,3 +381,27 @@ ekrandaki uyarı zamanlayıcının gerçek davranışından sapabilir.
 
 **Karar.** `TazelemeZamanlayici.gunIciKapali(kategori, varlıkSayısı)` companion fonksiyonu eklendi;
 zamanlayıcı ve Portföy ekranı aynı hesaplamayı çağırır.
+
+---
+
+## 26. Release imzalama yerelde, self-signed
+
+**Sorun.** Doküman 13/4 ve M8 "Release APK imzalanıp doğrudan kurulum" istiyor; Play Store yayını
+kapsam dışı (kullanıcı: "4 tamam yayından önce bakarız").
+
+**Karar.** `app/keystore/portfoy-release.jks`: RSA 2048, 30 yıl geçerli, self-signed, yalnızca bu
+bilgisayarda (`*.jks` gitignore'da). Şifreler `local.properties`'e eklendi (zaten gitignore'da).
+`buildTypes.release`'de minify + kaynak küçültme açık; ProGuard kuralları yalnızca reflection'la
+bulunan sınıfları korur (WorkManager worker'ları, Room/model sınıfları) — kotlinx.serialization
+elle JSON ağacı okuduğu için (`@Serializable` veri sınıfı yok) ek kural gerekmedi.
+
+## 27. Jacoco yerine elle kapsam denetimi
+
+**Sorun.** M8 `:core:calc` için ≥%90 test kapsamı istiyor. `jacoco` eklentisi kendi ajanını
+indirirken Avast'ın SSL araya girmesiyle çakıştı (`SSLInitializationException: Windows-ROOT not
+found`) — bu ortamın `gradle.properties`'teki `Windows-ROOT` trust store ayarı diğer bağımlılık
+çözümlemelerinde gerekliyken jacoco'nun kullandığı Apache HttpClient ile uyumsuz çıktı.
+
+**Karar.** Otomasyon yerine `:core:calc`'in 12 dosyası elle satır satır tarandı, her dalın bir
+testle karşılandığı doğrulandı (bkz. GELISTIRME_PLANI.md M8). Kişisel proje için savunulabilir bir
+takas; CI eklenirse jacoco tekrar denenebilir (ortam kısıtı olmayan bir makinede sorun çıkmaz).

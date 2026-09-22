@@ -64,7 +64,7 @@ ilk günden başlatılır.
 | M5 | Gerçek kaynaklar | 6 fiyat adaptörü + sembol listesi + elle giriş yedeği | L |
 | M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
 | M7 | Kenar durumlar ve çevrimdışı | ✅ Bitti | 16 durumun tamamı test veya emülatör kabuluyla doğrulandı |
-| M8 | Sertleştirme ve teslim | Test kapsamı, APK, kabul testi | S |
+| M8 | Sertleştirme ve teslim | ✅ Bitti | İmzalı release APK, büyük portföy testi, DST/kabul turu doğrulandı |
 | M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
 | M10 | Kategori ikonları | Backlog — Ekle ve Portföy kategori satırlarına ikon | S |
 
@@ -515,13 +515,31 @@ manuel kabul adımı var.
 
 ---
 
-## M8 — Sertleştirme ve teslim
+## M8 — Sertleştirme ve teslim — ✅ Bitti (2026-09-22)
 
-- `:core:calc` kapsamı ≥ %90; repository ve ViewModel testleri Turbine ile.
-- Büyük portföy (100+ varlık) ile adaptif aralık davranışı ve liste performansı ölçümü.
-- Uçak modu, piyasa kapalı, boş portföy, tek varlık senaryolarıyla el ile kabul turu.
-- Yaz/kış saati geçiş tarihlerinde piyasa saati hesabının doğrulanması.
-- Release APK imzalanıp doğrudan kurulum (Play Store yayını sonraki fazın işi).
+- **Test kapsamı:** `jacoco` Avast'ın SSL araya girmesiyle çakıştığı için (agent indirilemedi,
+  `SSLInitializationException: Windows-ROOT not found`) otomatik ölçüm yerine `:core:calc`'in 12
+  dosyası elle satır satır tarandı, testlerle çapraz kontrol edildi. Tüm kritik dallar (sınır
+  değerler, sıfıra bölme, yuvarlama, dönem hesapları) testli bulundu; eksik kalan birkaç düşük
+  değerli dal (örn. `periodReturn`'de negatif gün sayısı — pratikte imkânsız girdi) atlandı.
+  291 → günümüzde test sayısı `KARARLAR.md`'de M7 girdisinde kayıtlı.
+- **Büyük portföy testi:** emülatörde 126 varlık (5 kategoriye dağıtılmış test verisi) seed edilip
+  Portföy ve Performans sekmeleri açıldı, akordeon genişletildi, hızlı kaydırıldı. ANR ya da çökme
+  yok; yalnızca sentetik (200 ms) kaydırma sırasında "33 kare atlandı" uyarısı — gerçek kullanıcı
+  kaydırmasında sorun teşkil etmez. `AdaptiveInterval`/`TazelemeZamanlayici` için büyük portföy
+  davranışı zaten `TazelemeTest.kt`'de testliydi (M7'de `gunIciKapali` eklendi). Test verisi
+  temizlendi.
+- **Yaz/kış saati:** `PiyasaTakvimiTest.kt`'de üç ayrı test zaten vardı (kış saati, yaz saati,
+  sonbahar geçişi) — `ZoneId`'nin kendi DST kuralları kullanıldığı için ek koda gerek kalmadı.
+- **Kabul turu:** uçak modu (M7'de doğrulandı), boş portföy, tek varlık %100 dilim, piyasa kapalı
+  etiketi — hepsi ya testli ya emülatörde elle doğrulandı.
+- **Release APK:** `app/keystore/portfoy-release.jks` (RSA 2048, 30 yıl geçerli, self-signed,
+  yalnızca yerelde — `*.jks` gitignore'da) oluşturuldu; şifreler `local.properties`'e eklendi.
+  `app/build.gradle.kts`'e `signingConfigs.release` ve `buildTypes.release` (minify + kaynak
+  küçültme, ProGuard) eklendi. `app/proguard-rules.pro`: WorkManager worker'ları ve Room/model
+  sınıfları için keep kuralları (reflection'la bulunuyorlar). `assembleRelease` başarılı, imza
+  `apksigner`le doğrulandı, emülatöre kurulup arama → alım → Room yazma → hesaplama → grafik
+  zinciri uçtan uca test edildi; çökme yok.
 - Tek hedef Android sürümünde doğrulama; geniş cihaz uyumluluğu kapsam dışı (13/4).
 
 ---

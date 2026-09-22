@@ -38,6 +38,28 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // Release imzalama yalnızca local.properties doluysa etkinleşir; anahtarlar git'e girmez (M8).
+    val releaseStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")
+    if (releaseStoreFile != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseStoreFile != null) signingConfig = signingConfigs.getByName("release")
+        }
+    }
 }
 
 kotlin {
