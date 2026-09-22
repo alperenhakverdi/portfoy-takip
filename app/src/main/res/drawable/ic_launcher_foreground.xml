@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Uygulamanın kendi Portföy sekmesindeki dağılım grafiğiyle aynı motif: beyaz bir halka, tek bir
+    kırmızı dilim vurgulu (M10'daki "renkli ama minimalist" ilkesiyle aynı). İçerik, uyarlanabilir
+    ikonun güvenli alanı olan merkez ~66dp'lik daire içinde kalır (108dp tuval üzerinde 19.5–30.5dp
+    yarıçap aralığında), maskeleme sırasında kırpılmaz.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M79,54 A25,25 0 1,1 29,54 A25,25 0 1,1 79,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="11"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M79,54 A25,25 0 0,1 62.55,77.49"
+        android:strokeColor="#E30A17"
+        android:strokeWidth="11"
+        android:fillColor="#00000000" />
+</vector>

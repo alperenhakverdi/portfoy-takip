@@ -69,6 +69,7 @@ ilk günden başlatılır.
 | M8 | Sertleştirme ve teslim | ✅ Bitti | İmzalı release APK, büyük portföy testi, DST/kabul turu doğrulandı |
 | M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar: Ekle, Portföy ve Performans kategori satırları |
+| M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge (halka + kırmızı dilim motifi) |
 
 **Süre tahmini yok, bilinçli olarak:** tek kişilik kişisel proje, deadline yok. Boyutlar göreli (S küçük, M orta, L büyük). En belirsiz kalem M5 — kaynak denemeleri önce yapılırsa netleşir.
 

@@ -449,3 +449,18 @@ tanımsız kategoride (Fon) eski davranış (yalnız uyarı) sürer.
 **Yan hata, aynı işte bulundu ve düzeltildi.** Arama/liste akışı yalnızca (kategori, sorgu) değişince
 yeniden hesaplanıyordu; bir varlığın fiyatı forma girilip geri dönüldüğünde çekilmiş olsa da liste
 bayat (fiyatsız) kalıyordu. `liste` akışı artık `fiyatDeposu.observeLatestPrices()`'i de dinliyor.
+
+---
+
+## 31. Uygulama adı ve simgesi
+
+**Karar.** Ana ekran adı "Portföy Takip" (`@string/app_name`, `res/values/strings.xml`).
+
+Simge, uygulamanın kendi Portföy sekmesindeki dağılım grafiğiyle aynı motifi kullanır: beyaz bir
+halka, tek bir kırmızı dilim vurgulu (M10'daki "renkli ama minimalist" ilkesiyle tutarlı). Koyu gri
+zemin (`#262626`, temanın `Gri.Koyu` rengiyle aynı). `minSdk=26` olduğu için yalnızca uyarlanabilir
+simge (`mipmap-anydpi-v26`, vektör önyüz + renk zemin) yeterli; eski yoğunluk PNG'leri gerekmez.
+
+Emülatörde doğrulandı: ana ekran ve Ayarlar > Uygulama Bilgisi'nde isim ve şekil doğru görünüyor.
+Bazı başlatıcılarda (launcher) "temalı simgeler" açıkken sistem simgeyi duvar kağıdına göre tek renge
+boyuyor — bu platformun kendi davranışı, kaynak dosyalarıyla ilgisi yok; kapalıyken gerçek renkler görünür.
