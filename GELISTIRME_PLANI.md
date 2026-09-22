@@ -9,16 +9,17 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 |---|---|---|---|
 | M0 | İskelet | ✅ Bitti | Gradle, 5 modül, Compose + Hilt |
 | M1 | Room veritabanı | ✅ Bitti | 5 tablo, 16+ DAO testi. Migration testi ilk şema değişikliğinde |
-| M2 | Hesaplama çekirdeği | ✅ Bitti | Getiri, Dietz, dağılım, biçim, doğrulama: 59 test |
+| M2 | Hesaplama çekirdeği | ✅ Bitti | Getiri, Dietz, dağılım, biçim, doğrulama |
 | M3 | Kaynak katmanı | ✅ Bitti | Yönlendirici, bütçe, takvim, zamanlayıcı, fiyat deposu |
 | M4 | Ekranlar (W1–W11) | ✅ Bitti | Emülatörde elle gezildi; grafikler M6 ile gerçek veriye bağlandı |
-| M5 | Gerçek kaynaklar | 🟡 Büyük kısmı bitti | 7 adaptör, 89 fixture testi, 8 canlı test geçti, uygulamaya bağlı. Kalan: aşağıya bak |
-| M6 | Geçmiş seriler, snapshot, gerçek grafikler | Geriye dönük hesaplanan grafikler, günlük snapshot | M |
-| M7 | Kenar durumlar, çevrimdışı | ⏳ | |
-| M8 | Sertleştirme, APK | ⏳ | |
+| M5 | Gerçek kaynaklar | ✅ Bitti | 7 adaptör, zamanlayıcı tazelemeye bağlandı, uygulamada canlı doğrulandı |
+| M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı |
+| M7 | Kenar durumlar, çevrimdışı | ✅ Bitti | 16 durumun tamamı test/emülatör kabuluyla doğrulandı |
+| M8 | Sertleştirme, APK | ✅ Bitti | İmzalı release APK, büyük portföy testi, DST/kabul turu |
+| M9 | Güncelleme paketi 1 | ✅ Bitti | Döviz kategorisi, kategoriden başlayan ekleme, kategori kırılımlı performans |
+| M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar |
 
-**M5'te kalanlar:** zamanlayıcının (piyasa saati, açılış/kapanış turu, adaptif aralık) tazelemeye bağlanması ve
-WorkManager işleri (M6 ile birlikte); şu an tazeleme uygulama öne gelince ve aşağı çekince çalışıyor.
+Plan (M0–M10) tamamlandı. Ayrıntılar aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
 
 **Geliştirme ortamı notu:** bu bilgisayardaki Avast antivirüsü HTTPS trafiğini kendi sertifikasıyla yeniden imzalıyor.
 Java araçları için `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT` gerekiyor; emülatörde ise Avast'ın
@@ -28,8 +29,9 @@ güveniyor (`app/src/debug`). Yayın sürümü etkilenmez. Gerçek telefonda bu 
 **Ölçülen performans (emülatör, yavaş):** ilk açılışta 30 bin kayıtlık katalog yüklemesi 85 sn → 31–38 sn'ye indi
 (hazır SQL ifadesi + 500'lük kısa işlemler). Ekran yükleme sırasında kilitlenmiyor. Gerçek telefonda birkaç saniye beklenir.
 
-Plan, dokümandaki eksik ya da
-kendi içinde çelişen noktaları 20 kararla kapatır (bazıları kapsamı genişletir); kararların gereksinim dokümanına geri işlenmesi gerekir.
+Plan, dokümandaki eksik ya da kendi içinde çelişen noktaları 27 kararla kapatır (bazıları kapsamı
+genişletir, M9/M10 kullanıcı geri bildirimiyle eklendi); kararların gereksinim dokümanına geri
+işlenmesi isteğe bağlıdır (bölüm 4).
 
 ---
 
@@ -623,12 +625,12 @@ akordeon başlıkları. Emülatörde görsel olarak doğrulandı.
 
 ## 4. Gereksinim dokümanına işlenecek değişiklikler
 
-Plan 20 karar alıyor; hepsi gerekçeleriyle [KARARLAR.md](KARARLAR.md)'de. Dokümanda değişen bölümler:
+Plan 27 karar alıyor; hepsi gerekçeleriyle [KARARLAR.md](KARARLAR.md)'de. Dokümanda değişen bölümler:
 
 | Doküman bölümü | Değişiklik |
 |---|---|
 | 1 — Karar tablosu | "Alış tarihi" satırı: formda sorulur, varsayılan bugün |
-| 3 — Varlık türleri | Emtia kodları `XAUGR` / `XAGGR` |
+| 3 — Varlık türleri | Emtia kodları `XAUGR` / `XAGGR`; **Döviz** kategorisi eklendi (M9, `USDTRY`/`EURTRY`) |
 | 4.1 — Arama | Sembol listesi kaynakları; sonuç fiyatı önbellekten |
 | 4.2 — Ekleme formu | Alış tarihi alanı; ABD'de USD→TL çevirici |
 | 5.5 / 6.5 — Form durumu | Çelişki giderildi: form sıfırlanır, arama korunur |
@@ -643,6 +645,9 @@ Plan 20 karar alıyor; hepsi gerekçeleriyle [KARARLAR.md](KARARLAR.md)'de. Dok�
 | 11.3 — Saklama | Geçmiş seri çekimi 5 yılla sınırlı |
 | 14 — Kenar durumlar | "Toplam maliyet 0" satırı düzeltildi; manuel varlık yaşam döngüsü; iki yeni satır |
 | 16 — Ekran listesi | W10 ve W11 eklendi, toplam 11 ekran |
+| 4.1 — Arama | M9: + sekmesi doğrudan aramayla değil kategoriden başlar; arama seçilen kategoriyle sınırlanır |
+| 7.3 — Performans listesi | M9: liste kategori kırılımlı (akordeon), kategori getirisi ayrı hesaplanır |
+| — (yeni) | M10: kategori satırlarında renkli, tek tip minimalist ikon |
 
 ---
 
@@ -657,8 +662,13 @@ Plan 20 karar alıyor; hepsi gerekçeleriyle [KARARLAR.md](KARARLAR.md)'de. Dok�
 7. adım  M5 devam  →  M6 (geçmiş seri, snapshot, grafikler)
 8. adım  M6 devam  →  M7 (kenar durumlar, çevrimdışı)
 9. adım  M8 (sertleştirme, APK, kabul turu)
+10. adım  M9, M10 (kullanıcı geri bildirimiyle sonradan eklendi, teslimden sonra)
 ```
 
 Wireframe onay kapısı dokümanın Faz 1 teslimatıyla örtüşür: o noktaya kadar üretilen her şey —
 hesaplama çekirdeği, Room şeması, adaptör arayüzü, tazeleme zamanlayıcısı — tasarım kararları
 değişse de ayakta kalır.
+
+**Durum (2026-09-22):** M0–M10 tamamlandı. Uygulama kişisel kullanım için hazır; yayın (Play Store,
+proxy ile API anahtarı gizleme) kullanıcı isteğiyle kapsam dışı bırakıldı ("4 tamam yayından önce
+bakarız"). Yeni bir istek gelirse M11 olarak buraya eklenir.
