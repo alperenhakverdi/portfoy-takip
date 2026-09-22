@@ -350,7 +350,9 @@ testlerle doğrulanmış. Yaz/kış saati geçişi için `America/New_York` üze
 ## M4 — Wireframe ekranları (W1–W11)
 
 Dokümanın Faz 1 teslimatı bu. Renk, tipografi, ikon seti ve animasyon **kapsam dışı** (15/1);
-ayrım yalnızca gri tonu, çerçeve kalınlığı ve boşlukla yapılır.
+ayrım yalnızca gri tonu, çerçeve kalınlığı ve boşlukla yapılır. (Durum notu: bölüm 6'da —
+M10/M11'de dar bir istisnayla yalnızca kategori ikonlarına ve uygulama simgesine renk eklendi,
+geri kalanı hâlâ kapsam dışı.)
 
 **Navigasyon (bölüm 5)**
 
@@ -722,5 +724,10 @@ eksik/yarım bırakılmış bir şey değil — bilinçli olarak kapsam dışı 
 |---|---|---|
 | **Play Store yayını** | Kullanıcı karar verirse ("belki hiç olmayabilir") | Kod tarafı incelendi, `.aab` derlemesi doğrulandı. En büyük engel: API anahtarlarının istemcide açık olması (proxy sunucu gerektirir). Tüm ayrıntı ve adım sırası: [PLAY_STORE_HAZIRLIK.md](PLAY_STORE_HAZIRLIK.md). |
 | **BIST gibi büyük listelerde kademeli (scroll) fiyat çekimi** | Kullanıcı "BIST'in tamamını da gerçek fiyatla görmek istiyorum" derse | Şu an kategori açılışında yalnız ilk 30 hisse tazeleniyor (karar 32); kalan ~500 hisse elle seçilince anında çekiliyor. Kaydırdıkça artan bir bütçeyle kademeli çekim eklenebilir, ama günlük Yahoo bütçesini (300) zorlamamak için dikkatli tasarlanmalı. |
+| **Genel renk paleti / marka kimliği** | Wireframe'den "gerçek uygulama" görünümüne geçilmek istenirse | Doküman 15/1: Faz 1'de renk, tipografi, ikon seti ve animasyon **bilinçli olarak kapsam dışı** bırakılmıştı — ayrım yalnız gri tonu, çerçeve kalınlığı ve boşlukla yapılıyor (`ui/tema/Tema.kt`, `Gri` paleti). M10/M11'de yalnızca **kategori ikonlarına** ve **uygulama simgesine** dar bir istisna olarak renk eklendi; geri kalan her şey (arka plan, birincil/ikincil renkler, buton/kart renkleri) hâlâ tamamen gri. |
+| **Tipografi** | Renk paletiyle birlikte ele alınabilir | Hiç özel yazı tipi/tipografi ölçeği tanımlanmadı; Material3'ün varsayılan tipografisi kullanılıyor. Doküman 15/1'in kapsam dışı bıraktığı maddelerden. |
+| **Özel ikon seti** | Renk paletiyle birlikte ele alınabilir | Kategori ikonları (M10) ve uygulama simgesi (M11) dışında, ekranlardaki tüm ikonlar hazır **Material Icons** setinden (`androidx.compose.material.icons`) — markaya özgü tasarlanmış bir ikon seti yok. |
+| **Animasyon** | Renk paletiyle birlikte ele alınabilir | Compose'un varsayılan geçişleri (`AnimatedVisibility` ile akordeon açılış/kapanışı) dışında özel tasarlanmış bir animasyon yok. Doküman 15/1'in kapsam dışı bıraktığı son madde. |
+| **Geniş cihaz uyumluluğu** | Birden fazla telefon/tablet modelinde kullanılmak istenirse | Doküman 13/4: tek hedef Android sürümünde (bu oturumda emülatör + release APK) doğrulandı. Farklı ekran boyutu, katlanabilir cihaz, tablet düzeni hiç test edilmedi. |
 
 Yeni bir istek ya da fikir geldiğinde buraya eklenir; hayata geçirildiğinde ilgili milestone'a taşınır.
