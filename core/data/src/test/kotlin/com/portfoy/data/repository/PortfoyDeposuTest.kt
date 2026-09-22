@@ -188,6 +188,30 @@ class PortfoyDeposuTest {
     }
 
     @Test
+    fun `kategori kisayollari sirayla doner, katalogda olmayan kod atlanir`() = runBlocking {
+        varlik("AAPL", "Apple", Category.ABD)
+        varlik("MSFT", "Microsoft", Category.ABD)
+
+        val sonuc = depo.kategoriKisayollari(Category.ABD, listOf("MSFT", "YOKBOYLE", "AAPL"))
+
+        assertEquals(listOf("MSFT", "AAPL"), sonuc.map { it.asset.code }) // istenen sıra korunur
+    }
+
+    @Test
+    fun `arama ve kisayol sonuclari gunluk degisim yuzdesini de tasir`() = runBlocking {
+        val id = varlik("THYAO", "Türk Hava Yolları", Category.BIST)
+        db.priceQuoteDao().insert(
+            PriceQuoteEntity(
+                assetId = id, price = BigDecimal("300"), currency = "TRY", priceTl = BigDecimal("300"),
+                timestamp = Instant.parse("2026-09-21T09:00:00Z"), source = "YAHOO", changePercent = BigDecimal("1.25"),
+            ),
+        )
+
+        assertEquals(0, BigDecimal("1.25").compareTo(depo.search("turk").single().dailyChangePercent!!))
+        assertEquals(0, BigDecimal("1.25").compareTo(depo.kategoriKisayollari(Category.BIST, listOf("THYAO")).single().dailyChangePercent!!))
+    }
+
+    @Test
     fun `fiyati olmayan arama sonucu fiyatsiz gelir`() = runBlocking {
         varlik("THYAO", "Türk Hava Yolları", Category.BIST)
         assertNull(depo.search("thyao").single().lastPriceTl)

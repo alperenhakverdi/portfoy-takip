@@ -405,3 +405,47 @@ found`) — bu ortamın `gradle.properties`'teki `Windows-ROOT` trust store ayar
 **Karar.** Otomasyon yerine `:core:calc`'in 12 dosyası elle satır satır tarandı, her dalın bir
 testle karşılandığı doğrulandı (bkz. GELISTIRME_PLANI.md M8). Kişisel proje için savunulabilir bir
 takas; CI eklenirse jacoco tekrar denenebilir (ortam kısıtı olmayan bir makinede sorun çıkmaz).
+
+---
+
+## 28. Günlük değişim yüzdesi, kaynağın kendi verisinden
+
+**Sorun.** Kullanıcı Ekle sekmesindeki sonuç satırlarında fiyatın altında günlük performans (%) görmek
+istedi. Ama "arama sırasında hiç ağ çağrısı yapılmaz" kararı hâlâ geçerli — arama sonucundaki her
+varlık için ayrıca bir istek atmak bu kararı bozardı.
+
+**Karar.** Kaynaklar zaten tek çağrıda günlük değişimi taşıyor: Finnhub `/quote` içinde `dp` (yüzde)
+ve `pc` (önceki kapanış), Yahoo chart `meta.chartPreviousClose`, Truncgil `Change` alanı doğrudan
+yüzde veriyor. Bu değer artık `Quote.changePercent`'e ekstra çağrı olmadan taşınıyor ve `price_quote`
+tablosuna yazılıyor (`changePercent` sütunu, karar 29). Arama satırı yalnızca **önbellekte zaten olan**
+fiyatın yanında bu yüzdeyi gösterir; hiç fiyatı çekilmemiş varlıkta boş kalır — tıpkı fiyatın kendisi gibi.
+% hesaplaması para birimi çevriminden bağımsızdır (oran), bu yüzden TL'ye çevrilmeden, kaynağın kendi
+para biriminde saklanır.
+
+## 29. İlk şema değişikliği: `changePercent` sütunu, migration testiyle
+
+**Sorun.** Karar 28'in verisini saklamak için `price_quote` tablosuna yeni bir sütun gerekiyordu —
+planın öngördüğü ilk gerçek şema değişikliği ("Migration testi ilk şema değişikliğinde").
+
+**Karar.** DB v1 → v2, `MIGRATION_1_2` (`ALTER TABLE price_quote ADD COLUMN changePercent TEXT`),
+eski satırlar `NULL` kalır. `androidx.room.testing.MigrationTestHelper` bu Room (2.8.5) + Robolectric
+kombinasyonunda çalışmadı (`SupportSQLiteDriver` içinde yol karşılaştırması hatalı — bilinen bir
+kütüphane uyumsuzluğu, hem eski String tabanlı hem yeni sınıf tabanlı yapıcılarda aynı hata). Test,
+yardımcı sınıfı atlayıp `MIGRATION_1_2.migrate(db)`'yi ham bir `SupportSQLiteOpenHelper` üzerinde
+doğrudan çalıştırarak yazıldı — test edilen zaten migration'ın kendisi, yardımcı harness değil.
+
+## 30. ABD'de arama zorunluysa bile "öne çıkanlar" gösterilir
+
+**Sorun.** ABD kategorisinde 27 binin üzerinde kayıt olduğu için hiçbir şey yazılmadan liste boş
+kalıyordu (yalnızca "arama yap" uyarısı). Kullanıcı en büyük şirketlerin (AAPL, MSFT, GOOGL...)
+doğrudan görünmesini istedi.
+
+**Karar.** Arama zorunlu kategoriler için sabit bir "öne çıkanlar" kod listesi tanımlanabilir
+(`EkleViewModel.ONE_CIKAN_KODLAR`); tanımlıysa bu varlıklar kod bazlı doğrudan sorguyla (`getByCode`,
+fuzzy arama değil) bulunup listelenir, "arama gerekli" uyarısı üstte kalmaya devam eder. Şu an yalnız
+ABD için 12 şirket tanımlı (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, BRK.B, AVGO, JPM, NFLX, COST);
+tanımsız kategoride (Fon) eski davranış (yalnız uyarı) sürer.
+
+**Yan hata, aynı işte bulundu ve düzeltildi.** Arama/liste akışı yalnızca (kategori, sorgu) değişince
+yeniden hesaplanıyordu; bir varlığın fiyatı forma girilip geri dönüldüğünde çekilmiş olsa da liste
+bayat (fiyatsız) kalıyordu. `liste` akışı artık `fiyatDeposu.observeLatestPrices()`'i de dinliyor.

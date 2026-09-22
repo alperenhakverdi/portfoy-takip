@@ -35,6 +35,15 @@ class YahooFinnhubTest {
     }
 
     @Test
+    fun `yahoo gunluk degisim yuzdesi chartPreviousClose'dan hesaplanir`() = runTest {
+        val http = SahteHttp.sabit(SahteHttp.fixture("yahoo_aapl.json")) // regularMarketPrice=338.98, chartPreviousClose=309.35
+        val sonuc = YahooSource(http).getQuotes(listOf(aapl)).getOrThrow().single()
+
+        // (338.98 - 309.35) / 309.35 * 100 ≈ %9,58
+        assertEquals(0, BigDecimal("9.5781").compareTo(sonuc.changePercent!!))
+    }
+
+    @Test
     fun `yahoo USD TRY sembolu ve ABD nokta tire donusumu`() = runTest {
         val http = SahteHttp.sabit(SahteHttp.fixture("yahoo_usdtry.json"))
         YahooSource(http).getQuotes(listOf(AssetRef.USDTRY, AssetRef("BRK.B", Category.ABD)))
@@ -95,6 +104,22 @@ class YahooFinnhubTest {
         assertEquals("USD", sonuc.currency)
         assertEquals(Instant.ofEpochSecond(1790020800), sonuc.timestamp)
         assertEquals("https://finnhub.io/api/v1/quote?symbol=AAPL&token=ANAHTAR", http.istekler.single().url)
+        // "dp" (Finnhub'ın kendi hesapladığı günlük yüzde) doğrudan kullanılır.
+        assertEquals(0, BigDecimal("0.8479").compareTo(sonuc.changePercent!!))
+    }
+
+    @Test
+    fun `finnhub dp yoksa pc'den hesaplar`() = runTest {
+        val http = SahteHttp.sabit("""{"c":110,"pc":100,"t":1790020800}""")
+        val sonuc = FinnhubSource(http, apiKey = "X").getQuotes(listOf(aapl)).getOrThrow().single()
+        assertEquals(0, BigDecimal("10.0000").compareTo(sonuc.changePercent!!))
+    }
+
+    @Test
+    fun `finnhub pc de yoksa degisim null`() = runTest {
+        val http = SahteHttp.sabit("""{"c":110,"t":1790020800}""")
+        val sonuc = FinnhubSource(http, apiKey = "X").getQuotes(listOf(aapl)).getOrThrow().single()
+        assertEquals(null, sonuc.changePercent)
     }
 
     @Test

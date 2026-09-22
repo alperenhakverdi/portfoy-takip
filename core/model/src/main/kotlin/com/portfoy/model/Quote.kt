@@ -29,13 +29,18 @@ data class AssetRef(val code: String, val category: Category?, val fundKind: Str
     }
 }
 
-/** Anlık fiyat. [price] kaynağın para biriminde gelir (ABD için USD); TL'ye çevrim sonradan yapılır. */
+/**
+ * Anlık fiyat. [price] kaynağın para biriminde gelir (ABD için USD); TL'ye çevrim sonradan yapılır.
+ * [changePercent] o günkü değişim yüzdesidir (kaynağın kendi para biriminde hesaplanır; TL çevrimi
+ * yüzdeyi değiştirmez). Kaynak aynı çağrıda vermiyorsa (ör. TCMB, EVDS, TEFAS) `null` kalır.
+ */
 data class Quote(
     val code: String,
     val price: BigDecimal,
     val currency: String,
     val timestamp: Instant,
     val source: SourceId,
+    val changePercent: BigDecimal? = null,
 )
 
 /** Günlük kapanış. */

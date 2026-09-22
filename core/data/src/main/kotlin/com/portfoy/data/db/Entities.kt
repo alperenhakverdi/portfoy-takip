@@ -74,6 +74,8 @@ data class PriceQuoteEntity(
     val timestamp: Instant,
     /** Fiyatın geldiği kaynak (FINNHUB, YAHOO, TEFAS, MANUEL...). */
     val source: String,
+    /** O günkü değişim yüzdesi; kaynak vermiyorsa `null` (v2'de eklendi, bkz. [com.portfoy.data.db.MIGRATION_1_2]). */
+    val changePercent: BigDecimal? = null,
 )
 
 /** Günlük kapanış serisi. [assetId] gerçek bir varlık ya da [FX_USDTRY_ID] olabilir. */

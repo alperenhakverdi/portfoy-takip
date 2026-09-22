@@ -21,7 +21,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
 /** Arama sonucu: varlık ve önbellekteki son bilinen TL fiyatı (arama hiç ağ çağrısı yapmaz). */
-data class SearchHit(val asset: Asset, val lastPriceTl: BigDecimal?, val priceSource: String?)
+data class SearchHit(
+    val asset: Asset,
+    val lastPriceTl: BigDecimal?,
+    val priceSource: String?,
+    /** O günkü değişim yüzdesi; kaynak vermediyse ya da hiç fiyat çekilmediyse `null`. */
+    val dailyChangePercent: BigDecimal? = null,
+)
 
 /** Fiyat bilgisiyle birlikte portföy verisi. [lastUpdate] tüm fiyatların en yenisidir. */
 data class PortfolioData(
@@ -90,8 +96,12 @@ class PortfolioRepository(
 
     private suspend fun AssetEntity.toHit(): SearchHit {
         val quote = quoteDao.latestFor(id)
-        return SearchHit(toModel(), quote?.priceTl, quote?.source)
+        return SearchHit(toModel(), quote?.priceTl, quote?.source, quote?.changePercent)
     }
+
+    /** [kodlar] sırasıyla, kategorideki karşılıkları bulunursa döner; katalogda yoksa atlanır (öne çıkanlar listesi). */
+    suspend fun kategoriKisayollari(category: Category, kodlar: List<String>): List<SearchHit> =
+        kodlar.mapNotNull { kod -> assetDao.getByCode(kod, category)?.toHit() }
 
     suspend fun asset(id: Long): Asset? = assetDao.getById(id)?.toModel()
 

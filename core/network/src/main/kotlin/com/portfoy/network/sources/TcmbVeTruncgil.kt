@@ -51,7 +51,9 @@ class TruncgilSource(
             val alis = o["Buying"]?.jsonPrimitive?.doubleOrNull
             val satis = o["Selling"]?.jsonPrimitive?.doubleOrNull
             if (alis == null || satis == null || alis <= 0 || satis <= 0) throw BeklenmeyenYanitException("Truncgil $anahtar fiyatı geçersiz")
-            Quote(asset.code, ortalama(alis, satis), "TRY", zaman, id)
+            // "Change" alanı günlük değişim yüzdesini doğrudan verir; ayrıca hesaplamaya gerek yok.
+            val degisim = o["Change"]?.jsonPrimitive?.doubleOrNull?.let { BigDecimal.valueOf(it) }
+            Quote(asset.code, ortalama(alis, satis), "TRY", zaman, id, changePercent = degisim)
         }
     }
 

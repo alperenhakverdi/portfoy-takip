@@ -179,7 +179,14 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             when {
-                liste.isNotEmpty() -> items(liste, key = { "varlik-${it.asset.id}" }) { SonucSatiri(it) { vm.sec(it.asset) } }
+                liste.isNotEmpty() -> {
+                    // Arama zorunluysa (ABD, fon) bu liste öne çıkanlardır; hâlâ arama gerektiği hatırlatılır.
+                    if (ekran.aramaGerekli && !ekran.aramaAktif) {
+                        item { AramaGerekliKutusu(kategori) }
+                        item { BolumBasligi("Öne çıkanlar") }
+                    }
+                    items(liste, key = { "varlik-${it.asset.id}" }) { SonucSatiri(it) { vm.sec(it.asset) } }
+                }
 
                 ekran.aramaAktif -> item {
                     Kutu {
@@ -191,20 +198,7 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                     }
                 }
 
-                // Küçük gri metin gözden kaçıyordu (kullanıcı "hiçbir şey çıkmıyor" sandı); belirgin bir kutuya alındı.
-                ekran.aramaGerekli -> item {
-                    Kutu {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                "${kategori.etiket()} kategorisinde binlerce kayıt var, hepsi listelenmez.\nAramak için en az 2 karakter yaz.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-                }
+                ekran.aramaGerekli -> item { AramaGerekliKutusu(kategori) }
 
                 else -> item { Text("Yükleniyor…", style = MaterialTheme.typography.bodySmall) }
             }
@@ -221,7 +215,26 @@ private fun BolumBasligi(metin: String) {
     Text(metin, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
 }
 
-/** Sonuç satırı: varlık kodu, tam adı, güncel (önbellekteki) fiyat. Kategori başlıkta yazdığı için tekrar edilmez. */
+/** Küçük gri metin gözden kaçıyordu (kullanıcı "hiçbir şey çıkmıyor" sandı); belirgin bir kutuya alındı. */
+@Composable
+private fun AramaGerekliKutusu(kategori: Category) {
+    Kutu {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "${kategori.etiket()} kategorisinde binlerce kayıt var, hepsi listelenmez.\nAramak için en az 2 karakter yaz.",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+/**
+ * Sonuç satırı: varlık kodu, tam adı; sağda güncel (önbellekteki) fiyat, altında çok daha küçük puntoda
+ * o günkü değişim yüzdesi (fiyat henüz çekilmediyse ya da kaynak vermediyse gösterilmez).
+ */
 @Composable
 private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
     Kutu(Modifier.clickable(onClick = sec)) {
@@ -231,7 +244,12 @@ private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
                 Text(sonuc.asset.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.width(12.dp))
-            Text(TrFormat.money(sonuc.lastPriceTl), style = MaterialTheme.typography.bodyMedium)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(TrFormat.money(sonuc.lastPriceTl), style = MaterialTheme.typography.bodyMedium)
+                sonuc.dailyChangePercent?.let {
+                    Text(TrFormat.signedPercent(it), style = MaterialTheme.typography.labelSmall)
+                }
+            }
         }
     }
 }

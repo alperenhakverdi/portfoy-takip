@@ -92,16 +92,23 @@ class EkleViewModel @Inject constructor(
         val aramaGerekli: Boolean = false,
     )
 
-    private val liste: Flow<Liste> = ic.map { it.kategori to it.sorgu }
-        .distinctUntilChanged()
+    private val liste: Flow<Liste> = combine(
+        ic.map { it.kategori to it.sorgu }.distinctUntilChanged(),
+        // Fiyat listesi yalnızca kategori/sorgu değişince değil, bir varlığın fiyatı yeni çekildiğinde de
+        // yenilenir: kullanıcı listeden bir varlığı seçip fiyatını görüp geri dönünce liste bayat kalmasın.
+        fiyatDeposu.observeLatestPrices(),
+    ) { kategoriVeSorgu, _ -> kategoriVeSorgu }
         .mapLatest { (kategori, sorgu) ->
             if (kategori == null) return@mapLatest Liste()
             delay(80) // yazdıkça filtrele, her tuşta sorgu atma
             val aramaAktif = sorgu.trim().length >= com.portfoy.calc.MIN_SEARCH_LENGTH
             if (aramaAktif) return@mapLatest Liste(sonuclar = depo.search(sorgu, category = kategori))
-            // Kayıt sayısı azsa liste doğrudan gelir; çoksa (ABD, fon) arama beklenir.
-            val tumu = if (depo.kategoriSayisi(kategori) <= LISTE_SINIRI) depo.kategoriListesi(kategori, LISTE_SINIRI) else emptyList()
-            Liste(kategoriListesi = tumu, aramaGerekli = tumu.isEmpty())
+            // Kayıt sayısı azsa liste doğrudan gelir; çoksa (ABD, fon) arama beklenir — ama en azından
+            // öne çıkanlar (tanımlıysa) gösterilir, ekran tamamen boş kalmaz.
+            val cokKayitVar = depo.kategoriSayisi(kategori) > LISTE_SINIRI
+            val tumu = if (!cokKayitVar) depo.kategoriListesi(kategori, LISTE_SINIRI)
+                else ONE_CIKAN_KODLAR[kategori]?.let { depo.kategoriKisayollari(kategori, it) }.orEmpty()
+            Liste(kategoriListesi = tumu, aramaGerekli = cokKayitVar)
         }
 
     val ekran: StateFlow<EkleEkranVerisi> = combine(ic, liste, depo.observeRecentAssets()) { ic, liste, son ->
@@ -212,5 +219,15 @@ class EkleViewModel @Inject constructor(
     private companion object {
         /** Bu sayıya kadar olan kategoriler doğrudan listelenir; üstü aramayla bulunur (ABD 27 bin, fon 2 bin). */
         const val LISTE_SINIRI = 600
+
+        /**
+         * Arama zorunlu olan kategorilerde, hiçbir şey yazılmadan gösterilen öne çıkan kısayollar
+         * (kullanıcı isteği: ABD'de en büyük şirketler doğrudan görünsün). Tanımsız kategoride boş kalır.
+         */
+        val ONE_CIKAN_KODLAR: Map<Category, List<String>> = mapOf(
+            Category.ABD to listOf(
+                "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B", "AVGO", "JPM", "NFLX", "COST",
+            ),
+        )
     }
 }

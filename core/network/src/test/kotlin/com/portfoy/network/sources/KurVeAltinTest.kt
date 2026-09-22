@@ -32,6 +32,8 @@ class KurVeAltinTest {
         assertTrue(sonuc.all { it.currency == "TRY" && it.source == SourceId.TRUNCGIL })
         assertEquals(Instant.parse("2026-09-21T21:56:02Z"), sonuc[0].timestamp) // 00:56:02 TSİ
         assertEquals("https://finans.truncgil.com/v4/today.json", http.istekler.single().url)
+        // "Change" alanı günlük değişim yüzdesini doğrudan verir, hesaplamaya gerek yok.
+        assertEquals(BigDecimal("0.05"), sonuc[0].changePercent)
     }
 
     @Test

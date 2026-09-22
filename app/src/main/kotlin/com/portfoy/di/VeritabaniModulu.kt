@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.portfoy.data.db.AssetDao
 import com.portfoy.data.db.PortfolioSnapshotDao
+import com.portfoy.data.db.MIGRATION_1_2
 import com.portfoy.data.db.PortfoyDatabase
 import com.portfoy.data.db.PriceHistoryDao
 import com.portfoy.data.db.PriceQuoteDao
@@ -22,7 +23,9 @@ object VeritabaniModulu {
     @Provides
     @Singleton
     fun veritabani(@ApplicationContext context: Context): PortfoyDatabase =
-        Room.databaseBuilder(context, PortfoyDatabase::class.java, PortfoyDatabase.NAME).build()
+        Room.databaseBuilder(context, PortfoyDatabase::class.java, PortfoyDatabase.NAME)
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun assetDao(db: PortfoyDatabase): AssetDao = db.assetDao()

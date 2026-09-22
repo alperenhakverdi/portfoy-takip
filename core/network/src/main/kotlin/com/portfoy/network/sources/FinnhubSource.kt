@@ -45,12 +45,16 @@ class FinnhubSource(
             val fiyat = o["c"]?.jsonPrimitive?.doubleOrNull ?: throw BeklenmeyenYanitException("Finnhub fiyatı yok: ${asset.code}")
             // Bilinmeyen sembolde Finnhub hata değil c=0 döndürür.
             if (fiyat <= 0.0) throw BeklenmeyenYanitException("Finnhub fiyat vermedi (bilinmeyen sembol?): ${asset.code}")
+            // "dp" günlük değişim yüzdesini doğrudan verir; yoksa önceki kapanıştan (pc) hesaplanır.
+            val degisim = o["dp"]?.jsonPrimitive?.doubleOrNull?.let { BigDecimal.valueOf(it) }
+                ?: gunlukDegisim(fiyat, o["pc"]?.jsonPrimitive?.doubleOrNull)
             Quote(
                 code = asset.code,
                 price = BigDecimal.valueOf(fiyat),
                 currency = "USD",
                 timestamp = o["t"]?.jsonPrimitive?.longOrNull?.takeIf { it > 0 }?.let(Instant::ofEpochSecond) ?: Instant.now(),
                 source = id,
+                changePercent = degisim,
             )
         }
     }

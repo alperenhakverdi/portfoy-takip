@@ -149,6 +149,7 @@ class PriceRepository(
                 priceTl = quote.price * rateToTl,
                 timestamp = quote.timestamp,
                 source = quote.source.name,
+                changePercent = quote.changePercent,
             ),
         )
     }

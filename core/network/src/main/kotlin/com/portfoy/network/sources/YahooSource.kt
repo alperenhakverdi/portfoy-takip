@@ -45,12 +45,14 @@ class YahooSource(
             val meta = sonuc(sembol, "range=1d&interval=1d")["meta"]!!.jsonObject
             val fiyat = meta["regularMarketPrice"]?.jsonPrimitive?.doubleOrNull
                 ?: throw BeklenmeyenYanitException("Yahoo fiyatı yok: $sembol")
+            val oncekiKapanis = meta["chartPreviousClose"]?.jsonPrimitive?.doubleOrNull
             Quote(
                 code = asset.code,
                 price = BigDecimal.valueOf(fiyat),
                 currency = meta["currency"]?.jsonPrimitive?.contentOrNull ?: "USD",
                 timestamp = meta["regularMarketTime"]?.jsonPrimitive?.longOrNull?.let(Instant::ofEpochSecond) ?: Instant.now(),
                 source = id,
+                changePercent = gunlukDegisim(fiyat, oncekiKapanis),
             )
         }
     }
