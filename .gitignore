@@ -9,3 +9,4 @@ build/
 
 # Gradle'ın kendi ürettiği daemon JVM tanımı
 gradle/gradle-daemon-jvm.properties
+.kotlin/
