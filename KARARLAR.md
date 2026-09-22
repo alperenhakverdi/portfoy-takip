@@ -494,3 +494,22 @@ olmayan varlıkların `price_history`/`price_quote` kayıtları, serinin son gü
 Kaldırılma anı ayrı bir sütunda tutulmaz — held olmayan varlık tazelenmeyi bıraktığı için serisi zaten
 kendiliğinden eskir, bu doğal eskime "30 gün" sayacı yerine geçer. Varlık yeniden satın alınırsa held
 listesine döner ve temizlik dokunmaz.
+
+---
+
+## 34. Performans kategori satırı: yüzde ve TL alt alta
+
+**Sorun.** Örnek (test) portföyde gerçekçi ama büyük bir senaryo kurgulandı: AAPL 2 yıl önce düşük bir
+fiyattan alınmış gibi test verisiyle girildi, gerçek güncel fiyatla birleşince ABD kategorisinin
+"Tümü" dönem getirisi %12.332,00 gibi 5 haneli bir yüzdeye ulaştı. Performans ekranındaki kategori
+satırında yüzde ve TL iki ayrı sabit genişlikli (`weight`) sütunda yan yanaydı; büyük yüzde sütuna
+sığmayınca satır kırılıp iki değer görsel olarak birbirine karışıyordu.
+
+**Karar.** Yüzde ve TL, sabit genişlikli iki sütun yerine tek bir sağa hizalı sütunda alt alta
+gösteriliyor (yüzde kalın üstte, TL küçük punto altta) — tıpkı Ekle sekmesindeki fiyat/günlük
+performans gösterimi gibi. Her değer satırın tamamını kullanabildiği için büyüklüğü ne olursa olsun
+taşmaz. Tablo başlığı da buna göre "Getiri %" + "Getiri ₺" yerine tek "Getiri" oldu.
+
+**Ders:** gerçekçi ama uç senaryolu örnek portföylerle test etmek, birim testlerin yakalayamadığı
+görsel yerleşim hatalarını ortaya çıkardı — sabit genişlikli sütun düzenleri büyük/uzun değerlerde
+her zaman kırılma riski taşır; bu projede artık "değer + küçük alt metrik" alt alta deseni tercih ediliyor.

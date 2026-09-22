@@ -128,9 +128,9 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
 
         item {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
-                Text("Kategori", Modifier.weight(1.4f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Getiri %", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
-                Text("Getiri ₺", Modifier.weight(1.1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
+                Text("Kategori", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // Değerler altta yüzde/TL olarak alt alta gösterildiği için başlık da tek sütun (Getiri).
+                Text("Getiri", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
             }
         }
 
@@ -156,8 +156,12 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                             )
                         }
                     }
-                    Text(TrFormat.signedPercent(grup.yuzde), Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
-                    Text(TrFormat.signedMoney(grup.tl), Modifier.weight(1.1f), textAlign = TextAlign.End, fontWeight = FontWeight.Bold)
+                    // Yüzde ve TL yan yana değil alt alta: büyük değerlerde (ör. %12.332,00) satır taşıp
+                    // iki metnin üst üste binmesini önler, her biri satırın tamamını kullanabilir.
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(TrFormat.signedPercent(grup.yuzde), fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(TrFormat.signedMoney(grup.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                    }
                 }
 
                 // Fon fiyatı günde bir kez, akşam açıklanır; "1 Gün" getirisi bu yüzden %0 görünebilir (doküman 14).
@@ -182,8 +186,10 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                                         Text("giriş: ${it.tr()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                                     }
                                 }
-                                Text(TrFormat.signedPercent(satir.yuzde), Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
-                                Text(TrFormat.signedMoney(satir.tl), Modifier.weight(1.1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyMedium)
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(TrFormat.signedPercent(satir.yuzde), style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                                    Text(TrFormat.signedMoney(satir.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                }
                             }
                         }
                     }
