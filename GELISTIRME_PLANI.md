@@ -20,6 +20,9 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar |
 | M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge |
 | M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi |
+| M13 | Kaydırdıkça kademeli fiyat çekimi | ⏳ Planlandı | Görünen öğeler için partili çekim, ayrı gezinme bütçesi |
+| M14 | Tema: renk, tipografi, ikon, animasyon | ⏳ Planlandı | Getiri yeşil/kırmızı; wireframe griden gerçek temaya geçiş |
+| M15 | Cihaz uyumluluğu ve erişilebilirlik | ⏳ Planlandı | Ekran boyutları, koyu tema, yazı ölçeği, yatay yön kararı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -74,6 +77,9 @@ ilk günden başlatılır.
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar: Ekle, Portföy ve Performans kategori satırları |
 | M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge (halka + kırmızı dilim motifi) |
 | M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi, Play Store incelemesi |
+| M13 | Kaydırdıkça kademeli fiyat çekimi | ⏳ Planlandı | S–M |
+| M14 | Tema: renk, tipografi, ikon, animasyon | ⏳ Planlandı | L |
+| M15 | Cihaz uyumluluğu ve erişilebilirlik | ⏳ Planlandı | S |
 
 **Süre tahmini yok, bilinçli olarak:** tek kişilik kişisel proje, deadline yok. Boyutlar göreli (S küçük, M orta, L büyük). En belirsiz kalem M5 — kaynak denemeleri önce yapılırsa netleşir.
 
@@ -648,6 +654,162 @@ görünüyordu (kategori açılışında toplu tazeleme yoktu) → düzeltildi, 
 
 ---
 
+## M13 — Kaydırdıkça kademeli fiyat çekimi
+
+**Sorun.** Kategori açılışında yalnız ilk 30 varlık tazeleniyor (karar 32). BIST'te 537 hisse var;
+kullanıcı aşağı kaydırdığında geri kalanı "—" görüyor. Tamamını açılışta çekmek ise günlük Yahoo
+bütçesini (300) tek seferde tüketir ve portföyün kendi tazelemesini günün geri kalanında bozar.
+
+**Çözüm.** Görünen öğeler kaydırıldıkça, **bütçe korumalı** kademeli çekim.
+
+| Konu | Karar |
+|---|---|
+| Tetikleyici | `LazyListState.layoutInfo.visibleItemsInfo` → `snapshotFlow` ile izlenir |
+| Gecikme | Kaydırma durduktan ~400 ms sonra (debounce); kaydırma sırasında istek atılmaz |
+| Parti büyüklüğü | Görünen ama fiyatı olmayan/eskimiş en fazla `CallBudget.ROUND_CAP` (30) varlık |
+| Tekrarı önleme | `PriceRepository.refresh(minAge)` zaten taze olanı atlar; ayrıca oturum içi "istendi" kümesi tutulur |
+| **Gezinme bütçesi** | Ayrı bir günlük sayaç: `GunlukSayac(BROWSE_DAILY_CAP = 120)` — geçmiş seri çekiminde kullanılan sınıfın aynısı. Dolunca kaydırma çekimi o gün için susar; portföyün kendi tazelemesi etkilenmez |
+| Bütçe dolduğunda | Sessiz (doküman 14: "API limiti aşıldı → kullanıcıya hata gösterme"); varlık elle seçilince yine tek çağrıyla çekilir |
+| Kapsam | Ekle sekmesindeki hem kategori listesi hem arama sonuçları |
+
+**Dokunulacak yerler:** `EkleViewModel` (görünürlük akışı + gezinme sayacı), `EkleEkrani`
+(`rememberLazyListState` → ViewModel'e bildirim), `CallBudget` (yeni sabit).
+
+**Test:** gezinme sayacının tükenmesi ve gün dönünce sıfırlanması birim testle; emülatörde BIST'te
+kaydırıp fiyatların partiler hâlinde dolduğu görsel olarak.
+
+**Boyut:** S–M.
+
+---
+
+## M14 — Tema: renk, tipografi, ikon, animasyon
+
+Faz 1'in bilinçli olarak dışarıda bıraktığı (15/1) dört madde birlikte ele alınır: wireframe gri
+düzeninden gerçek bir uygulama görünümüne geçiş. **İlke: minimalizm.** Veri kahraman; renk yalnız
+anlam taşıdığı yerde kullanılır, süs için değil.
+
+### M14.1 — Renk sistemi
+
+Üç katmanlı bir palet: **nötr** (yüzeyler ve metin), **semantik** (kazanç/kayıp), **kategori**
+(yalnız ikon ve grafik dilimleri). Marka rengi bilinçli olarak mürekkep (koyu lacivert-gri) —
+yeşil ve kırmızıyı semantik anlam için serbest bırakır.
+
+| Rol | Açık tema | Koyu tema |
+|---|---|---|
+| Zemin | `#F6F7F9` | `#0E1116` |
+| Yüzey (kart) | `#FFFFFF` | `#161B22` |
+| Yüzey varyantı | `#EDEFF3` | `#1F2630` |
+| Çerçeve | `#D6DAE0` | `#2C333D` |
+| Ana metin | `#131A24` | `#E4E7EB` |
+| İkincil metin | `#5C6672` | `#9AA3AE` |
+| Birincil (mürekkep) | `#1A2332` | `#E4E7EB` |
+| **Kazanç** | `#0E7A55` | `#35C88E` |
+| **Kayıp** | `#B3261E` | `#FF6B61` |
+| Nötr (sıfır getiri) | ikincil metin rengi | ikincil metin rengi |
+
+Kontrast hedefi WCAG AA (metin için ≥ 4.5:1); seçilen yeşil ve kırmızı bu eşiği kendi zeminlerinde
+karşılar (neon tonlardan kaçınılmasının sebebi budur).
+
+### M14.2 — Getiri renkleri (kullanıcının asıl istediği)
+
+Artı getiri yeşil, eksi kırmızı, sıfır nötr. Renk **tek başına** anlam taşımaz: mevcut ▲/▼ işaretleri
+korunur (renk körlüğü ve gri tonlamalı ekran görüntüleri için).
+
+- `ui/tema/Renkler.kt`: `@Composable fun getiriRengi(deger: BigDecimal?): Color` — işaret → renk.
+- Uygulanacak 10 nokta: Portföy toplam kartı ve varlık satırı, Performans özeti/kategori/varlık
+  satırları, Ekle sekmesi günlük değişim yüzdesi.
+- Portföy ekranındaki iki satır metni birleştiriyor (`miktar • getiri`); `AnnotatedString` ile
+  yalnız getiri kısmı renklenecek.
+- Donut grafik dilimleri gri tonları yerine **kategori renklerini** kullanacak (aşağıda).
+
+### M14.3 — Kategori renkleri
+
+Semantik yeşil/kırmızıyla karışmayacak, birbirinden ayırt edilebilir altı ton. M10'da seçilen
+BIST kırmızısı ve Döviz yeşili bu yüzden değişiyor.
+
+| Kategori | Açık tema | Koyu tema |
+|---|---|---|
+| ABD | `#2563EB` mavi | `#60A5FA` |
+| BIST | `#EA580C` turuncu | `#FB923C` |
+| Fon | `#7C3AED` mor | `#A78BFA` |
+| Emtia | `#CA8A04` altın | `#EAB308` |
+| Döviz | `#0891B2` camgöbeği | `#22D3EE` |
+| Nakit | `#64748B` nötr | `#94A3B8` |
+
+Nakit TL ikonu Türk bayrağı çizimi olarak kalır (kendi doğal renkleriyle — bir rozet değil, resim);
+donut dilimi ve legend karesi nötr tonu kullanır.
+
+### M14.4 — Tipografi
+
+Özel yazı tipi dosyası **eklenmez** (APK boyutu ve lisans yükü minimalizme aykırı); sistem yazı tipi
+üzerinde bilinçli bir ölçek tanımlanır. Finans uygulamasında asıl kazanç **hizalı rakamlardır**:
+sayısal stillerde `fontFeatureSettings = "tnum"` (tabular figures) ile rakamlar sütun hâlinde hizalanır.
+
+| Slot | Kullanım | Boyut / ağırlık |
+|---|---|---|
+| `displaySmall` | Toplam portföy değeri | 34sp / SemiBold / tnum |
+| `headlineSmall` | Dönem getirisi yüzdesi | 24sp / SemiBold / tnum |
+| `titleMedium` | Kategori adı | 17sp / Medium |
+| `titleSmall` | Varlık kodu | 15sp / Medium |
+| `bodyMedium` | Değerler | 15sp / Regular / tnum |
+| `bodySmall` | Varlık adı, notlar | 13sp / Regular |
+| `labelMedium` | Etiketler ("piyasa kapalı") | 12sp / Medium |
+
+`ui/tema/Tipografi.kt` olarak tanımlanır, `PortfoyTemasi`'na bağlanır.
+
+### M14.5 — İkonlar
+
+Tam bespoke bir set çizilmez (minimalizm + efor); yapılacak olan **tutarlılık**:
+
+- Tek aile: Material Symbols **Outlined**; yalnız alt bardaki seçili sekme dolgulu.
+- Tek ölçek: liste içi 20dp, alt bar 24dp.
+- Anlamı zayıf iki ikon değişir: Fon için kumbara (`Savings`) yerine `AccountBalance`;
+  Emtia için dolar sikkesi (`MonetizationOn`) yerine sade, elle çizilmiş külçe/sikke vektörü
+  (Türk bayrağı ikonuyla aynı yaklaşım).
+- Mevcut deprecated kullanım kalmadığı doğrulanır.
+
+### M14.6 — Animasyon
+
+Kısa, amaçlı, abartısız. Hepsi 150–250 ms, standart easing.
+
+| Yer | Animasyon |
+|---|---|
+| Akordeon aç/kapa | `expandVertically` + fade, yaylanmasız spring |
+| Sekme geçişi | Fade-through (150 ms) |
+| Fiyat tazelenince | Değişen değerde kısa vurgu (kazanç/kayıp renginde 400 ms sönümlenen arka plan) |
+| Donut ilk çizim | Sweep animasyonu (500 ms, easeOutCubic) |
+| Erişilebilirlik | Sistemde "animasyonları azalt" açıksa tüm süreler 0 |
+
+### Kabul kriteri
+
+- Açık ve koyu temada üç sekmenin de ekran görüntüsü alınır ve gözle doğrulanır.
+- Getiri renkleri: artı/eksi/sıfır üçü de gerçek veriyle görülür.
+- Metin kontrastı AA eşiğini geçer; ▲/▼ işaretleri korunur.
+- Yazı tipi ölçeği %130'a çıkarıldığında taşma olmaz.
+- `getiriRengi` için birim test (artı → kazanç, eksi → kayıp, sıfır ve `null` → nötr).
+
+**Boyut:** L (projenin en büyük tek görsel işi).
+
+---
+
+## M15 — Cihaz uyumluluğu ve erişilebilirlik turu
+
+En sona bırakıldı (kullanıcı: "7'de en son test edebiliriz"). Tema oturduktan sonra anlamlı.
+
+| Kontrol | Nasıl |
+|---|---|
+| Küçük telefon (≈5.4") | Emülatör profili; taşma ve kırpılma kontrolü |
+| Büyük telefon | Mevcut Pixel profili |
+| Tablet (≈10") | Geniş ekranda düzenin dağılıp dağılmadığı |
+| Yazı tipi ölçeği | %85 / %100 / %130 |
+| Koyu tema | Tüm ekranlar |
+| Yatay yön | Şu an kilitli değil; **karar gerekiyor**: ya dikey kilitlenir ya da yatay düzen düzeltilir |
+| Erişilebilirlik | TalkBack ile alt bar ve akordeonlarda içerik açıklamaları |
+
+**Boyut:** S.
+
+---
+
 ## 3. Risk kaydı
 
 | Risk | Etki | Önlem |
@@ -710,24 +872,21 @@ Wireframe onay kapısı dokümanın Faz 1 teslimatıyla örtüşür: o noktaya k
 hesaplama çekirdeği, Room şeması, adaptör arayüzü, tazeleme zamanlayıcısı — tasarım kararları
 değişse de ayakta kalır.
 
-**Durum (2026-09-22):** M0–M12 tamamlandı. Uygulama kişisel kullanım için hazır (release derlemesi
-sıfırdan kurulup doğrulandı). Yeni bir istek gelirse bir sonraki milestone (M13...) olarak buraya eklenir.
+**Durum (2026-09-22):** M0–M12 tamamlandı; uygulama kişisel kullanım için hazır (release derlemesi
+sıfırdan kurulup doğrulandı). Kullanıcı isteğiyle **M13–M15 planlandı**: kaydırdıkça fiyat çekimi,
+tema (getiri renkleri dahil) ve cihaz uyumluluğu turu. Sıra: M13 → M14 → M15.
 
 ---
 
 ## 6. Gelecek planlar (backlog)
 
-Şu an yapılması **gerekmeyen**, ileride istenirse ele alınacak maddeler. Hiçbiri kod tarafında
-eksik/yarım bırakılmış bir şey değil — bilinçli olarak kapsam dışı tutuluyor.
+M13–M15 artık **planlandı** (yukarıdaki bölümler) — bu tabloda yalnızca hâlâ kapsam dışı olanlar kalır.
 
 | Madde | Ne zaman gündeme gelir | Not |
 |---|---|---|
-| **Play Store yayını** | Kullanıcı karar verirse ("belki hiç olmayabilir") | Kod tarafı incelendi, `.aab` derlemesi doğrulandı. En büyük engel: API anahtarlarının istemcide açık olması (proxy sunucu gerektirir). Tüm ayrıntı ve adım sırası: [PLAY_STORE_HAZIRLIK.md](PLAY_STORE_HAZIRLIK.md). |
-| **BIST gibi büyük listelerde kademeli (scroll) fiyat çekimi** | Kullanıcı "BIST'in tamamını da gerçek fiyatla görmek istiyorum" derse | Şu an kategori açılışında yalnız ilk 30 hisse tazeleniyor (karar 32); kalan ~500 hisse elle seçilince anında çekiliyor. Kaydırdıkça artan bir bütçeyle kademeli çekim eklenebilir, ama günlük Yahoo bütçesini (300) zorlamamak için dikkatli tasarlanmalı. |
-| **Genel renk paleti / marka kimliği** | Wireframe'den "gerçek uygulama" görünümüne geçilmek istenirse | Doküman 15/1: Faz 1'de renk, tipografi, ikon seti ve animasyon **bilinçli olarak kapsam dışı** bırakılmıştı — ayrım yalnız gri tonu, çerçeve kalınlığı ve boşlukla yapılıyor (`ui/tema/Tema.kt`, `Gri` paleti). M10/M11'de yalnızca **kategori ikonlarına** ve **uygulama simgesine** dar bir istisna olarak renk eklendi; geri kalan her şey (arka plan, birincil/ikincil renkler, buton/kart renkleri) hâlâ tamamen gri. |
-| **Tipografi** | Renk paletiyle birlikte ele alınabilir | Hiç özel yazı tipi/tipografi ölçeği tanımlanmadı; Material3'ün varsayılan tipografisi kullanılıyor. Doküman 15/1'in kapsam dışı bıraktığı maddelerden. |
-| **Özel ikon seti** | Renk paletiyle birlikte ele alınabilir | Kategori ikonları (M10) ve uygulama simgesi (M11) dışında, ekranlardaki tüm ikonlar hazır **Material Icons** setinden (`androidx.compose.material.icons`) — markaya özgü tasarlanmış bir ikon seti yok. |
-| **Animasyon** | Renk paletiyle birlikte ele alınabilir | Compose'un varsayılan geçişleri (`AnimatedVisibility` ile akordeon açılış/kapanışı) dışında özel tasarlanmış bir animasyon yok. Doküman 15/1'in kapsam dışı bıraktığı son madde. |
-| **Geniş cihaz uyumluluğu** | Birden fazla telefon/tablet modelinde kullanılmak istenirse | Doküman 13/4: tek hedef Android sürümünde (bu oturumda emülatör + release APK) doğrulandı. Farklı ekran boyutu, katlanabilir cihaz, tablet düzeni hiç test edilmedi. |
+| **Play Store yayını** | Kullanıcı karar verirse ("belki hiç olmayabilir") | Kod tarafı incelendi, `.aab` derlemesi doğrulandı. En büyük engel: API anahtarlarının istemcide açık olması (proxy sunucu gerektirir). Ayrıntı: [PLAY_STORE_HAZIRLIK.md](PLAY_STORE_HAZIRLIK.md). |
+| **Özel yazı tipi (ör. Inter)** | Sistem yazı tipi yetersiz görülürse | M14.4 bilinçli olarak sistem yazı tipinde kalıyor (APK boyutu + lisans). Marka kimliği istenirse ayrı bir adım olarak eklenebilir. |
+| **Tam bespoke ikon seti** | Marka kimliği çalışması yapılırsa | M14.5 tutarlılıkla yetiniyor (tek aile + iki özel çizim). Her ikonun elle çizilmesi ayrı bir tasarım işi. |
+| **Widget / ana ekran kısayolu** | İstenirse | Hiç konuşulmadı, fikir olarak burada durur: portföy toplamını ana ekranda gösteren bir widget. |
 
 Yeni bir istek ya da fikir geldiğinde buraya eklenir; hayata geçirildiğinde ilgili milestone'a taşınır.
