@@ -10,8 +10,8 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.PieChart
-import androidx.compose.material.icons.filled.ShowChart
-import androidx.compose.material.icons.outlined.ShowChart
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -47,7 +47,7 @@ private enum class Sekme(
     val cizgi: ImageVector,
 ) {
     EKLE("ekle", "Ekle", Icons.Filled.AddCircle, Icons.Outlined.AddCircleOutline),
-    PERFORMANS("performans", "Performans", Icons.Filled.ShowChart, Icons.Outlined.ShowChart),
+    PERFORMANS("performans", "Performans", Icons.AutoMirrored.Filled.ShowChart, Icons.AutoMirrored.Outlined.ShowChart),
     PORTFOY("portfoy", "Portföy", Icons.Filled.PieChart, Icons.Outlined.PieChart),
 }
 

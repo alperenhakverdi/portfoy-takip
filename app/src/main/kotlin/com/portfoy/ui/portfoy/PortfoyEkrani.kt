@@ -23,7 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.outlined.ShowChart
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -191,7 +191,7 @@ private fun PortfoyIcerigi(
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = vm::degerGrafiginiAcKapat) {
-                        Icon(Icons.Outlined.ShowChart, contentDescription = "Toplam değer grafiği")
+                        Icon(Icons.AutoMirrored.Outlined.ShowChart, contentDescription = "Toplam değer grafiği")
                     }
                 }
                 Text(
@@ -399,7 +399,7 @@ private fun VarlikSatiri(
             // Elle girilen fiyat otomatik güncellenmez; 7 günü geçtiyse kullanıcı uyarılır (karar 9).
             val eski = elleFiyatZamani != null && Tazelik.elleFiyatEskiMi(elleFiyatZamani, Instant.now())
             Text(
-                if (eski) "elle girilen fiyat • ${Tazelik.gunFarki(elleFiyatZamani!!, Instant.now())} gün önce girildi, güncel değil" else "elle girilen fiyat",
+                if (eski) "elle girilen fiyat • ${Tazelik.gunFarki(elleFiyatZamani, Instant.now())} gün önce girildi, güncel değil" else "elle girilen fiyat",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
             )

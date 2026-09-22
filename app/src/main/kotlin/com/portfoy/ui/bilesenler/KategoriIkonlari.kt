@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Savings
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -45,7 +45,7 @@ fun KategoriIkonu(kategori: Category, modifier: Modifier = Modifier) {
 }
 
 private fun Category.simgeVeRenk(): Pair<ImageVector, Color> = when (this) {
-    Category.BIST -> Icons.Filled.ShowChart to KategoriRengi.Bist
+    Category.BIST -> Icons.AutoMirrored.Filled.ShowChart to KategoriRengi.Bist
     Category.ABD -> Icons.Filled.Public to KategoriRengi.Abd
     Category.FON -> Icons.Filled.Savings to KategoriRengi.Fon
     Category.EMTIA -> Icons.Filled.MonetizationOn to KategoriRengi.Emtia
