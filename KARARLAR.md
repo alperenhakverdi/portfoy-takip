@@ -464,3 +464,23 @@ simge (`mipmap-anydpi-v26`, vektör önyüz + renk zemin) yeterli; eski yoğunlu
 Emülatörde doğrulandı: ana ekran ve Ayarlar > Uygulama Bilgisi'nde isim ve şekil doğru görünüyor.
 Bazı başlatıcılarda (launcher) "temalı simgeler" açıkken sistem simgeyi duvar kağıdına göre tek renge
 boyuyor — bu platformun kendi davranışı, kaynak dosyalarıyla ilgisi yok; kapalıyken gerçek renkler görünür.
+
+---
+
+## 32. Kategori açılışında sınırlı toplu fiyat tazelemesi
+
+**Sorun.** Karar 28'in fiyat+günlük performans gösterimi, önbellekte fiyatı olan varlıklar için
+çalışıyordu ama kategori ilk açıldığında hiçbir varlığın önbellekte fiyatı yoktu (yalnızca elle
+seçilmiş olanlar hariç) — kullanıcı BIST'e girince yalnızca daha önce seçtiği A1CAP'in fiyatını
+görüyordu, geri kalan 536 hisse "—" gösteriyordu.
+
+**Karar.** Kategori seçilince (`kategoriSec`), görünecek varlıklar için **bir kerelik, sınırlı**
+bir toplu tazeleme tetiklenir: öne çıkanlar tanımlıysa (ABD, 12 varlık) hepsi; küçük tam listelerde
+(BIST, Emtia, Döviz) ilk `CallBudget.ROUND_CAP` (30) varlık — tıpkı gün içi tazeleme turlarında
+kullanılan sınırla aynı. Büyük kataloglarda (ABD'nin tamamı, Fon) hâlâ hiçbir şey çekilmez; arama
+hâlâ sıfır ağ çağrısıyla çalışır (karar korunur). BIST'in 537 hissesinin tamamını her açılışta
+çekmek günlük Yahoo bütçesini (300) tek seferde tüketirdi; bu yüzden yalnızca ilk 30 (alfabetik)
+gerçek veriyle gelir, kalanı elle seçilince anında (tek çağrı) çekilir — mevcut davranış zaten buydu.
+
+**İleride:** kaydırdıkça (scroll) kalan hisseler için kademeli çekim eklenebilir (M12 adayı);
+şimdilik kapsam dışı bırakıldı, "sadece ileride yapılacaklar kalsın" talimatına uygun not düşülüyor.

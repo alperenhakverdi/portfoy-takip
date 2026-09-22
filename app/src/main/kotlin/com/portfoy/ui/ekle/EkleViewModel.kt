@@ -147,6 +147,27 @@ class EkleViewModel @Inject constructor(
             return
         }
         ic.update { it.copy(kategori = kategori, sorgu = "") }
+        tazeleKategoriGorunumu(kategori)
+    }
+
+    /**
+     * Kategori açılınca görünecek varlıkların fiyatı bir kerede tazelenir: öne çıkanlar (ABD'de en
+     * fazla 12) ya da küçük kategorinin ilk 30'u (`CallBudget.ROUND_CAP` — diğer tazeleme turlarıyla
+     * aynı sınır). Büyük kataloglarda (ABD'nin tamamı, fon) hâlâ hiçbir şey çekilmez; arama hâlâ
+     * sıfır ağ çağrısıyla çalışır, bu yalnızca kategori ilk açıldığında ve sınırlı sayıda varlık içindir.
+     */
+    private fun tazeleKategoriGorunumu(kategori: Category) {
+        viewModelScope.launch {
+            val kodlar = ONE_CIKAN_KODLAR[kategori]
+            val varliklar = when {
+                kodlar != null -> kodlar.mapNotNull { kod -> assetDao.getByCode(kod, kategori) }
+                depo.kategoriSayisi(kategori) <= LISTE_SINIRI ->
+                    depo.kategoriListesi(kategori, com.portfoy.network.CallBudget.ROUND_CAP)
+                        .mapNotNull { assetDao.getById(it.asset.id) }
+                else -> emptyList()
+            }
+            if (varliklar.isNotEmpty()) fiyatDeposu.refresh(varliklar, PriceRepository.MANUAL_MIN_AGE)
+        }
     }
 
     fun kategoriyiKapat() = ic.update { it.copy(kategori = null, sorgu = "") }
