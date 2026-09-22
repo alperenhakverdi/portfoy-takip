@@ -441,11 +441,17 @@ denenmiş ve sonucu kayda geçmiş.
 - Varlık eklendiğinde geçmiş fiyat serisi **bir kez** çekilir, `price_history`'e yazılır; her açılışta
   tekrarlanmaz. Çekim **alış tarihinden** bugüne, en fazla **5 yıl** geriye (kararlar 3, 20).
 - Her gün bir `portfolio_snapshot` yazılır.
-- Geçmiş seri günlük kapanış değerleriyle tutulur; gün içi veri yalnızca "1 Gün" grafiği için saklanır
-  ve 48 saat sonra silinir (11.2/4).
-- Hafta sonu ve tatil günleri son işlem gününün değeriyle düzleştirilir (11.2/6).
-- Saklama sınırları (11.3): varlık başına 5 yıl; snapshot sınırsız; portföyden çıkan varlığın serisi
-  30 gün sonra temizlenir.
+- Geçmiş seri günlük kapanış değerleriyle tutulur. "1 Gün" grafiği ayrı bir gün-içi (intraday) depoya
+  ihtiyaç duymaz: dünün kapanışı `price_history`'den, bugünkü an ise zaten önbellekteki canlı kottan
+  (`price_quote`) gelir (`GrafikDeposu`, `PortfolioHistory.portfolioSeries`). Bu yüzden 11.2/4'teki
+  "gün içi veri 48 saat sonra silinir" maddesi ayrı bir uygulama gerektirmedi — **farklı bir
+  mekanizmayla zaten karşılanıyor**, eksik değil.
+  ✅ Uygulandı (M6).
+- Hafta sonu ve tatil günleri son işlem gününün değeriyle düzleştirilir (11.2/6). ✅ Uygulandı (M6).
+- Saklama sınırları (11.3): varlık başına 5 yıl (günlük iş, `deleteOlderThan`) ✅; snapshot sınırsız ✅;
+  portföyden çıkan varlığın serisi 30 gün sonra temizlenir — `TerkedilenSeriTemizleyici`, günlük işe
+  bağlı; kaldırılma anı ayrı saklanmaz, serinin son günü doğal olarak eskimesinden anlaşılır (karar 32).
+  ✅ Uygulandı.
 
 **Geçmiş seri kaynakları** (karar 6)
 

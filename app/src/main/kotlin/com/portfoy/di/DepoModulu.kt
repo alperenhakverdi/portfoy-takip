@@ -17,6 +17,7 @@ import com.portfoy.data.repository.PriceRepository
 import com.portfoy.data.repository.SnapshotDeposu
 import com.portfoy.data.repository.SonCalismaDeposu
 import com.portfoy.data.repository.TazelemeZamanlayici
+import com.portfoy.data.repository.TerkedilenSeriTemizleyici
 import com.portfoy.model.AssetRef
 import com.portfoy.network.CallBudget
 import com.portfoy.network.GecmisAnahtari
@@ -174,6 +175,11 @@ object DepoModulu {
     @Provides
     @Singleton
     fun snapshotDeposu(grafik: GrafikDeposu, dao: PortfolioSnapshotDao) = SnapshotDeposu(grafik, dao)
+
+    @Provides
+    @Singleton
+    fun terkedilenSeriTemizleyici(transactionDao: TransactionDao, historyDao: PriceHistoryDao, quoteDao: PriceQuoteDao) =
+        TerkedilenSeriTemizleyici(transactionDao, historyDao, quoteDao)
 
     @Provides
     @Singleton

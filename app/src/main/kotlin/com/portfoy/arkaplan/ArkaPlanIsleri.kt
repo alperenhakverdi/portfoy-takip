@@ -15,6 +15,7 @@ import com.portfoy.data.db.PriceHistoryDao
 import com.portfoy.data.repository.SnapshotDeposu
 import com.portfoy.data.repository.SonCalismaDeposu
 import com.portfoy.data.repository.TazelemeZamanlayici
+import com.portfoy.data.repository.TerkedilenSeriTemizleyici
 import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.calc.HISTORY_YEARS
 import dagger.assisted.Assisted
@@ -53,6 +54,7 @@ class GunlukIsWorker @AssistedInject constructor(
     private val gecmis: GecmisYoneticisi,
     private val snapshot: SnapshotDeposu,
     private val gecmisDao: PriceHistoryDao,
+    private val terkedilenTemizleyici: TerkedilenSeriTemizleyici,
     private val saat: Clock,
 ) : CoroutineWorker(context, parametreler) {
     override suspend fun doWork(): Result {
@@ -61,6 +63,8 @@ class GunlukIsWorker @AssistedInject constructor(
         runCatching { snapshot.eksikGunleriYaz(bugun) }
         // Günlük kapanış serisi varlık başına en fazla 5 yıl saklanır (doküman 11.3/1).
         runCatching { gecmisDao.deleteOlderThan(bugun.minusYears(HISTORY_YEARS)) }
+        // Portföyden çıkan varlığın serisi 30 gün sonra temizlenir (doküman 11.3/3).
+        runCatching { terkedilenTemizleyici.temizle(bugun) }
         return Result.success()
     }
 }

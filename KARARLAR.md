@@ -484,3 +484,13 @@ gerçek veriyle gelir, kalanı elle seçilince anında (tek çağrı) çekilir �
 
 **İleride:** kaydırdıkça (scroll) kalan hisseler için kademeli çekim eklenebilir (M12 adayı);
 şimdilik kapsam dışı bırakıldı, "sadece ileride yapılacaklar kalsın" talimatına uygun not düşülüyor.
+
+---
+
+## 33. Terk edilmiş varlık serisi temizliği (doküman 11.3/3) uygulandı
+
+**Karar.** `TerkedilenSeriTemizleyici`, günlük işe (00:30 TSİ) bağlı: portföyde artık hiç işlemi
+olmayan varlıkların `price_history`/`price_quote` kayıtları, serinin son günü 30 günden eskiyse silinir.
+Kaldırılma anı ayrı bir sütunda tutulmaz — held olmayan varlık tazelenmeyi bıraktığı için serisi zaten
+kendiliğinden eskir, bu doğal eskime "30 gün" sayacı yerine geçer. Varlık yeniden satın alınırsa held
+listesine döner ve temizlik dokunmaz.

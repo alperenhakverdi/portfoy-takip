@@ -111,6 +111,10 @@ interface TransactionDao {
 
     @Query("SELECT MIN(tradeDate) FROM transactions")
     suspend fun oldestTradeDate(): LocalDate?
+
+    /** Hâlâ işlemi olan (portföyde tutulan) varlık kimlikleri; terk edilmiş seri temizliği için. */
+    @Query("SELECT DISTINCT assetId FROM transactions")
+    suspend fun heldAssetIds(): List<Long>
 }
 
 @Dao
@@ -164,6 +168,13 @@ interface PriceHistoryDao {
     /** Saklama sınırı: bu tarihten eski kayıtlar silinir. */
     @Query("DELETE FROM price_history WHERE date < :before")
     suspend fun deleteOlderThan(before: LocalDate)
+
+    /**
+     * Son günü [before]'dan eski olan varlıklar: tazelenmeyi bırakmış (muhtemelen portföyden çıkmış)
+     * varlıklar doğal olarak bunlardır. Terk edilmiş seri temizliği bu listeyi kullanır.
+     */
+    @Query("SELECT assetId FROM price_history GROUP BY assetId HAVING MAX(date) < :before")
+    suspend fun assetIdsStaleBefore(before: LocalDate): List<Long>
 }
 
 @Dao
