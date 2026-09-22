@@ -66,7 +66,7 @@ ilk günden başlatılır.
 | M7 | Kenar durumlar ve çevrimdışı | ✅ Bitti | 16 durumun tamamı test veya emülatör kabuluyla doğrulandı |
 | M8 | Sertleştirme ve teslim | ✅ Bitti | İmzalı release APK, büyük portföy testi, DST/kabul turu doğrulandı |
 | M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
-| M10 | Kategori ikonları | Backlog — Ekle ve Portföy kategori satırlarına ikon | S |
+| M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar: Ekle, Portföy ve Performans kategori satırları |
 
 **Süre tahmini yok, bilinçli olarak:** tek kişilik kişisel proje, deadline yok. Boyutlar göreli (S küçük, M orta, L büyük). En belirsiz kalem M5 — kaynak denemeleri önce yapılırsa netleşir.
 
@@ -588,24 +588,20 @@ kırılımlı olsun, kategoriye tıklayınca altındaki varlıklar açılsın.
 
 ---
 
-## M10 — Kategori ikonları (backlog, 2026-09-22)
+## M10 — Kategori ikonları — ✅ Bitti (2026-09-22)
 
-Kullanıcı isteği: Ekle sekmesindeki kategori listesinde (ve mümkünse Portföy/Performans kategori
-satırlarında) her kategorinin yanında kendine özgü bir ikon olsun — Nakit TL'de Türk bayrağı, BIST'te
-borsa/grafik simgesi, Emtia'da altın külçesi, Döviz'de dolar işareti, Fon'da fon simgesi, ABD'de
-kendine özgü bir simge (bayrak ya da benzeri).
+Kullanıcı kararı: renkli ama minimalist. Her kategori tek renkli bir Material ikonla eşlendi
+(BIST kırmızı ShowChart, ABD lacivert Public/globe, Fon mor Savings, Emtia altın rengi
+MonetizationOn, Döviz yeşil AttachMoney). Nakit TL için hazır ikon yeterli görülmedi; sade bir
+Türk bayrağı çizimi eklendi (`app/src/main/kotlin/com/portfoy/ui/bilesenler/KategoriIkonlari.kt`):
+kırmızı zemin, iki dairenin üst üste binmesiyle oluşan hilal, yıldız tek noktaya indirgenmiş —
+gerçek bayrağın ayrıntısı yerine tanınabilir en yalın hâli.
 
-**Not — wireframe teması ile gerilim.** Uygulamanın kararı (bkz. KARARLAR.md) grinin tonlarıyla
-sınırlı, ikon yerine metin etiketiyle giden bir wireframe estetiği. Renkli bayrak/altın/dolar
-simgeleri bu temayı kırar. İki seçenek var:
-1. İkonlar da tek renkli (gri) tutulur — Material ikon seti üzerinden (`CurrencyLira`, `ShowChart`,
-   `Paid`/külçe benzeri, `AttachMoney`, fon için `PieChart` ya da `AccountBalance`, ABD için
-   `Flag`/`Public`). Wireframe tutarlılığı korunur, iş küçük (S).
-2. Kategori ikonları renkli olur (gerçek bayraklar, altın sarısı, dolar yeşili) — tema burada özel
-   olarak kırılır, diğer her şey gri kalır. Görsel olarak daha "gerçek uygulama" hissi verir ama
-   kararla çelişir, tasarım onayı gerektirir.
+Renkler yalnızca kategori ikonuna özgü bilinçli bir istisna; wireframe temasının geri kalanı
+(arka plan, çerçeve, metin) gri tonlarında kalmaya devam eder.
 
-Karar kullanıcıya bırakıldı; iş M8'den sonra, teslime yakın küçük bir cila adımı olarak planlandı.
+İkon üç yerde kullanılır: Ekle sekmesi kategori listesi ve arama başlığı, Portföy ve Performans
+akordeon başlıkları. Emülatörde görsel olarak doğrulandı.
 
 ---
 

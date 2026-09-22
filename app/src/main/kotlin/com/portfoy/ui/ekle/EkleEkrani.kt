@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -53,6 +54,7 @@ import com.portfoy.model.Category
 import com.portfoy.ui.bilesenler.AlimFormAlanlari
 import com.portfoy.ui.bilesenler.AlimFormDurumu
 import com.portfoy.ui.bilesenler.Kutu
+import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.etiket
 import java.time.LocalDate
@@ -115,6 +117,8 @@ private fun KategoriGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                 kalinCerceve = kategori == Category.NAKIT,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    KategoriIkonu(kategori, Modifier.size(28.dp))
+                    Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             if (kategori == Category.NAKIT) "Nakit TL" else kategori.etiket(),
@@ -150,6 +154,8 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = vm::kategoriyiKapat) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri") }
+            KategoriIkonu(kategori, Modifier.size(22.dp))
+            Spacer(Modifier.width(8.dp))
             Text(kategori.etiket(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
         OutlinedTextField(

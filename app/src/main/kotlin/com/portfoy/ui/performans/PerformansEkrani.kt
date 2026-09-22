@@ -2,6 +2,7 @@ package com.portfoy.ui.performans
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import com.portfoy.calc.Donem
 import com.portfoy.model.Category
+import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -142,6 +144,8 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                             if (acik) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                             contentDescription = if (acik) "Kapat" else "Aç",
                         )
+                        Spacer(Modifier.width(4.dp))
+                        KategoriIkonu(grup.kategori, Modifier.size(20.dp))
                         Spacer(Modifier.width(6.dp))
                         Column {
                             Text(grup.kategori.etiket(), fontWeight = FontWeight.Bold)

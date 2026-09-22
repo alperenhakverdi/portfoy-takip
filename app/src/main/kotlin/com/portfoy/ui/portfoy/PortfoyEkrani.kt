@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -71,6 +72,7 @@ import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.DonutGrafik
 import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.birimEtiketi
+import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
 import com.portfoy.ui.bilesenler.tr
 import java.math.BigDecimal
@@ -336,6 +338,8 @@ private fun KategoriSatiri(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(if (acik) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null)
+            Spacer(Modifier.width(4.dp))
+            KategoriIkonu(kategori.category, Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(kategori.category.etiket(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
