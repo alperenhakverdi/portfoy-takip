@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -59,6 +60,10 @@ import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.etiket
 import java.time.LocalDate
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import androidx.compose.runtime.snapshotFlow
 
 /**
  * Sekme 1 — Ekle. Tek işi varlık eklemektir.
@@ -173,8 +178,21 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
         )
 
         val liste = if (ekran.aramaAktif) ekran.sonuclar else ekran.kategoriListesi
+        val listeDurumu = rememberLazyListState()
+
+        // Kaydırdıkça görünen ama fiyatı önbellekte olmayan varlıklar için parti hâlinde çekim (M13).
+        // Kaydırma durduktan ~400 ms sonra tetiklenir; sürekli kaydırırken istek atılmaz.
+        LaunchedEffect(listeDurumu) {
+            snapshotFlow { listeDurumu.layoutInfo.visibleItemsInfo.map { it.key } }
+                .debounce(400)
+                .map { anahtarlar -> anahtarlar.mapNotNull { (it as? String)?.removePrefix("varlik-")?.toLongOrNull() } }
+                .distinctUntilChanged()
+                .collect { idler -> if (idler.isNotEmpty()) vm.gorunenVarliklariTazele(idler) }
+        }
+
         LazyColumn(
             Modifier.fillMaxSize(),
+            state = listeDurumu,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

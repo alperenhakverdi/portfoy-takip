@@ -6,12 +6,15 @@ import com.portfoy.GecmisYoneticisi
 import com.portfoy.TazelemeYoneticisi
 import com.portfoy.calc.AlimDegerleri
 import com.portfoy.data.db.AssetDao
+import com.portfoy.data.db.AssetEntity
 import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.data.repository.PriceRepository
 import com.portfoy.data.repository.SearchHit
 import com.portfoy.model.Asset
 import com.portfoy.model.Category
+import com.portfoy.network.GunlukSayac
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.portfoy.di.GezinmeButcesi
 import com.portfoy.di.UygulamaZamanDilimi
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -80,11 +83,15 @@ class EkleViewModel @Inject constructor(
     private val assetDao: AssetDao,
     private val yonetici: TazelemeYoneticisi,
     private val gecmis: GecmisYoneticisi,
+    @GezinmeButcesi private val gezinmeButcesi: GunlukSayac,
 ) : ViewModel() {
 
     private val ic = MutableStateFlow(EkleIc())
     private val olayKanali = Channel<EkleOlayi>(Channel.BUFFERED)
     val olaylar: Flow<EkleOlayi> = olayKanali.receiveAsFlow()
+
+    /** Kaydırma sırasında bu oturumda zaten istenmiş varlıklar; aynı varlık tekrar tekrar denenmez. */
+    private val gezinmeIstenenler = mutableSetOf<Long>()
 
     private data class Liste(
         val sonuclar: List<SearchHit> = emptyList(),
@@ -165,6 +172,28 @@ class EkleViewModel @Inject constructor(
                     depo.kategoriListesi(kategori, com.portfoy.network.CallBudget.ROUND_CAP)
                         .mapNotNull { assetDao.getById(it.asset.id) }
                 else -> emptyList()
+            }
+            if (varliklar.isNotEmpty()) fiyatDeposu.refresh(varliklar, PriceRepository.MANUAL_MIN_AGE)
+        }
+    }
+
+    /**
+     * Liste kaydırıldıkça çağrılır (M13): ekranda görünen ama henüz gezinme sırasında istenmemiş
+     * varlıklar için fiyat çekilir. Kaynak bazlı günlük bütçelerden (ör. Yahoo 300) ayrı bir gezinme
+     * bütçesi (`GezinmeButcesi`, 120/gün) kullanılır ki BIST gibi büyük bir listede uzun süre
+     * gezinmek portföyün kendi tazelemesine ayrılan günlük çağrı hakkını tüketmesin. Bütçe dolunca
+     * sessizce durur; henüz denenmemiş varlıklar bir sonraki denemede (bütçe sıfırlanınca ya da
+     * kategoriye tekrar girilince) tekrar aday olur.
+     */
+    fun gorunenVarliklariTazele(varlikIdleri: List<Long>) {
+        val adaylar = varlikIdleri.filter { it !in gezinmeIstenenler }
+        if (adaylar.isEmpty()) return
+        viewModelScope.launch {
+            val varliklar = mutableListOf<AssetEntity>()
+            for (id in adaylar) {
+                if (!gezinmeButcesi.tuket()) break // bütçe doldu; kalanlar denenmeden bırakılır
+                gezinmeIstenenler += id
+                assetDao.getById(id)?.let { varliklar += it }
             }
             if (varliklar.isNotEmpty()) fiyatDeposu.refresh(varliklar, PriceRepository.MANUAL_MIN_AGE)
         }

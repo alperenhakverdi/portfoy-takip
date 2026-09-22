@@ -45,10 +45,16 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.time.Clock
 import java.time.ZoneId
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 /** Uygulamanın kullandığı saat dilimi. Piyasa saatleri kendi dilimlerinde ayrıca hesaplanır. */
 val UygulamaZamanDilimi: ZoneId = ZoneId.of("Europe/Istanbul")
+
+/** Ekle sekmesinde kaydırdıkça tetiklenen fiyat çekimi için ayrı günlük sayaç (M13, karar 35). */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class GezinmeButcesi
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -180,6 +186,12 @@ object DepoModulu {
     @Singleton
     fun terkedilenSeriTemizleyici(transactionDao: TransactionDao, historyDao: PriceHistoryDao, quoteDao: PriceQuoteDao) =
         TerkedilenSeriTemizleyici(transactionDao, historyDao, quoteDao)
+
+    /** Kaynak bazlı bütçelerden (Yahoo 300 vb.) bağımsız, yalnız gezinme (kaydırma) için (M13). */
+    @Provides
+    @Singleton
+    @GezinmeButcesi
+    fun gezinmeButcesi(clock: Clock): GunlukSayac = GunlukSayac(CallBudget.BROWSE_DAILY_CAP, clock, UygulamaZamanDilimi)
 
     @Provides
     @Singleton

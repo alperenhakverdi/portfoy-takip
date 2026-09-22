@@ -513,3 +513,22 @@ taşmaz. Tablo başlığı da buna göre "Getiri %" + "Getiri ₺" yerine tek "G
 **Ders:** gerçekçi ama uç senaryolu örnek portföylerle test etmek, birim testlerin yakalayamadığı
 görsel yerleşim hatalarını ortaya çıkardı — sabit genişlikli sütun düzenleri büyük/uzun değerlerde
 her zaman kırılma riski taşır; bu projede artık "değer + küçük alt metrik" alt alta deseni tercih ediliyor.
+
+---
+
+## 35. Kaydırdıkça kademeli fiyat çekimi, ayrı bütçeyle (M13)
+
+**Sorun.** Kategori açılışında yalnız ilk 30 varlık tazeleniyordu (karar 32). BIST'te 537 hisse var;
+kullanıcı aşağı kaydırdığında geri kalanı "—" görüyordu.
+
+**Karar.** `EkleEkrani`'nde `LazyListState` + `snapshotFlow` ile görünen öğeler izlenir; kaydırma
+durduktan 400 ms sonra (debounce), henüz istenmemiş varlıklar için `EkleViewModel.gorunenVarliklariTazele`
+çağrılır. Kaynak bazlı günlük bütçelerden (Yahoo 300 vb.) **ayrı** bir gezinme bütçesi kullanılır
+(`CallBudget.BROWSE_DAILY_CAP = 120`, Hilt'te `@GezinmeButcesi GunlukSayac` olarak sağlanır) — amacı,
+uzun süre listede gezinmenin portföyün kendi tazelemesine ayrılan günlük çağrı hakkını tüketmemesi.
+Bütçe dolunca sessizce durur (doküman 14); henüz denenmemiş varlıklar `gezinmeIstenenler` kümesine
+eklenmediği için bir sonraki denemede (bütçe sıfırlanınca ya da kategoriye tekrar girilince) tekrar
+aday olur. Arama sonuçları da aynı `LazyColumn`'u paylaştığı için ayrı bir kod yoluna gerek kalmadı.
+
+Emülatörde doğrulandı: BIST'te "B" harfine kadar kaydırılıp bekleyince görünen 8 hissenin tamamı
+gerçek fiyat ve günlük değişimle doldu.

@@ -52,6 +52,14 @@ class CallBudget(
         /** Günlük geçmiş seri çağrı tavanı (doküman 9.3/3). */
         const val HISTORY_DAILY_CAP = 100
 
+        /**
+         * Ekle sekmesinde kaydırdıkça tetiklenen fiyat çekimi için ayrı günlük tavan (M13). Kaynak
+         * bazlı tavanlardan (ör. Yahoo 300) bağımsızdır — amacı, gezinmenin portföyün kendi
+         * tazelemesine ayrılan günlük bütçeyi tüketmesini önlemek. Tavan dolunca sessizce durur
+         * (doküman 14: "API limiti aşıldı → kullanıcıya hata gösterme").
+         */
+        const val BROWSE_DAILY_CAP = 120
+
         /** Sağlayıcı limitlerinin altında kalan varsayılan günlük tavanlar. */
         val DEFAULT_DAILY_CAPS: Map<SourceId, Int> = mapOf(
             SourceId.FINNHUB to 500,
