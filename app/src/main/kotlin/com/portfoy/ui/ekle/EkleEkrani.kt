@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -190,12 +191,19 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                     }
                 }
 
+                // Küçük gri metin gözden kaçıyordu (kullanıcı "hiçbir şey çıkmıyor" sandı); belirgin bir kutuya alındı.
                 ekran.aramaGerekli -> item {
-                    Text(
-                        "Bu kategoride çok kayıt var. En az 2 karakter yazınca arama başlar.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Kutu {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "${kategori.etiket()} kategorisinde binlerce kayıt var, hepsi listelenmez.\nAramak için en az 2 karakter yaz.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
                 }
 
                 else -> item { Text("Yükleniyor…", style = MaterialTheme.typography.bodySmall) }
