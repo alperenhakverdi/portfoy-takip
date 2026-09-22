@@ -18,8 +18,11 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M8 | Sertleştirme, APK | ✅ Bitti | İmzalı release APK, büyük portföy testi, DST/kabul turu |
 | M9 | Güncelleme paketi 1 | ✅ Bitti | Döviz kategorisi, kategoriden başlayan ekleme, kategori kırılımlı performans |
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar |
+| M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge |
+| M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi |
 
-Plan (M0–M10) tamamlandı. Ayrıntılar aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
+Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
+aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
 
 **Geliştirme ortamı notu:** bu bilgisayardaki Avast antivirüsü HTTPS trafiğini kendi sertifikasıyla yeniden imzalıyor.
 Java araçları için `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT` gerekiyor; emülatörde ise Avast'ın
@@ -67,9 +70,10 @@ ilk günden başlatılır.
 | M6 | Geçmiş seriler, snapshot, gerçek grafikler | ✅ Bitti | Emülatörde gerçek verilerle doğrulandı (değer grafiği, getiri, varlık listesi) |
 | M7 | Kenar durumlar ve çevrimdışı | ✅ Bitti | 16 durumun tamamı test veya emülatör kabuluyla doğrulandı |
 | M8 | Sertleştirme ve teslim | ✅ Bitti | İmzalı release APK, büyük portföy testi, DST/kabul turu doğrulandı |
-| M9 | Güncelleme paketi 1 | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans | M |
+| M9 | Güncelleme paketi 1 | ✅ Bitti | Döviz kategorisi, kategoriden başlayan ekleme akışı, kategori kırılımlı performans |
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar: Ekle, Portföy ve Performans kategori satırları |
 | M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge (halka + kırmızı dilim motifi) |
+| M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi, Play Store incelemesi |
 
 **Süre tahmini yok, bilinçli olarak:** tek kişilik kişisel proje, deadline yok. Boyutlar göreli (S küçük, M orta, L büyük). En belirsiz kalem M5 — kaynak denemeleri önce yapılırsa netleşir.
 
@@ -614,6 +618,34 @@ akordeon başlıkları. Emülatörde görsel olarak doğrulandı.
 
 ---
 
+## M11 — Uygulama adı ve simgesi — ✅ Bitti (2026-09-22)
+
+Ana ekran adı "Portföy Takip" (`res/values/strings.xml`). Simge: koyu gri zemin üzerinde beyaz
+halka + kırmızı dilim — Portföy sekmesindeki dağılım grafiğiyle aynı motif, M10'un "renkli ama
+minimalist" ilkesiyle tutarlı. `minSdk=26` olduğu için yalnızca uyarlanabilir simge yeterli
+(`mipmap-anydpi-v26`), eski yoğunluk PNG'leri gerekmedi. Ayrıntı: karar 31.
+
+---
+
+## M12 — Bulunan hatalar ve tamamlama turu — ✅ Bitti (2026-09-22)
+
+Kullanıcı geri bildirimiyle: Ekle sekmesinde fiyat/performans yalnızca elle seçilen varlıklarda
+görünüyordu (kategori açılışında toplu tazeleme yoktu) → düzeltildi, karar 32. Ayrıca bu turda:
+
+- Fiyatın altında günlük performans yüzdesi eklendi (kaynaklar zaten tek çağrıda veriyor, karar 28).
+- ABD'de "öne çıkanlar" (12 büyük şirket) kısayolu eklendi, karar 30.
+- İlk gerçek şema değişikliği: `price_quote.changePercent`, migration + test, karar 29.
+- Doküman 11.3/3: portföyden çıkan varlığın serisi 30 gün sonra temizleniyor, karar 33.
+- Gerçekçi bir örnek portföyle (6 kategori, 6 yıl geriye giden alım) uçtan uca test edildi; bu test
+  Performans ekranında büyük yüzdelerde satır taşması hatasını buldu, düzeltildi (karar 34).
+- `.aab` derlemesi denendi ve doğrulandı; kod tarafının Play Store'a hazırlığı incelendi
+  ([PLAY_STORE_HAZIRLIK.md](PLAY_STORE_HAZIRLIK.md)).
+- Derleme uyarıları (deprecated ikon, gereksiz `!!`) temizlendi.
+
+305 test geçiyor. Ayrıntılar: [KARARLAR.md](KARARLAR.md) karar 28–34.
+
+---
+
 ## 3. Risk kaydı
 
 | Risk | Etki | Önlem |
@@ -669,13 +701,26 @@ Plan 27 karar alıyor; hepsi gerekçeleriyle [KARARLAR.md](KARARLAR.md)'de. Dok�
 7. adım  M5 devam  →  M6 (geçmiş seri, snapshot, grafikler)
 8. adım  M6 devam  →  M7 (kenar durumlar, çevrimdışı)
 9. adım  M8 (sertleştirme, APK, kabul turu)
-10. adım  M9, M10 (kullanıcı geri bildirimiyle sonradan eklendi, teslimden sonra)
+10. adım  M9–M12 (kullanıcı geri bildirimiyle sonradan eklendi, teslimden sonra)
 ```
 
 Wireframe onay kapısı dokümanın Faz 1 teslimatıyla örtüşür: o noktaya kadar üretilen her şey —
 hesaplama çekirdeği, Room şeması, adaptör arayüzü, tazeleme zamanlayıcısı — tasarım kararları
 değişse de ayakta kalır.
 
-**Durum (2026-09-22):** M0–M10 tamamlandı. Uygulama kişisel kullanım için hazır; yayın (Play Store,
-proxy ile API anahtarı gizleme) kullanıcı isteğiyle kapsam dışı bırakıldı ("4 tamam yayından önce
-bakarız"). Yeni bir istek gelirse M11 olarak buraya eklenir.
+**Durum (2026-09-22):** M0–M12 tamamlandı. Uygulama kişisel kullanım için hazır (release derlemesi
+sıfırdan kurulup doğrulandı). Yeni bir istek gelirse bir sonraki milestone (M13...) olarak buraya eklenir.
+
+---
+
+## 6. Gelecek planlar (backlog)
+
+Şu an yapılması **gerekmeyen**, ileride istenirse ele alınacak maddeler. Hiçbiri kod tarafında
+eksik/yarım bırakılmış bir şey değil — bilinçli olarak kapsam dışı tutuluyor.
+
+| Madde | Ne zaman gündeme gelir | Not |
+|---|---|---|
+| **Play Store yayını** | Kullanıcı karar verirse ("belki hiç olmayabilir") | Kod tarafı incelendi, `.aab` derlemesi doğrulandı. En büyük engel: API anahtarlarının istemcide açık olması (proxy sunucu gerektirir). Tüm ayrıntı ve adım sırası: [PLAY_STORE_HAZIRLIK.md](PLAY_STORE_HAZIRLIK.md). |
+| **BIST gibi büyük listelerde kademeli (scroll) fiyat çekimi** | Kullanıcı "BIST'in tamamını da gerçek fiyatla görmek istiyorum" derse | Şu an kategori açılışında yalnız ilk 30 hisse tazeleniyor (karar 32); kalan ~500 hisse elle seçilince anında çekiliyor. Kaydırdıkça artan bir bütçeyle kademeli çekim eklenebilir, ama günlük Yahoo bütçesini (300) zorlamamak için dikkatli tasarlanmalı. |
+
+Yeni bir istek ya da fikir geldiğinde buraya eklenir; hayata geçirildiğinde ilgili milestone'a taşınır.
