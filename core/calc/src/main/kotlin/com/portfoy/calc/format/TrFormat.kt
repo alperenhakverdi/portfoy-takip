@@ -8,6 +8,12 @@ import java.time.Instant
 import java.time.ZoneId
 
 /**
+ * Bir getiri değerinin yönü — hem ▲/▼ işareti hem de ekran rengi (M14.2, kazanç yeşil/kayıp kırmızı)
+ * bu tek karardan türer, ikisi asla birbirinden bağımsız hesaplanmaz.
+ */
+enum class GetiriYonu { ARTI, EKSI, NOTR }
+
+/**
  * Türkçe sayı biçimi: binlik ayıracı nokta, ondalık ayıracı virgül (1.234.567,89 ₺).
  * Tutar ve yüzde 2 hane, adet/gram en fazla 4 hane. Yuvarlama yalnızca burada uygulanır.
  * Artı/eksi yön işaretiyle (▲ / ▼) gösterilir.
@@ -45,12 +51,23 @@ object TrFormat {
     }
 
     /** İşaret, ekranda görünecek (yuvarlanmış) değere göre belirlenir: "▲ %0,00" görünmesin. */
-    private fun direction(value: BigDecimal): String {
+    private fun direction(value: BigDecimal): String = when (yon(value)) {
+        GetiriYonu.ARTI -> "▲ "
+        GetiriYonu.EKSI -> "▼ "
+        GetiriYonu.NOTR -> ""
+    }
+
+    /**
+     * [value]'nun yönü, ekranda görünecek (2 hane yuvarlanmış) değere göre — "▲ %0,00" ya da yeşil
+     * bir "%0,00" görünmesin diye ham değer değil, yuvarlanmış değer kullanılır. `null` nötr sayılır.
+     */
+    fun yon(value: BigDecimal?): GetiriYonu {
+        if (value == null) return GetiriYonu.NOTR
         val shown = value.setScale(2, RoundingMode.HALF_UP)
         return when {
-            shown.signum() > 0 -> "▲ "
-            shown.signum() < 0 -> "▼ "
-            else -> ""
+            shown.signum() > 0 -> GetiriYonu.ARTI
+            shown.signum() < 0 -> GetiriYonu.EKSI
+            else -> GetiriYonu.NOTR
         }
     }
 

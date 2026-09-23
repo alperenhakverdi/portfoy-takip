@@ -20,9 +20,9 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar |
 | M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge |
 | M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi |
-| M13 | Kaydırdıkça kademeli fiyat çekimi | ⏳ Planlandı | Görünen öğeler için partili çekim, ayrı gezinme bütçesi |
-| M14 | Tema: renk, tipografi, ikon, animasyon | ⏳ Planlandı | Getiri yeşil/kırmızı; wireframe griden gerçek temaya geçiş |
-| M15 | Cihaz uyumluluğu ve erişilebilirlik | ⏳ Planlandı | Ekran boyutları, koyu tema, yazı ölçeği, yatay yön kararı |
+| M13 | Kaydırdıkça kademeli fiyat çekimi | ✅ Bitti | Emülatörde doğrulandı: BIST'te kaydırılan hisseler partiler hâlinde doldu |
+| M14 | Tema: renk, tipografi, ikon, animasyon | ✅ Bitti | Açık/koyu tema, kategori ve getiri renkleri, ikonlar emülatörde doğrulandı |
+| M15 | Cihaz uyumluluğu ve erişilebilirlik | ⏳ Planlandı | Ekran boyutları, koyu tema, yazı ölçeği, yatay yön kararı — gerçek cihazda yapılacak |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -77,7 +77,7 @@ ilk günden başlatılır.
 | M10 | Kategori ikonları | ✅ Bitti | Renkli minimalist ikonlar: Ekle, Portföy ve Performans kategori satırları |
 | M11 | Uygulama adı ve simgesi | ✅ Bitti | "Portföy Takip", uyarlanabilir simge (halka + kırmızı dilim motifi) |
 | M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi, Play Store incelemesi |
-| M13 | Kaydırdıkça kademeli fiyat çekimi | ⏳ Planlandı | S–M |
+| M13 | Kaydırdıkça kademeli fiyat çekimi | ✅ Bitti | S–M |
 | M14 | Tema: renk, tipografi, ikon, animasyon | ⏳ Planlandı | L |
 | M15 | Cihaz uyumluluğu ve erişilebilirlik | ⏳ Planlandı | S |
 
@@ -654,7 +654,7 @@ görünüyordu (kategori açılışında toplu tazeleme yoktu) → düzeltildi, 
 
 ---
 
-## M13 — Kaydırdıkça kademeli fiyat çekimi
+## M13 — Kaydırdıkça kademeli fiyat çekimi — ✅ Bitti (2026-09-22)
 
 **Sorun.** Kategori açılışında yalnız ilk 30 varlık tazeleniyor (karar 32). BIST'te 537 hisse var;
 kullanıcı aşağı kaydırdığında geri kalanı "—" görüyor. Tamamını açılışta çekmek ise günlük Yahoo
@@ -682,7 +682,7 @@ kaydırıp fiyatların partiler hâlinde dolduğu görsel olarak.
 
 ---
 
-## M14 — Tema: renk, tipografi, ikon, animasyon
+## M14 — Tema: renk, tipografi, ikon, animasyon — ✅ Bitti (2026-09-23)
 
 Faz 1'in bilinçli olarak dışarıda bıraktığı (15/1) dört madde birlikte ele alınır: wireframe gri
 düzeninden gerçek bir uygulama görünümüne geçiş. **İlke: minimalizm.** Veri kahraman; renk yalnız
@@ -789,6 +789,16 @@ Kısa, amaçlı, abartısız. Hepsi 150–250 ms, standart easing.
 - `getiriRengi` için birim test (artı → kazanç, eksi → kayıp, sıfır ve `null` → nötr).
 
 **Boyut:** L (projenin en büyük tek görsel işi).
+
+**Doğrulama sonucu (2026-09-23):** `core:calc` birim testleri (yön/renk eşlemesi dahil) ve
+`app:compileDebugKotlin` yeşil. Emülatörde Portföy, Performans ve Ekle sekmeleri hem açık hem koyu
+temada elle gezildi: kategori renkleri (ABD mavi, BIST turuncu, Fon mor, Emtia altın, Döviz camgöbeği,
+Nakit nötr gri) ve getiri renkleri (artı yeşil, sıfır getiri kartında gözlemlendi) beklendiği gibi.
+İkonlar tutarlı (Outlined aile, Fon→`AccountBalance`, Emtia→özel külçe vektörü). Yazı ölçeği %130
+testi emülatörde `settings put system font_scale` sistem ayarının yeni pencereye yansımaması nedeniyle
+görsel olarak doğrulanamadı (ortam kısıtı); kod tarafı `sp` birimleriyle yazıldığı ve `fontScale`
+override'ı olmadığı için doğru ölçeklenmesi bekleniyor — kesin doğrulama gerçek cihazda M15 ile birlikte
+yapılacak.
 
 ---
 

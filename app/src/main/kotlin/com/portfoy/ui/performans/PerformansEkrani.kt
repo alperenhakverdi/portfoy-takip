@@ -43,6 +43,7 @@ import com.portfoy.ui.bilesenler.CizgiGrafik
 import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.tr
+import com.portfoy.ui.tema.getiriRengi
 
 /**
  * Sekme 2 — Performans. Grafik, yüzdesel getiri ve TL bazlı kâr/zarar birlikte gösterilir.
@@ -78,10 +79,10 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                 Text("Seçilen dönemdeki getiri", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     TrFormat.signedPercent(ekran.toplamYuzde),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = getiriRengi(ekran.toplamYuzde),
                 )
-                Text(TrFormat.signedMoney(ekran.toplamTl), style = MaterialTheme.typography.titleMedium)
+                Text(TrFormat.signedMoney(ekran.toplamTl), style = MaterialTheme.typography.titleMedium, color = getiriRengi(ekran.toplamTl))
                 Spacer(Modifier.height(12.dp))
 
                 if (ekran.getiri.size < 2) {
@@ -159,8 +160,8 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                     // Yüzde ve TL yan yana değil alt alta: büyük değerlerde (ör. %12.332,00) satır taşıp
                     // iki metnin üst üste binmesini önler, her biri satırın tamamını kullanabilir.
                     Column(horizontalAlignment = Alignment.End) {
-                        Text(TrFormat.signedPercent(grup.yuzde), fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text(TrFormat.signedMoney(grup.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                        Text(TrFormat.signedPercent(grup.yuzde), fontWeight = FontWeight.Bold, maxLines = 1, color = getiriRengi(grup.yuzde))
+                        Text(TrFormat.signedMoney(grup.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1, color = getiriRengi(grup.tl))
                     }
                 }
 
@@ -187,8 +188,8 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                                     }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text(TrFormat.signedPercent(satir.yuzde), style = MaterialTheme.typography.bodyMedium, maxLines = 1)
-                                    Text(TrFormat.signedMoney(satir.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                    Text(TrFormat.signedPercent(satir.yuzde), style = MaterialTheme.typography.bodyMedium, maxLines = 1, color = getiriRengi(satir.yuzde))
+                                    Text(TrFormat.signedMoney(satir.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1, color = getiriRengi(satir.tl))
                                 }
                             }
                         }

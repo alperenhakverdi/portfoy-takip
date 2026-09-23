@@ -59,6 +59,7 @@ import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.etiket
+import com.portfoy.ui.tema.getiriRengi
 import java.time.LocalDate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -265,7 +266,7 @@ private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(TrFormat.money(sonuc.lastPriceTl), style = MaterialTheme.typography.bodyMedium)
                 sonuc.dailyChangePercent?.let {
-                    Text(TrFormat.signedPercent(it), style = MaterialTheme.typography.labelSmall)
+                    Text(TrFormat.signedPercent(it), style = MaterialTheme.typography.labelSmall, color = getiriRengi(it))
                 }
             }
         }

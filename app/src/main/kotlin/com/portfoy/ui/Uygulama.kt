@@ -1,5 +1,8 @@
 package com.portfoy.ui
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.ime
@@ -34,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import com.portfoy.ui.ekle.EkleEkrani
 import com.portfoy.ui.performans.PerformansEkrani
 import com.portfoy.ui.portfoy.PortfoyEkrani
+import com.portfoy.ui.tema.Animasyon
 import kotlinx.coroutines.launch
 
 /**
@@ -81,7 +85,17 @@ fun Uygulama() {
     ) { ic ->
         // Uygulama açıldığında varsayılan sekme 3'tür (Portföy). Sekmeler arası geçmiş tutulmaz: başka sekmede
         // geri tuşu Portföy'e döner, Portföy'de uygulamadan çıkar. Her sekmenin durumu ViewModel'inde korunur.
-        NavHost(nav, startDestination = Sekme.PORTFOY.rota, modifier = Modifier.padding(ic).consumeWindowInsets(ic).imePadding()) {
+        // Sekme geçişi kısa bir fade-through ile yapılır (M14.6): kayma/büyüme değil, yalnızca solma —
+        // "hangi yöne gidiliyor" hissi vermez çünkü alt bar sekmeleri bir sıra değil, bağımsız üç ekrandır.
+        NavHost(
+            nav,
+            startDestination = Sekme.PORTFOY.rota,
+            modifier = Modifier.padding(ic).consumeWindowInsets(ic).imePadding(),
+            enterTransition = { fadeIn(tween(Animasyon.KISA_MS)) },
+            exitTransition = { fadeOut(tween(Animasyon.KISA_MS)) },
+            popEnterTransition = { fadeIn(tween(Animasyon.KISA_MS)) },
+            popExitTransition = { fadeOut(tween(Animasyon.KISA_MS)) },
+        ) {
             composable(Sekme.EKLE.rota) {
                 EkleEkrani(onKaydedildi = {
                     nav.sekmeyeGit(Sekme.PORTFOY.rota)

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Açılış anı için (Compose içeriği çizilene kadarki kısa an): sistem gün/gece temasını takip
+        eder ki koyu modda kısa bir açık tema "flaşı" görünmesin. Asıl tema Compose seviyesinde
+        PortfoyTemasi'dır (ui/tema/Tema.kt, M14); bu yalnızca pencere arka planı içindir.
+    -->
+    <style name="Theme.Portfoy" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

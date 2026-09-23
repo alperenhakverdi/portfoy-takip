@@ -1,5 +1,6 @@
 package com.portfoy.calc
 
+import com.portfoy.calc.format.GetiriYonu
 import com.portfoy.calc.format.TrFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -45,6 +46,21 @@ class TrFormatTest {
         assertEquals("%0,00", TrFormat.signedPercent(bd("0.001")))
         assertEquals("%0,00", TrFormat.signedPercent(bd("-0.001")))
         assertEquals("%0,00", TrFormat.signedPercent(bd("0")))
+    }
+
+    @Test
+    fun `yon artiya eksiye ve notre dogru esler`() {
+        assertEquals(GetiriYonu.ARTI, TrFormat.yon(bd("12.4")))
+        assertEquals(GetiriYonu.EKSI, TrFormat.yon(bd("-3.1")))
+        assertEquals(GetiriYonu.NOTR, TrFormat.yon(bd("0")))
+        assertEquals(GetiriYonu.NOTR, TrFormat.yon(null))
+    }
+
+    @Test
+    fun `yon da isaretle ayni yuvarlama kuralini kullanir, ikisi hep birlikte degisir`() {
+        // signedPercent isaretsiz kaldigi her yerde yon de NOTR olmali (M14.2: renk ve isaret aynı hesaptan).
+        assertEquals(GetiriYonu.NOTR, TrFormat.yon(bd("0.001")))
+        assertEquals(GetiriYonu.NOTR, TrFormat.yon(bd("-0.001")))
     }
 
     @Test

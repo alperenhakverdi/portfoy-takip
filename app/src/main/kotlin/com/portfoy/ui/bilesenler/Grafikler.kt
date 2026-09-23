@@ -1,5 +1,8 @@
 package com.portfoy.ui.bilesenler
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,7 +30,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -36,16 +39,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.portfoy.calc.AllocationSlice
 import com.portfoy.calc.format.TrFormat
-import com.portfoy.ui.tema.Gri
+import com.portfoy.model.Category
+import com.portfoy.ui.tema.AppTema
+import com.portfoy.ui.tema.LocalReducedMotion
 import kotlin.math.roundToInt
 
 /**
- * Kategori dağılımı halka grafiği. Wireframe'de dilimler gri tonu ve desenle temsil edilir:
- * tek sıradaki dilimler düz, çift sıradakiler ek olarak kesik çizgilidir. Her dilimin etiketi ayrı listededir.
+ * Kategori dağılımı halka grafiği. Her dilim kendi kategori rengini kullanır (M14.3) — gri
+ * tonlar/desenler yerine, gerçek ve tutarlı bir renk kimliği. İlk çizimde 500 ms'lik bir sweep
+ * animasyonuyla açılır (M14.6); sistemde "animasyonları azalt" açıksa bu animasyon atlanır.
  */
 @Composable
 fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) {
+    val renkler = AppTema.renkler
     val aciklama = dilimler.joinToString { "${it.category.etiket()} ${TrFormat.percent(it.percent)}" }
+    val azaltilmisAnimasyon = LocalReducedMotion.current
+    val ilerleme = remember(dilimler) { Animatable(if (azaltilmisAnimasyon) 1f else 0f) }
+    LaunchedEffect(dilimler, azaltilmisAnimasyon) {
+        if (!azaltilmisAnimasyon) ilerleme.animateTo(1f, tween(500, easing = FastOutSlowInEasing))
+    }
+
     Canvas(
         modifier
             .aspectRatio(1f)
@@ -57,42 +70,33 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
         val ust = (size.height - cap) / 2f
         val boslukAcisi = if (dilimler.size > 1) 1.5f else 0f
         var baslangic = -90f
-        dilimler.forEachIndexed { i, dilim ->
-            val tam = dilim.percent.toFloat() / 100f * 360f
-            val tarama = (tam - boslukAcisi).coerceAtLeast(0.5f)
-            drawArc(
-                color = Gri.Dilimler[i % Gri.Dilimler.size],
-                startAngle = baslangic + boslukAcisi / 2f,
-                sweepAngle = tarama,
-                useCenter = false,
-                topLeft = Offset(sol, ust),
-                size = Size(cap, cap),
-                style = Stroke(width = kalinlik, cap = StrokeCap.Butt),
-            )
-            if (i % 2 == 1) {
+        dilimler.forEach { dilim ->
+            val tam = dilim.percent.toFloat() / 100f * 360f * ilerleme.value
+            val tarama = (tam - boslukAcisi).coerceAtLeast(if (tam > 0f) 0.5f else 0f)
+            if (tarama > 0f) {
                 drawArc(
-                    color = Color.White,
+                    color = renkler.kategoriRengi(dilim.category),
                     startAngle = baslangic + boslukAcisi / 2f,
                     sweepAngle = tarama,
                     useCenter = false,
                     topLeft = Offset(sol, ust),
                     size = Size(cap, cap),
-                    style = Stroke(width = kalinlik * 0.28f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))),
+                    style = Stroke(width = kalinlik, cap = StrokeCap.Butt),
                 )
             }
-            baslangic += tam
+            baslangic += dilim.percent.toFloat() / 100f * 360f
         }
     }
 }
 
-/** Açıklama listesindeki dilim işareti: grafikteki dilimle aynı gri ton. */
+/** Açıklama listesindeki dilim işareti: grafikteki dilimle aynı kategori rengi. */
 @Composable
-fun DilimIsareti(sira: Int, modifier: Modifier = Modifier) {
+fun DilimIsareti(kategori: Category, modifier: Modifier = Modifier) {
+    val renkler = AppTema.renkler
     Box(
         modifier
             .size(14.dp)
-            .border(1.dp, Gri.Koyu)
-            .background(Gri.Dilimler[sira % Gri.Dilimler.size]),
+            .background(renkler.kategoriRengi(kategori), shape = androidx.compose.foundation.shape.CircleShape),
     )
 }
 

@@ -75,6 +75,10 @@ import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
 import com.portfoy.ui.bilesenler.tr
+import com.portfoy.ui.tema.getiriRengi
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -168,9 +172,9 @@ private fun PortfoyIcerigi(
                     DonutGrafik(ozet.allocation, Modifier.width(190.dp))
                 }
                 Spacer(Modifier.height(12.dp))
-                ozet.allocation.forEachIndexed { i, dilim ->
+                ozet.allocation.forEach { dilim ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                        DilimIsareti(i)
+                        DilimIsareti(dilim.category)
                         Spacer(Modifier.width(10.dp))
                         Text(dilim.category.etiket(), Modifier.weight(1f))
                         Text(TrFormat.percent(dilim.percent), fontWeight = FontWeight.Bold)
@@ -186,8 +190,7 @@ private fun PortfoyIcerigi(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         TrFormat.money(ozet.totalValue),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.displaySmall,
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(onClick = vm::degerGrafiginiAcKapat) {
@@ -197,6 +200,7 @@ private fun PortfoyIcerigi(
                 Text(
                     "${TrFormat.signedPercent(ozet.returnPercent)}   ${TrFormat.signedMoney(ozet.profitLoss)}",
                     style = MaterialTheme.typography.titleMedium,
+                    color = getiriRengi(ozet.returnPercent),
                 )
                 Spacer(Modifier.height(6.dp))
                 GuncellemeBilgisi(ekran, veri.lastUpdate, veri.fxTime, ozet)
@@ -389,9 +393,20 @@ private fun VarlikSatiri(
         }
         Spacer(Modifier.height(2.dp))
         val miktar = if (nakit) "" else "${TrFormat.quantity(sonuc.quantity)} ${sonuc.asset.birimEtiketi()}"
-        val getiri = if (nakit) "" else "${TrFormat.signedPercent(sonuc.returnPercent)}  ${TrFormat.signedMoney(sonuc.profitLoss)}"
+        // Miktar nötr, getiri kısmı renkli: tek satırda iki farklı renk gerektiği için AnnotatedString.
+        val getiriRenk = getiriRengi(sonuc.returnPercent)
         Text(
-            listOf(miktar, getiri).filter { it.isNotBlank() }.joinToString("   •   "),
+            buildAnnotatedString {
+                if (miktar.isNotBlank()) append(miktar)
+                if (!nakit) {
+                    if (miktar.isNotBlank()) append("   •   ")
+                    withStyle(SpanStyle(color = getiriRenk)) {
+                        append(TrFormat.signedPercent(sonuc.returnPercent))
+                        append("  ")
+                        append(TrFormat.signedMoney(sonuc.profitLoss))
+                    }
+                }
+            },
             style = MaterialTheme.typography.bodySmall,
         )
         if (sonuc.priceMissing) Text("fiyat alınamadı", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
