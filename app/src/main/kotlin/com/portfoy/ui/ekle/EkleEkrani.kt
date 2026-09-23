@@ -201,7 +201,7 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                 liste.isNotEmpty() -> {
                     // Arama zorunluysa (ABD, fon) bu liste öne çıkanlardır; hâlâ arama gerektiği hatırlatılır.
                     if (ekran.aramaGerekli && !ekran.aramaAktif) {
-                        item { AramaGerekliKutusu(kategori) }
+                        item { AramaGerekliKutusu() }
                         item { BolumBasligi("Öne çıkanlar") }
                     }
                     items(liste, key = { "varlik-${it.asset.id}" }) { SonucSatiri(it) { vm.sec(it.asset) } }
@@ -217,7 +217,7 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                     }
                 }
 
-                ekran.aramaGerekli -> item { AramaGerekliKutusu(kategori) }
+                ekran.aramaGerekli -> item { AramaGerekliKutusu() }
 
                 else -> item { Text("Yükleniyor…", style = MaterialTheme.typography.bodySmall) }
             }
@@ -236,13 +236,13 @@ private fun BolumBasligi(metin: String) {
 
 /** Küçük gri metin gözden kaçıyordu (kullanıcı "hiçbir şey çıkmıyor" sandı); belirgin bir kutuya alındı. */
 @Composable
-private fun AramaGerekliKutusu(kategori: Category) {
+private fun AramaGerekliKutusu() {
     Kutu {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(10.dp))
             Text(
-                "${kategori.etiket()} kategorisinde binlerce kayıt var, hepsi listelenmez.\nAramak için en az 2 karakter yaz.",
+                "Aramak için en az 2 karakter yaz.",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
             )

@@ -186,7 +186,6 @@ private fun PortfoyIcerigi(
         // Blok 2 — Toplam portföy değeri.
         item {
             Kutu(kalinCerceve = true) {
-                Text("Toplam portföy değeri", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         TrFormat.money(ozet.totalValue),
