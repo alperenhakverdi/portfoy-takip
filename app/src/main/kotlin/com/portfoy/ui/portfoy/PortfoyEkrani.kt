@@ -313,13 +313,6 @@ private fun DegerGrafigi(ekran: PortfoyEkranVerisi, vm: PortfoyViewModel) {
         Spacer(Modifier.height(6.dp))
         Text("portföy geçmişi ${veri.pencere.portfolioDays} gün", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
     }
-    if (veri?.tahmini == true) {
-        Text(
-            if (grafik.gecmisYukleniyor) "Bazı fiyat geçmişleri yükleniyor…" else "Bazı günler için fiyat geçmişi yok; o günler maliyetle gösteriliyor.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
 
 @Composable

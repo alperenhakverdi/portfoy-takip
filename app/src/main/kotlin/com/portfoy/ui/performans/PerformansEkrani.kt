@@ -100,13 +100,6 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                     Spacer(Modifier.height(6.dp))
                     Text("portföy geçmişi ${it.portfolioDays} gün", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                 }
-                if (ekran.tahmini) {
-                    Text(
-                        if (ekran.gecmisYukleniyor) "Bazı fiyat geçmişleri yükleniyor…" else "Bazı günler için fiyat geçmişi yok; o günler maliyetle gösteriliyor.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
 
