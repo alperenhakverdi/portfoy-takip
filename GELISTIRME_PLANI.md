@@ -22,7 +22,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M12 | Bulunan hatalar ve tamamlama turu | ✅ Bitti | Fiyat/performans hatası, terk edilmiş seri temizliği, örnek portföy testi |
 | M13 | Kaydırdıkça kademeli fiyat çekimi | ✅ Bitti | Emülatörde doğrulandı: BIST'te kaydırılan hisseler partiler hâlinde doldu |
 | M14 | Tema: renk, tipografi, ikon, animasyon | ✅ Bitti | Açık/koyu tema, kategori ve getiri renkleri, ikonlar emülatörde doğrulandı |
-| M15 | Cihaz uyumluluğu ve erişilebilirlik | ⏳ Planlandı | Ekran boyutları, koyu tema, yazı ölçeği, yatay yön kararı — gerçek cihazda yapılacak |
+| M15 | Cihaz uyumluluğu ve erişilebilirlik | ✅ Bitti | Küçük/tablet ekran, yazı ölçeği, dikey kilit, TalkBack; emülatörde doğrulandı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -802,21 +802,24 @@ yapılacak.
 
 ---
 
-## M15 — Cihaz uyumluluğu ve erişilebilirlik turu
+## M15 — Cihaz uyumluluğu ve erişilebilirlik turu — ✅ Bitti (2026-09-23)
 
 En sona bırakıldı (kullanıcı: "7'de en son test edebiliriz"). Tema oturduktan sonra anlamlı.
 
-| Kontrol | Nasıl |
-|---|---|
-| Küçük telefon (≈5.4") | Emülatör profili; taşma ve kırpılma kontrolü |
-| Büyük telefon | Mevcut Pixel profili |
-| Tablet (≈10") | Geniş ekranda düzenin dağılıp dağılmadığı |
-| Yazı tipi ölçeği | %85 / %100 / %130 |
-| Koyu tema | Tüm ekranlar |
-| Yatay yön | Şu an kilitli değil; **karar gerekiyor**: ya dikey kilitlenir ya da yatay düzen düzeltilir |
-| Erişilebilirlik | TalkBack ile alt bar ve akordeonlarda içerik açıklamaları |
+| Kontrol | Nasıl | Sonuç |
+|---|---|---|
+| Küçük telefon (≈5.4") | `wm size`/`wm density` ile ana emülatörün ekranı küçültüldü, gerçek portföy verisiyle test edildi | ✅ Taşma/kırpılma yok; kategori adları, büyük TL rakamı, kart genişlikleri sığıyor |
+| Büyük telefon | Mevcut Pixel profili | ✅ M14'te zaten doğrulandı |
+| Tablet (≈10") | `wm size` ile 1600×2560 simüle edildi, gerçek veriyle test edildi | ✅ Taşma yok; ama tek sütun düzeni geniş ekranda yayılıyor, tablete özel düzen yok — bilinçli kapsam dışı (bölüm 6 backlog) |
+| Yazı tipi ölçeği | `settings put system font_scale 1.3` | ✅ Doğrulandı — **emülatörde `am force-stop`+`am start` ile değişikliğin yansıması için tam bir cihaz reboot'u gerekli** (bilinen emülatör kısıtı); reboot sonrası kod doğru ölçeklendi. Gerçek cihazda bu adım gerekmez |
+| Koyu tema | Tüm ekranlar | ✅ M14'te doğrulandı |
+| Yatay yön | Karar verildi: **dikeye kilitlendi** (karar 37) | ✅ `MainActivity` → `android:screenOrientation="portrait"` |
+| Erişilebilirlik | TalkBack açılıp `uiautomator` ile erişilebilirlik ağacı incelendi | ✅ Alt bar ("Ekle"/"Performans"/"Portföy") ve donut özeti (tam metin: "Portföy dağılımı: ABD %52,41, ...") düzgün etiketli. ⚠️ Kategori akordeon satırları alt metinleri (ör. "ABD", "288.002,06 ₺") okunuyor ama açık/kapalı durumu (expanded/collapsed) için ayrı bir `stateDescription` yok — backlog'a not düşüldü |
 
 **Boyut:** S.
+
+**Not:** yazı ölçeği testinde emülatöre özgü bir kısıt bulundu ve dokümante edildi; uygulama kodu
+standart `sp` birimleri kullanıyor, gerçek cihazda ekstra adım gerektirmeden doğru ölçeklenmesi beklenir.
 
 ---
 
@@ -898,5 +901,7 @@ M13–M15 artık **planlandı** (yukarıdaki bölümler) — bu tabloda yalnızc
 | **Özel yazı tipi (ör. Inter)** | Sistem yazı tipi yetersiz görülürse | M14.4 bilinçli olarak sistem yazı tipinde kalıyor (APK boyutu + lisans). Marka kimliği istenirse ayrı bir adım olarak eklenebilir. |
 | **Tam bespoke ikon seti** | Marka kimliği çalışması yapılırsa | M14.5 tutarlılıkla yetiniyor (tek aile + iki özel çizim). Her ikonun elle çizilmesi ayrı bir tasarım işi. |
 | **Widget / ana ekran kısayolu** | İstenirse | Hiç konuşulmadı, fikir olarak burada durur: portföy toplamını ana ekranda gösteren bir widget. |
+| **Tablete özel düzen** | Tablet kullanımı gerçek ihtiyaç olursa | M15'te tablet boyutunda taşma yok ama tek sütun düzeni geniş ekranı optimize kullanmıyor (ör. iki sütunlu düzen). |
+| **Akordeon açık/kapalı erişilebilirlik durumu** | Erişilebilirlik önceliklenirse | M15'te TalkBack testinde görüldü: kategori satırları içerik olarak okunuyor ama "genişletildi/daraltıldı" durumu ayrıca anons edilmiyor (`stateDescription` eksik). |
 
 Yeni bir istek ya da fikir geldiğinde buraya eklenir; hayata geçirildiğinde ilgili milestone'a taşınır.

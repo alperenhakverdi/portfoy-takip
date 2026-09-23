@@ -25,8 +25,11 @@
                 tools:node="remove" />
         </provider>
 
+        <!-- M15: yatay yön kararı — düzen tek sütun ve dikey için tasarlandı (donut, kart, liste);
+             yatayda kırpılma/dağılma yaşatmak yerine dikeye kilitlenir (karar 37). -->
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

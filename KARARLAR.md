@@ -532,3 +532,32 @@ aday olur. Arama sonuçları da aynı `LazyColumn`'u paylaştığı için ayrı 
 
 Emülatörde doğrulandı: BIST'te "B" harfine kadar kaydırılıp bekleyince görünen 8 hissenin tamamı
 gerçek fiyat ve günlük değişimle doldu.
+
+---
+
+## 36. Getiri rengi tek başına anlam taşımaz — işaret her zaman korunur (M14)
+
+**Sorun.** M14 ile getiri artık renkle de gösteriliyor (artı yeşil, eksi kırmızı). Yalnızca renge
+dayanmak renk körü kullanıcıları ve gri tonlamalı ekran görüntülerini (destek, sunum, yazıcı çıktısı)
+dışarıda bırakır.
+
+**Karar.** Renk hiçbir yerde ▲/▼ işaretinin yerine geçmez, yalnızca onu güçlendirir. `getiriRengi`
+ve işaret aynı tek kaynaktan türer (`TrFormat.yon`) — ikisi asla birbirinden bağımsız yuvarlanıp
+çelişmez (`TrFormatTest`'te birlikte test edilir). Sıfır ve `null` için renk daima ikincil metin
+(nötr), yeşil/kırmızı değil — "getiri yok/bilinmiyor" ile "getiri sıfır" karışmasın diye.
+
+---
+
+## 37. Yatay yön: dikeye kilitlendi (M15)
+
+**Sorun.** Gereksinim dokümanı yatay yön için bir karar bırakmamıştı; kilitlenmezse sistem varsayılanı
+serbest döner, ama tüm ekranlar (donut, kart, tek sütun liste) yalnızca dikey için tasarlandı.
+
+**Karar.** `MainActivity` `android:screenOrientation="portrait"` ile dikeye kilitlenir. Yatay düzen
+ayrıca tasarlanmadı — bu bir sonraki faz için bilinçli kapsam dışı bırakma (bölüm 6 backlog'a not
+düşülür), rastgele kırpılmış bir yatay görünüm sunmaktansa dikeye kilitlemek tercih edildi.
+
+**Doğrulama:** emülatörde küçük telefon (720×1600) ve tablet (1600×2560) boyutlarında gerçek
+portföy verisiyle test edildi — dikey düzende hiçbir ekranda taşma/kırpılma görülmedi. Tablette
+tek sütun düzeni genişliği doldurup dağılmıyor ama optimize de değil; tablete özel düzen backlog'a
+not düşüldü.
