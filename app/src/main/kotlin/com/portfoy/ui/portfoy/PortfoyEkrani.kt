@@ -19,23 +19,29 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +66,8 @@ import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
 import com.portfoy.ui.bilesenler.tr
+import com.portfoy.ui.tema.TemaTercihi
+import com.portfoy.ui.tema.TemaViewModel
 import com.portfoy.ui.tema.getiriRengi
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -78,28 +86,71 @@ fun PortfoyEkrani(
     onVarlikTikla: (Long) -> Unit,
     snackbar: SnackbarHostState,
     vm: PortfoyViewModel = hiltViewModel(),
+    temaVm: TemaViewModel = hiltViewModel(),
 ) {
     val ekran by vm.ekran.collectAsState()
     val scope = rememberCoroutineScope()
     val bugun = remember { LocalDate.now(UygulamaZamanDilimi) }
+    var temaDialogAcik by remember { mutableStateOf(false) }
 
-    PullToRefreshBox(
-        isRefreshing = ekran.tazeleme.yenileniyor,
-        onRefresh = {
-            scope.launch {
-                if (!vm.yenile()) snackbar.showSnackbar("Fiyatlar az önce güncellendi")
+    Column(Modifier.fillMaxSize()) {
+        // M18 — tema tercihi: sağ üstte küçük bir ikon, üç seçenekli diyalog açar.
+        Row(Modifier.fillMaxWidth().padding(end = 4.dp, top = 4.dp), horizontalArrangement = Arrangement.End) {
+            IconButton(onClick = { temaDialogAcik = true }) {
+                Icon(Icons.Filled.DarkMode, contentDescription = "Tema tercihi")
+            }
+        }
+        PullToRefreshBox(
+            isRefreshing = ekran.tazeleme.yenileniyor,
+            onRefresh = {
+                scope.launch {
+                    if (!vm.yenile()) snackbar.showSnackbar("Fiyatlar az önce güncellendi")
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            val ozet = ekran.ozet
+            when {
+                !ekran.yuklendi || ozet == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Yükleniyor…")
+                }
+                ozet.isEmpty -> BosDurum(onEkleGit)
+                else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla)
+            }
+        }
+    }
+
+    if (temaDialogAcik) {
+        TemaTercihiDialog(temaVm, onKapat = { temaDialogAcik = false })
+    }
+}
+
+@Composable
+private fun TemaTercihiDialog(temaVm: TemaViewModel, onKapat: () -> Unit) {
+    val mevcut by temaVm.tercih.collectAsState()
+    AlertDialog(
+        onDismissRequest = onKapat,
+        title = { Text("Tema") },
+        text = {
+            Column {
+                TemaSecenegi("Sistem", TemaTercihi.SISTEM, mevcut) { temaVm.ayarla(it); onKapat() }
+                TemaSecenegi("Açık", TemaTercihi.ACIK, mevcut) { temaVm.ayarla(it); onKapat() }
+                TemaSecenegi("Koyu", TemaTercihi.KOYU, mevcut) { temaVm.ayarla(it); onKapat() }
             }
         },
-        modifier = Modifier.fillMaxSize(),
+        confirmButton = { TextButton(onClick = onKapat) { Text("Kapat") } },
+    )
+}
+
+@Composable
+private fun TemaSecenegi(etiket: String, deger: TemaTercihi, secili: TemaTercihi, sec: (TemaTercihi) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable { sec(deger) },
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        val ozet = ekran.ozet
-        when {
-            !ekran.yuklendi || ozet == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Yükleniyor…")
-            }
-            ozet.isEmpty -> BosDurum(onEkleGit)
-            else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla)
-        }
+        RadioButton(selected = deger == secili, onClick = { sec(deger) })
+        Spacer(Modifier.width(4.dp))
+        Text(etiket)
     }
 }
 

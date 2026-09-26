@@ -6,8 +6,11 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.portfoy.model.Category
 
 /**
@@ -132,7 +135,14 @@ private fun materialSemasi(r: AppRenkler, koyuMu: Boolean) = if (koyuMu) {
 
 @Composable
 fun PortfoyTemasi(content: @Composable () -> Unit) {
-    val koyuMu = isSystemInDarkTheme()
+    // M18: kullanıcı elle Açık/Koyu seçebilir; varsayılan Sistem eski otomatik davranışın aynısı.
+    val temaVm: TemaViewModel = hiltViewModel()
+    val tercih by temaVm.tercih.collectAsState()
+    val koyuMu = when (tercih) {
+        TemaTercihi.SISTEM -> isSystemInDarkTheme()
+        TemaTercihi.ACIK -> false
+        TemaTercihi.KOYU -> true
+    }
     val renkler = if (koyuMu) KoyuRenkler else AcikRenkler
     val azaltilmisAnimasyon = rememberReducedMotion()
     CompositionLocalProvider(
