@@ -23,7 +23,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M13 | Kaydırdıkça kademeli fiyat çekimi | ✅ Bitti | Emülatörde doğrulandı: BIST'te kaydırılan hisseler partiler hâlinde doldu |
 | M14 | Tema: renk, tipografi, ikon, animasyon | ✅ Bitti | Açık/koyu tema, kategori ve getiri renkleri, ikonlar emülatörde doğrulandı |
 | M15 | Cihaz uyumluluğu ve erişilebilirlik | ✅ Bitti | Küçük/tablet ekran, yazı ölçeği, dikey kilit, TalkBack; emülatörde doğrulandı |
-| M16 | UI temizliği (kullanıcı geri bildirimi) | ⏳ Planlandı | "Son eklenenler" kaldırılır, grafik kartı notları sadeleşir, Performans satırları kısalır |
+| M16 | UI temizliği (kullanıcı geri bildirimi) | ✅ Bitti | "Son eklenenler" kaldırıldı, grafik kartı notları sadeleşti, Performans satırları kısaldı |
 | M17 | Varlık yönetimi ekranı | ⏳ Planlandı | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri, ilk gerçek Room migration'ı |
 | M18 | Tema tercihi: açık/koyu/sistem | ⏳ Planlandı | Şu an yalnızca sistemi izliyor; kullanıcının elle seçebileceği bir tercih eklenir |
 
@@ -826,7 +826,7 @@ standart `sp` birimleri kullanıyor, gerçek cihazda ekstra adım gerektirmeden 
 
 ---
 
-## M16 — UI temizliği (kullanıcı geri bildirimi, 2026-09-26)
+## M16 — UI temizliği (kullanıcı geri bildirimi, 2026-09-26) — ✅ Bitti
 
 Örnek portföyle gerçek kullanımda görülen dört küçük fazlalık kaldırılır.
 
