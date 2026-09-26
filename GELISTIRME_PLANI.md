@@ -23,6 +23,8 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M13 | Kaydırdıkça kademeli fiyat çekimi | ✅ Bitti | Emülatörde doğrulandı: BIST'te kaydırılan hisseler partiler hâlinde doldu |
 | M14 | Tema: renk, tipografi, ikon, animasyon | ✅ Bitti | Açık/koyu tema, kategori ve getiri renkleri, ikonlar emülatörde doğrulandı |
 | M15 | Cihaz uyumluluğu ve erişilebilirlik | ✅ Bitti | Küçük/tablet ekran, yazı ölçeği, dikey kilit, TalkBack; emülatörde doğrulandı |
+| M16 | UI temizliği (kullanıcı geri bildirimi) | ⏳ Planlandı | "Son eklenenler" kaldırılır, grafik kartı notları sadeleşir, Performans satırları kısalır |
+| M17 | Varlık yönetimi ekranı | ⏳ Planlandı | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri, ilk gerçek Room migration'ı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -823,6 +825,68 @@ standart `sp` birimleri kullanıyor, gerçek cihazda ekstra adım gerektirmeden 
 
 ---
 
+## M16 — UI temizliği (kullanıcı geri bildirimi, 2026-09-26)
+
+Örnek portföyle gerçek kullanımda görülen dört küçük fazlalık kaldırılır.
+
+| # | Değişiklik | Dosya |
+|---|---|---|
+| 1 | Ekle ekranındaki "Son eklenenler" kısayol listesi tamamen kaldırılır | `EkleEkrani.kt` (`KisayolSatiri` composable'ı ve `EkleViewModel.sonEklenenler` alanı, `depo.observeRecentAssets()` bağlantısı dahil) |
+| 2 | Grafik kartından "portföy geçmişi X gün" notu kaldırılır (Portföy ve Performans'ta aynı yapı) | `PortfoyEkrani.kt`, `PerformansEkrani.kt` |
+| 3 | Performans kategori satırında "N varlık" alt yazısı yerine kategorinin toplam getiri yüzdesi yazılır (artı→yeşil, eksi→kırmızı, `getiriRengi`) | `PerformansEkrani.kt` |
+| 4 | Performans varlık satırındaki uzun ad ("ALPHABET INC-CL A" gibi) kaldırılır, yalnızca kod kalır | `PerformansEkrani.kt` |
+
+**Kabul kriteri:** emülatörde Ekle/Portföy/Performans gezilip dört maddenin de kalktığı, kalan
+metinlerin taşmadığı doğrulanır.
+
+**Boyut:** S — veri modeli değişmiyor, yalnızca UI.
+
+---
+
+## M17 — Varlık yönetimi ekranı (kullanıcı geri bildirimi, 2026-09-26)
+
+**Sorun.** Bir varlığa (Portföy'de veya Performans'ta) tıklayınca detay şu an aynı liste içinde
+akordeon gibi açılıyor (`VarlikDetayi`, yalnızca Portföy'de var). Kullanıcı bunun yerine **ayrı, tam
+ekran bir yönetim sayfası** istiyor — hem Portföy'den hem Performans'tan aynı sayfaya gidilsin.
+
+**Çözüm.** Uygulamada zaten 3 sekme için bir `NavHost` var (`Uygulama.kt`); dördüncü bir rota eklemek
+mimariye uyuyor.
+
+### M17.1 — Yeni rota ve ekran
+- `varlik/{assetId}` rotası, yeni `VarlikYonetimEkrani` composable'ı.
+- Mevcut inline `VarlikDetayi` içeriği (ağırlıklı ortalama maliyet, güncel fiyat, toplam maliyet,
+  toplam getiri, "Fiyatı elle güncelle", hareket listesi + düzenle/sil) buraya taşınır.
+- Portföy'deki ve Performans'taki varlık satırları artık akordeon açmak yerine bu rotaya
+  yönlendirir (`nav.navigate("varlik/${asset.id}")`); geri tuşu kaldığı sekmeye döner.
+
+### M17.2 — "+ Ekle" / "− Azalt"
+- **"+ Ekle":** mevcut alım formu (`AlimFormAlanlari`) yeniden kullanılır, yeni bir hareket
+  (adet + fiyat + tarih + isteğe bağlı komisyon/not) eklenir. Yeni altyapı gerekmez.
+- **"− Azalt":** aynı form, ters yönde — azaltılan adet + o anki fiyat girilir, **ayrı bir azaltma
+  hareketi** olarak kaydedilir (var olan alım kayıtlarını değiştirmez; onlar için düzenle/sil zaten var).
+
+### M17.3 — Veri modeli: ilk gerçek Room migration'ı
+- `transactions` tablosuna yön bilgisi eklenir (alım/azaltma).
+- M1'de ayrılmış "migration testi ilk şema değişikliğinde" notu tam burada devreye girer:
+  migration'ın mevcut veriyi bozmadığı birim testle doğrulanır.
+
+### M17.4 — Hesaplama çekirdeği
+- `core/calc`'taki ağırlıklı ortalama maliyet hesabı azaltmayı işler: **azaltma ortalama maliyeti
+  değiştirmez**, yalnızca kalan adet ve toplam maliyeti orantılı düşürür.
+- **Kapsam kararı:** gerçekleşen kâr/zarar bu turda hesaplanmaz/gösterilmez — yalnızca adet ve
+  toplam maliyet düşer. Gerçekleşen kâr/zarar istenirse ayrı bir iş olarak bölüm 6'ya eklenir.
+- Yeni senaryolar birim testle: azaltma sonrası ortalama maliyet sabit kalıyor mu, adet sıfıra
+  inince varlık nasıl davranıyor (portföyden düşer mi, karar gerekebilir).
+
+### M17.5 — Kabul turu
+Emülatörde uçtan uca: bir varlığa alım ekle → azalt → adet/toplam maliyet/ortalama maliyet doğru
+mu, migration'dan önceki örnek portföy verisi bozulmadan mı geçti, Portföy ve Performans'tan
+gidilen ekran aynı mı davranıyor.
+
+**Boyut:** L — yeni ekran + gerçek migration + hesaplama mantığı değişikliği (M14 seviyesinde).
+
+---
+
 ## 3. Risk kaydı
 
 | Risk | Etki | Önlem |
@@ -903,5 +967,6 @@ M13–M15 artık **planlandı** (yukarıdaki bölümler) — bu tabloda yalnızc
 | **Widget / ana ekran kısayolu** | İstenirse | Hiç konuşulmadı, fikir olarak burada durur: portföy toplamını ana ekranda gösteren bir widget. |
 | **Tablete özel düzen** | Tablet kullanımı gerçek ihtiyaç olursa | M15'te tablet boyutunda taşma yok ama tek sütun düzeni geniş ekranı optimize kullanmıyor (ör. iki sütunlu düzen). |
 | **Akordeon açık/kapalı erişilebilirlik durumu** | Erişilebilirlik önceliklenirse | M15'te TalkBack testinde görüldü: kategori satırları içerik olarak okunuyor ama "genişletildi/daraltıldı" durumu ayrıca anons edilmiyor (`stateDescription` eksik). |
+| **Gerçekleşen kâr/zarar (azaltma/satıştan)** | İstenirse | M17.4'te bilinçli olarak kapsam dışı bırakıldı: "azaltma" hareketi adet/toplam maliyeti düşürür ama satıştan doğan kâr/zararı ayrıca hesaplayıp göstermez. |
 
 Yeni bir istek ya da fikir geldiğinde buraya eklenir; hayata geçirildiğinde ilgili milestone'a taşınır.
