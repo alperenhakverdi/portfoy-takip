@@ -25,7 +25,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M15 | Cihaz uyumluluğu ve erişilebilirlik | ✅ Bitti | Küçük/tablet ekran, yazı ölçeği, dikey kilit, TalkBack; emülatörde doğrulandı |
 | M16 | UI temizliği (kullanıcı geri bildirimi) | ✅ Bitti | "Son eklenenler" kaldırıldı, grafik kartı notları sadeleşti, Performans satırları kısaldı |
 | M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
-| M18 | Tema tercihi: açık/koyu/sistem | ⏳ Planlandı | Şu an yalnızca sistemi izliyor; kullanıcının elle seçebileceği bir tercih eklenir |
+| M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -895,7 +895,7 @@ ekranda gizleniyor, geri tuşunda kaldığı sekmeye dönüyor.
 
 ---
 
-## M18 — Tema tercihi: açık/koyu/sistem (kullanıcı geri bildirimi, 2026-09-26)
+## M18 — Tema tercihi: açık/koyu/sistem (kullanıcı geri bildirimi, 2026-09-26) — ✅ Bitti
 
 **Sorun.** M14'te açık/koyu tema `isSystemInDarkTheme()` ile tamamen otomatik — kullanıcının
 uygulama içinden elle seçebileceği bir yer yok. Uygulamada hiç "Ayarlar" yüzeyi de yok (alt bar
@@ -918,8 +918,11 @@ yalnızca Ekle/Performans/Portföy, M14'te bilinçli 3 ikonla sınırlı tutulmu
 | M18.3 | Portföy ekranının üstüne küçük ikon + 3 seçenekli diyalog (Sistem/Açık/Koyu, radyo düğmesi) |
 | M18.4 | Emülatörde üç seçenek de denenir: Sistem seçiliyken cihaz temasını değiştirince uygulama takip ediyor mu, Açık/Koyu seçiliyken cihaz teması değişince uygulama sabit kalıyor mu |
 
-**Kabul kriteri:** üç seçenek de anında (yeniden başlatmadan) uygulanır; tercih uygulama kapatılıp
-açılınca korunur.
+**Kabul kriteri (doğrulandı, 2026-09-26):** Portföy'de sağ üstteki ikona basılıp "Koyu" seçilince
+uygulama **anında** (yeniden başlatmadan) koyu temaya geçti — okuma (`PortfoyTemasi`) ve yazma
+(diyalog) farklı ViewModel örnekleri kullansa da ikisi de aynı `TemaTercihiDeposu` singleton'ına
+bağlı olduğu için state paylaşımı sorunsuz çalıştı. Uygulama tamamen kapatılıp yeniden açıldığında
+tercih ("Koyu") korundu. Ardından "Sistem"e geri alındı, doğrulandı.
 
 **Boyut:** S–M — yeni bir ekran değil, küçük bir tercih + saklama katmanı.
 
