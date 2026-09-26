@@ -24,7 +24,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M14 | Tema: renk, tipografi, ikon, animasyon | ✅ Bitti | Açık/koyu tema, kategori ve getiri renkleri, ikonlar emülatörde doğrulandı |
 | M15 | Cihaz uyumluluğu ve erişilebilirlik | ✅ Bitti | Küçük/tablet ekran, yazı ölçeği, dikey kilit, TalkBack; emülatörde doğrulandı |
 | M16 | UI temizliği (kullanıcı geri bildirimi) | ✅ Bitti | "Son eklenenler" kaldırıldı, grafik kartı notları sadeleşti, Performans satırları kısaldı |
-| M17 | Varlık yönetimi ekranı | ⏳ Planlandı | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri, ilk gerçek Room migration'ı |
+| M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
 | M18 | Tema tercihi: açık/koyu/sistem | ⏳ Planlandı | Şu an yalnızca sistemi izliyor; kullanıcının elle seçebileceği bir tercih eklenir |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
@@ -844,7 +844,7 @@ metinlerin taşmadığı doğrulanır.
 
 ---
 
-## M17 — Varlık yönetimi ekranı (kullanıcı geri bildirimi, 2026-09-26)
+## M17 — Varlık yönetimi ekranı (kullanıcı geri bildirimi, 2026-09-26) — ✅ Bitti
 
 **Sorun.** Bir varlığa (Portföy'de veya Performans'ta) tıklayınca detay şu an aynı liste içinde
 akordeon gibi açılıyor (`VarlikDetayi`, yalnızca Portföy'de var). Kullanıcı bunun yerine **ayrı, tam
@@ -866,10 +866,13 @@ mimariye uyuyor.
 - **"− Azalt":** aynı form, ters yönde — azaltılan adet + o anki fiyat girilir, **ayrı bir azaltma
   hareketi** olarak kaydedilir (var olan alım kayıtlarını değiştirmez; onlar için düzenle/sil zaten var).
 
-### M17.3 — Veri modeli: ilk gerçek Room migration'ı
-- `transactions` tablosuna yön bilgisi eklenir (alım/azaltma).
-- M1'de ayrılmış "migration testi ilk şema değişikliğinde" notu tam burada devreye girer:
-  migration'ın mevcut veriyi bozmadığı birim testle doğrulanır.
+### M17.3 — Veri modeli
+- `transactions` tablosunda yön bilgisi **zaten vardı** (`TransactionEntity.type`, en baştan
+  `TransactionType` olarak tanımlıydı, kod yorumu "Faz 1'de yalnızca alış vardır; satış sonraki
+  fazda buraya eklenir" diyordu) — yalnızca enum'a `AZALTMA` değeri eklendi.
+- Beklenenin aksine **migration gerekmedi**: Room enum'ları TEXT kolonda ad olarak saklıyor, yeni
+  bir enum değeri şemayı değiştirmiyor. M1'de ayrılan "migration testi ilk şema değişikliğinde"
+  notu bu turda devreye girmedi; ilk gerçek migration hâlâ ileride bir gün olacak.
 
 ### M17.4 — Hesaplama çekirdeği
 - `core/calc`'taki ağırlıklı ortalama maliyet hesabı azaltmayı işler: **azaltma ortalama maliyeti
@@ -879,12 +882,16 @@ mimariye uyuyor.
 - Yeni senaryolar birim testle: azaltma sonrası ortalama maliyet sabit kalıyor mu, adet sıfıra
   inince varlık nasıl davranıyor (portföyden düşer mi, karar gerekebilir).
 
-### M17.5 — Kabul turu
-Emülatörde uçtan uca: bir varlığa alım ekle → azalt → adet/toplam maliyet/ortalama maliyet doğru
-mu, migration'dan önceki örnek portföy verisi bozulmadan mı geçti, Portföy ve Performans'tan
-gidilen ekran aynı mı davranıyor.
+### M17.5 — Kabul turu (2026-09-26, tamamlandı)
+Emülatörde uçtan uca doğrulandı: GOOGL'a 15 adet 6.500 ₺'den alım vardı; "− Azalt" ile 5 adet
+20.000 ₺'den azaltıldı → kalan 10 adet, toplam maliyet 97.500→65.000 ₺, **ortalama maliyet 6.500 ₺
+sabit kaldı** (beklenen davranış). Hareket listesinde azaltma "−5 × 20.000,00 ₺" olarak kalın
+yazıyla ayırt ediliyor. Sil işlemi test edildi: azaltma kaydı silinince adet/maliyet önceki haline
+geri döndü. Aynı ekrana hem Portföy'den hem Performans'tan gidildiğinde davranış özdeş. Alt bar bu
+ekranda gizleniyor, geri tuşunda kaldığı sekmeye dönüyor.
 
-**Boyut:** L — yeni ekran + gerçek migration + hesaplama mantığı değişikliği (M14 seviyesinde).
+**Boyut:** L — yeni ekran + hesaplama mantığı değişikliği (M14 seviyesinde); beklenenden küçük
+çıktı çünkü migration gerekmedi.
 
 ---
 
