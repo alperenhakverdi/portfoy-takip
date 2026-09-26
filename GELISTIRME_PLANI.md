@@ -25,6 +25,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M15 | Cihaz uyumluluğu ve erişilebilirlik | ✅ Bitti | Küçük/tablet ekran, yazı ölçeği, dikey kilit, TalkBack; emülatörde doğrulandı |
 | M16 | UI temizliği (kullanıcı geri bildirimi) | ⏳ Planlandı | "Son eklenenler" kaldırılır, grafik kartı notları sadeleşir, Performans satırları kısalır |
 | M17 | Varlık yönetimi ekranı | ⏳ Planlandı | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri, ilk gerçek Room migration'ı |
+| M18 | Tema tercihi: açık/koyu/sistem | ⏳ Planlandı | Şu an yalnızca sistemi izliyor; kullanıcının elle seçebileceği bir tercih eklenir |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -884,6 +885,36 @@ mu, migration'dan önceki örnek portföy verisi bozulmadan mı geçti, Portföy
 gidilen ekran aynı mı davranıyor.
 
 **Boyut:** L — yeni ekran + gerçek migration + hesaplama mantığı değişikliği (M14 seviyesinde).
+
+---
+
+## M18 — Tema tercihi: açık/koyu/sistem (kullanıcı geri bildirimi, 2026-09-26)
+
+**Sorun.** M14'te açık/koyu tema `isSystemInDarkTheme()` ile tamamen otomatik — kullanıcının
+uygulama içinden elle seçebileceği bir yer yok. Uygulamada hiç "Ayarlar" yüzeyi de yok (alt bar
+yalnızca Ekle/Performans/Portföy, M14'te bilinçli 3 ikonla sınırlı tutulmuştu).
+
+**Karar (önerim, aksini söylemezsen bu şekilde ilerlerim):**
+- Üç seçenekli tercih: **Sistem (varsayılan) / Açık / Koyu.** Varsayılan "Sistem" seçilerek mevcut
+  otomatik davranış hiçbir kullanıcı için değişmeden korunur — yalnızca isteyen elle geçersiz kılar.
+- Tam bir "Ayarlar" sekmesi **açılmaz** (3 ikonluk alt bar M14 kararına göre korunur). Bunun yerine
+  Portföy ekranının üstüne küçük bir ikon konur (güneş/ay sembolü), tıklanınca üç seçenekli küçük bir
+  diyalog açılır. İleride başka tercih eklenirse aynı diyalog büyür — ayrı bir ekrana gerek kalmaz.
+- Saklama: `SharedPreferences` (`ArkaPlanIsleri`/`KatalogGuncelleyici`'de zaten kullanılan desenin
+  aynısı) — yeni bir DataStore bağımlılığı gerekmez.
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M18.1 | `TemaTercihi` (SİSTEM/AÇIK/KOYU) + `SharedPreferences` okuma/yazma katmanı |
+| M18.2 | `PortfoyTemasi`'nda `isSystemInDarkTheme()` yerine tercihe göre karar veren mantık (SİSTEM ise eskisi gibi) |
+| M18.3 | Portföy ekranının üstüne küçük ikon + 3 seçenekli diyalog (Sistem/Açık/Koyu, radyo düğmesi) |
+| M18.4 | Emülatörde üç seçenek de denenir: Sistem seçiliyken cihaz temasını değiştirince uygulama takip ediyor mu, Açık/Koyu seçiliyken cihaz teması değişince uygulama sabit kalıyor mu |
+
+**Kabul kriteri:** üç seçenek de anında (yeniden başlatmadan) uygulanır; tercih uygulama kapatılıp
+açılınca korunur.
+
+**Boyut:** S–M — yeni bir ekran değil, küçük bir tercih + saklama katmanı.
 
 ---
 
