@@ -64,7 +64,6 @@ data class EkleEkranVerisi(
     /** Kategoride çok kayıt var; kullanıcı arama yazmadan liste gösterilmez (ABD, fon). */
     val aramaGerekli: Boolean = false,
     val nakit: Asset? = null,
-    val sonEklenenler: List<Asset> = emptyList(),
     val secili: SeciliVarlik? = null,
     val manuelAcik: Boolean = false,
     val kur: BigDecimal? = null,
@@ -118,7 +117,7 @@ class EkleViewModel @Inject constructor(
             Liste(kategoriListesi = tumu, aramaGerekli = cokKayitVar)
         }
 
-    val ekran: StateFlow<EkleEkranVerisi> = combine(ic, liste, depo.observeRecentAssets()) { ic, liste, son ->
+    val ekran: StateFlow<EkleEkranVerisi> = combine(ic, liste) { ic, liste ->
         EkleEkranVerisi(
             kategori = ic.kategori,
             sorgu = ic.sorgu,
@@ -127,7 +126,6 @@ class EkleViewModel @Inject constructor(
             kategoriListesi = liste.kategoriListesi,
             aramaGerekli = liste.aramaGerekli,
             nakit = ic.nakit,
-            sonEklenenler = son,
             secili = ic.secili,
             manuelAcik = ic.manuelAcik,
             kur = ic.kur,

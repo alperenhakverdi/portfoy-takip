@@ -141,12 +141,6 @@ private fun KategoriGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                 }
             }
         }
-
-        // Sık yapılan iş kısa kalsın: aynı varlığa tekrar alım girmek kategori seçmeden de mümkün.
-        if (ekran.sonEklenenler.isNotEmpty()) {
-            item { BolumBasligi("Son eklenenler") }
-            items(ekran.sonEklenenler, key = { "son-${it.id}" }) { KisayolSatiri(it) { vm.sec(it) } }
-        }
     }
 }
 
@@ -269,17 +263,6 @@ private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
                     Text(TrFormat.signedPercent(it), style = MaterialTheme.typography.labelSmall, color = getiriRengi(it))
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun KisayolSatiri(varlik: Asset, sec: () -> Unit) {
-    Kutu(Modifier.clickable(onClick = sec)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(varlik.code, fontWeight = FontWeight.Bold, modifier = Modifier.width(88.dp))
-            Text(varlik.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            Text(varlik.category.etiket(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

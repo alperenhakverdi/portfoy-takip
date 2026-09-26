@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.portfoy.calc.format.TrFormat
@@ -96,10 +95,6 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                         etiket = { i -> "${ekran.getiri[i].first.tr()} • ${TrFormat.signedPercent(ekran.getiri[i].second)}" },
                     )
                 }
-                ekran.pencere?.takeIf { it.truncated }?.let {
-                    Spacer(Modifier.height(6.dp))
-                    Text("portföy geçmişi ${it.portfolioDays} gün", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                }
             }
         }
 
@@ -144,9 +139,9 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                         Column {
                             Text(grup.kategori.etiket(), fontWeight = FontWeight.Bold)
                             Text(
-                                "${grup.varliklar.size} varlık",
+                                TrFormat.signedPercent(grup.yuzde),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = getiriRengi(grup.yuzde),
                             )
                         }
                     }
@@ -174,7 +169,6 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1.4f).padding(start = 30.dp)) {
                                     Text(satir.varlik.code, fontWeight = FontWeight.Bold)
-                                    Text(satir.varlik.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     // Dönemin tamamında portföyde olmayan varlıklar listede kalır, yanlarında giriş tarihi yazar.
                                     satir.girisTarihi?.let {
                                         Text("giriş: ${it.tr()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)

@@ -196,14 +196,4 @@ class PortfolioRepository(
 
     /** Portföydeki en eski işlem tarihi ("Tümü" dönemi ve portföy yaşı için). */
     suspend fun oldestPurchaseDate(): LocalDate? = transactionDao.oldestTradeDate()
-
-    /** Son işlem yapılan varlıklar (arama boşken kısayol). */
-    fun observeRecentAssets(limit: Int = 6): Flow<List<Asset>> = combine(
-        assetDao.observeHeldAssets(),
-        transactionDao.observeAll(),
-    ) { assets, transactions ->
-        val order = transactions.sortedByDescending { it.createdAt }.map { it.assetId }.distinct()
-        val byId = assets.associateBy { it.id }
-        order.mapNotNull { byId[it] }.take(limit).map { it.toModel() }
-    }
 }

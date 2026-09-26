@@ -308,11 +308,6 @@ private fun DegerGrafigi(ekran: PortfoyEkranVerisi, vm: PortfoyViewModel) {
             etiket = { i -> "${veri.noktalar[i].date.tr()} • ${TrFormat.money(veri.noktalar[i].valueTl)}" },
         )
     }
-    // Portföy seçilen dönemden gençse grafik yalnızca mevcut veri kadar çizilir.
-    if (veri?.pencere?.truncated == true) {
-        Spacer(Modifier.height(6.dp))
-        Text("portföy geçmişi ${veri.pencere.portfolioDays} gün", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-    }
 }
 
 @Composable

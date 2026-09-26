@@ -241,17 +241,4 @@ class PortfoyDeposuTest {
         assertNotNull(depo.cashAsset())
         assertEquals(Category.NAKIT, depo.cashAsset()!!.category)
     }
-
-    @Test
-    fun `son eklenen varliklar en yeniden eskiye siralanir`() = runBlocking {
-        val a = varlik("AAA", "Bir", Category.BIST)
-        val b = varlik("BBB", "İki", Category.BIST)
-        val kaydet = { id: Long -> runBlocking { depo.addPurchase(id, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, LocalDate.of(2026, 8, 1), null) } }
-        kaydet(a)
-        // createdAt sabit saatle aynı; sıralama kararlı olsun diye ikinciyi sonraya bırak
-        kaydet(b)
-
-        val son = depo.observeRecentAssets().first().map { it.code }
-        assertEquals(setOf("AAA", "BBB"), son.toSet())
-    }
 }
