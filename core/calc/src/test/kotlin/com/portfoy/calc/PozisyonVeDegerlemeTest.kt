@@ -2,6 +2,7 @@ package com.portfoy.calc
 
 import com.portfoy.model.Category
 import com.portfoy.model.UnitType
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -40,6 +41,62 @@ class PozisyonVeDegerlemeTest {
     @Test
     fun `adet sifirsa birim maliyet tanimsiz`() {
         assertNullValue(positionOf(emptyList()).unitCost)
+    }
+
+    @Test
+    fun `azaltma sonrasi agirlikli ortalama maliyet degismez`() {
+        // 20 adet 100'den (2000 maliyet, ortalama 100) -> 5 adet azalt (fiyati onemsiz, gerceklesen kar zarar yok)
+        val position = positionOf(
+            listOf(
+                alis(1, "20", "100", date = LocalDate.of(2026, 1, 1)),
+                azalt(1, "5", "999", date = LocalDate.of(2026, 1, 5)),
+            ),
+        )
+        assertBd("15", position.quantity)
+        assertBd("1500", position.totalCost)
+        assertBd("100", position.unitCost)
+    }
+
+    @Test
+    fun `azaltma elde olandan fazlaysa sifirda durur`() {
+        val position = positionOf(
+            listOf(
+                alis(1, "10", "50", date = LocalDate.of(2026, 1, 1)),
+                azalt(1, "999", date = LocalDate.of(2026, 1, 2)),
+            ),
+        )
+        assertBd("0", position.quantity)
+        assertBd("0", position.totalCost)
+        assertNullValue(position.unitCost)
+    }
+
+    @Test
+    fun `azaltma sonrasi yeni alim ortalamayi yeniden hesaplar`() {
+        // 10 adet 100'den (1000) -> 5 azalt (kalan 5 adet, 500 maliyet) -> 5 adet 200'den al (1000 daha)
+        // kalan: 10 adet, 1500 maliyet, ortalama 150.
+        val position = positionOf(
+            listOf(
+                alis(1, "10", "100", date = LocalDate.of(2026, 1, 1)),
+                azalt(1, "5", date = LocalDate.of(2026, 1, 2)),
+                alis(1, "5", "200", date = LocalDate.of(2026, 1, 3)),
+            ),
+        )
+        assertBd("10", position.quantity)
+        assertBd("1500", position.totalCost)
+        assertBd("150", position.unitCost)
+    }
+
+    @Test
+    fun `kayitlar tarih sirasina gore islenir, ekleme sirasindan bagimsiz`() {
+        // Ayni islemler ters sirada verilse de tarihe gore islenir; sonuc degismez.
+        val position = positionOf(
+            listOf(
+                azalt(1, "5", date = LocalDate.of(2026, 1, 2)),
+                alis(1, "10", "100", date = LocalDate.of(2026, 1, 1)),
+            ),
+        )
+        assertBd("5", position.quantity)
+        assertBd("500", position.totalCost)
     }
 
     @Test

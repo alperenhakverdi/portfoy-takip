@@ -3,6 +3,7 @@ package com.portfoy.calc
 import com.portfoy.model.Asset
 import com.portfoy.model.Category
 import com.portfoy.model.Transaction
+import com.portfoy.model.TransactionType
 import com.portfoy.model.UnitType
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -21,12 +22,31 @@ fun alis(
     price: String,
     commission: String = "0",
     date: LocalDate = LocalDate.of(2026, 1, 1),
+    id: Long = 0,
 ) = Transaction(
-    id = 0,
+    id = id,
     assetId = assetId,
+    type = TransactionType.ALIS,
     quantity = bd(quantity),
     unitPriceTl = bd(price),
     commissionTl = bd(commission),
+    tradeDate = date,
+)
+
+/** M17 — azaltma: ağırlıklı ortalama maliyeti değiştirmeden adet/maliyeti orantılı düşürür. */
+fun azalt(
+    assetId: Long,
+    quantity: String,
+    price: String = "0",
+    date: LocalDate = LocalDate.of(2026, 1, 1),
+    id: Long = 0,
+) = Transaction(
+    id = id,
+    assetId = assetId,
+    type = TransactionType.AZALTMA,
+    quantity = bd(quantity),
+    unitPriceTl = bd(price),
+    commissionTl = BigDecimal.ZERO,
     tradeDate = date,
 )
 

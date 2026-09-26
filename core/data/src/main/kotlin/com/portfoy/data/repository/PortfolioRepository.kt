@@ -145,6 +145,27 @@ class PortfolioRepository(
 
     suspend fun updatePurchase(transaction: Transaction) = transactionDao.update(transaction.toEntity())
 
+    /** M17 — bir varlığın adedini azaltır (satış gibi ama gerçekleşen kâr/zarar hesaplanmaz). */
+    suspend fun addReduction(
+        assetId: Long,
+        quantity: BigDecimal,
+        unitPriceTl: BigDecimal,
+        date: LocalDate,
+        note: String?,
+    ): Long = transactionDao.insert(
+        Transaction(
+            id = 0,
+            assetId = assetId,
+            type = TransactionType.AZALTMA,
+            quantity = quantity,
+            unitPriceTl = unitPriceTl,
+            commissionTl = BigDecimal.ZERO,
+            tradeDate = date,
+            note = note?.takeIf { it.isNotBlank() },
+            createdAt = clock.instant(),
+        ).toEntity(),
+    )
+
     /** Kaydı siler ve geri alma için döndürür. */
     suspend fun deletePurchase(id: Long): Transaction? {
         val existing = transactionDao.getById(id)?.toModel() ?: return null

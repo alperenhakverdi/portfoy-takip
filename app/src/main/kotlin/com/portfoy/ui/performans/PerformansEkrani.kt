@@ -49,7 +49,7 @@ import com.portfoy.ui.tema.getiriRengi
  * Grafiğin y ekseni getiri yüzdesidir; Portföy sekmesindeki grafik ise TL değerini gösterir.
  */
 @Composable
-fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
+fun PerformansEkrani(onVarlikTikla: (Long) -> Unit, vm: PerformansViewModel = hiltViewModel()) {
     val ekran by vm.ekran.collectAsState()
     val ozet = ekran.ozet
 
@@ -166,7 +166,10 @@ fun PerformansEkrani(vm: PerformansViewModel = hiltViewModel()) {
                     Column {
                         grup.varliklar.forEach { satir ->
                             HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                Modifier.fillMaxWidth().clickable { onVarlikTikla(satir.varlik.id) },
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
                                 Column(Modifier.weight(1.4f).padding(start = 30.dp)) {
                                     Text(satir.varlik.code, fontWeight = FontWeight.Bold)
                                     // Dönemin tamamında portföyde olmayan varlıklar listede kalır, yanlarında giriş tarihi yazar.

@@ -30,14 +30,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.portfoy.ui.ekle.EkleEkrani
 import com.portfoy.ui.performans.PerformansEkrani
 import com.portfoy.ui.portfoy.PortfoyEkrani
 import com.portfoy.ui.tema.Animasyon
+import com.portfoy.ui.varlik.VarlikYonetimEkrani
 import kotlinx.coroutines.launch
 
 /**
@@ -65,11 +68,14 @@ fun Uygulama() {
     // Klavye açıkken alt bar gizlenir ve içerik klavyenin üstüne oturur; Kaydet düğmesi görünür kalır.
     val klavyeAcik = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
+    // Varlık yönetimi (M17) ayrı, tam ekran bir sayfadır — o ekrandayken alt bar gizlenir.
+    val altBarGorunur = mevcut == null || Sekme.entries.any { it.rota == mevcut }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             // Ekranı boydan boya kaplar, 3 ikon eşit aralıklıdır; sistem çubuğuyla çakışmaz (Scaffold/NavigationBar inset'leri).
-            if (!klavyeAcik) NavigationBar {
+            if (!klavyeAcik && altBarGorunur) NavigationBar {
                 Sekme.entries.forEach { sekme ->
                     val secili = mevcut == sekme.rota
                     NavigationBarItem(
@@ -102,9 +108,21 @@ fun Uygulama() {
                     scope.launch { snackbar.showSnackbar("Alım kaydedildi") }
                 })
             }
-            composable(Sekme.PERFORMANS.rota) { PerformansEkrani() }
+            composable(Sekme.PERFORMANS.rota) {
+                PerformansEkrani(onVarlikTikla = { id -> nav.navigate("varlik/$id") })
+            }
             composable(Sekme.PORTFOY.rota) {
-                PortfoyEkrani(onEkleGit = { nav.sekmeyeGit(Sekme.EKLE.rota) }, snackbar = snackbar)
+                PortfoyEkrani(
+                    onEkleGit = { nav.sekmeyeGit(Sekme.EKLE.rota) },
+                    onVarlikTikla = { id -> nav.navigate("varlik/$id") },
+                    snackbar = snackbar,
+                )
+            }
+            composable(
+                "varlik/{assetId}",
+                arguments = listOf(navArgument("assetId") { type = NavType.LongType }),
+            ) {
+                VarlikYonetimEkrani(onGeri = { nav.popBackStack() }, snackbar = snackbar)
             }
         }
     }

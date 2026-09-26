@@ -12,12 +12,9 @@ import com.portfoy.data.repository.GrafikDeposu
 import com.portfoy.data.repository.GrafikVerisi
 import com.portfoy.data.repository.PortfolioData
 import com.portfoy.data.repository.PortfolioRepository
-import com.portfoy.data.repository.PriceRepository
 import com.portfoy.model.Category
-import com.portfoy.model.Transaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.portfoy.di.UygulamaZamanDilimi
-import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
@@ -35,12 +32,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Sekmeler arası geçişte korunan ekran durumu: açık kategoriler, açık varlık detayı, toplam değer grafiği
- * ve seçili dönem. ViewModel sekme değişse de yaşadığı için bu durum kaybolmaz.
+ * Sekmeler arası geçişte korunan ekran durumu: açık kategoriler, toplam değer grafiği ve seçili
+ * dönem. ViewModel sekme değişse de yaşadığı için bu durum kaybolmaz. Varlık detayı artık ayrı
+ * bir ekranda (M17, [com.portfoy.ui.varlik.VarlikYonetimEkrani]) — burada durumu tutulmaz.
  */
 data class PortfoyDurumu(
     val acikKategoriler: Set<Category> = emptySet(),
-    val acikVarlik: Long? = null,
     val degerGrafigiAcik: Boolean = false,
     val donem: Donem = Donem.VARSAYILAN,
 )
@@ -65,7 +62,6 @@ data class GrafikDurumu(
 @HiltViewModel
 class PortfoyViewModel @Inject constructor(
     private val depo: PortfolioRepository,
-    private val fiyatDeposu: PriceRepository,
     private val yonetici: TazelemeYoneticisi,
     private val grafikDeposu: GrafikDeposu,
     gecmis: GecmisYoneticisi,
@@ -110,8 +106,6 @@ class PortfoyViewModel @Inject constructor(
         it.copy(acikKategoriler = if (kategori in it.acikKategoriler) it.acikKategoriler - kategori else it.acikKategoriler + kategori)
     }
 
-    fun varligiAcKapat(id: Long) = durum.update { it.copy(acikVarlik = if (it.acikVarlik == id) null else id) }
-
     fun degerGrafiginiAcKapat() = durum.update { it.copy(degerGrafigiAcik = !it.degerGrafigiAcik) }
 
     fun donemSec(donem: Donem) = durum.update { it.copy(donem = donem) }
@@ -120,21 +114,6 @@ class PortfoyViewModel @Inject constructor(
     suspend fun yenile(): Boolean = yonetici.manuelTazele()
 
     fun onForeground() = yonetici.onForeground()
-
-    fun alimGuncelle(islem: Transaction) {
-        viewModelScope.launch { depo.updatePurchase(islem) }
-    }
-
-    /** Kaydı siler ve geri alma için döndürür. */
-    suspend fun alimSil(id: Long): Transaction? = depo.deletePurchase(id)
-
-    fun alimiGeriAl(islem: Transaction) {
-        viewModelScope.launch { depo.restorePurchase(islem) }
-    }
-
-    fun elleFiyatGir(varlikId: Long, fiyat: BigDecimal) {
-        viewModelScope.launch { fiyatDeposu.setManualPrice(varlikId, fiyat) }
-    }
 }
 
 /** Piyasası olan kategoriler için takvim; "piyasa kapalı" etiketi buna göre gösterilir. */

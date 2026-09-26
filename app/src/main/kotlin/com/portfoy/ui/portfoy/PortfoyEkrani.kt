@@ -19,33 +19,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -58,14 +48,9 @@ import com.portfoy.calc.PortfolioSummary
 import com.portfoy.calc.Tazelik
 import com.portfoy.data.repository.TazelemeZamanlayici
 import com.portfoy.calc.format.TrFormat
-import com.portfoy.calc.parseDecimal
 import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.model.Category
-import com.portfoy.model.Transaction
-import com.portfoy.model.UnitType
 import com.portfoy.network.market.MarketCalendar
-import com.portfoy.ui.bilesenler.AlimFormAlanlari
-import com.portfoy.ui.bilesenler.AlimFormDurumu
 import com.portfoy.ui.bilesenler.CizgiGrafik
 import com.portfoy.ui.bilesenler.DilimIsareti
 import com.portfoy.ui.bilesenler.DonemSecici
@@ -79,10 +64,8 @@ import com.portfoy.ui.tema.getiriRengi
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val takvim = MarketCalendar()
@@ -92,26 +75,13 @@ private val takvim = MarketCalendar()
 @Composable
 fun PortfoyEkrani(
     onEkleGit: () -> Unit,
+    onVarlikTikla: (Long) -> Unit,
     snackbar: SnackbarHostState,
     vm: PortfoyViewModel = hiltViewModel(),
 ) {
     val ekran by vm.ekran.collectAsState()
     val scope = rememberCoroutineScope()
     val bugun = remember { LocalDate.now(UygulamaZamanDilimi) }
-
-    val sil: (Long) -> Unit = { id ->
-        scope.launch {
-            val silinen = vm.alimSil(id) ?: return@launch
-            // 5 saniyelik geri al bildirimi.
-            val kapat = launch {
-                delay(5_000)
-                snackbar.currentSnackbarData?.dismiss()
-            }
-            val sonuc = snackbar.showSnackbar("Alım kaydı silindi", "Geri al", duration = SnackbarDuration.Indefinite)
-            kapat.cancel()
-            if (sonuc == SnackbarResult.ActionPerformed) vm.alimiGeriAl(silinen)
-        }
-    }
 
     PullToRefreshBox(
         isRefreshing = ekran.tazeleme.yenileniyor,
@@ -128,7 +98,7 @@ fun PortfoyEkrani(
                 Text("Yükleniyor…")
             }
             ozet.isEmpty -> BosDurum(onEkleGit)
-            else -> PortfoyIcerigi(ekran, ozet, bugun, vm, sil)
+            else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla)
         }
     }
 }
@@ -151,14 +121,11 @@ private fun BosDurum(onEkleGit: () -> Unit) {
 private fun PortfoyIcerigi(
     ekran: PortfoyEkranVerisi,
     ozet: PortfolioSummary,
-    bugun: LocalDate,
     vm: PortfoyViewModel,
-    sil: (Long) -> Unit,
+    onVarlikTikla: (Long) -> Unit,
 ) {
     val veri = ekran.veri!!
     val durum = ekran.durum
-    var duzenlenen by remember { mutableStateOf<Pair<Transaction, com.portfoy.model.Asset>?>(null) }
-    var fiyatGirilen by remember { mutableStateOf<AssetResult?>(null) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -220,33 +187,12 @@ private fun PortfoyIcerigi(
             KategoriSatiri(
                 kategori = kategori,
                 acik = kategori.category in durum.acikKategoriler,
-                acikVarlik = durum.acikVarlik,
                 manuelFiyatli = veri.manualPriceAssetIds,
                 manuelZamanlar = veri.manualPriceTimes,
                 vm = vm,
-                sil = sil,
-                duzenle = { islem, varlik -> duzenlenen = islem to varlik },
-                fiyatGir = { fiyatGirilen = it },
+                onVarlikTikla = onVarlikTikla,
             )
         }
-    }
-
-    duzenlenen?.let { (islem, varlik) ->
-        AlimDuzenleDialog(
-            islem = islem,
-            birim = varlik.unitType,
-            birimAdi = varlik.birimEtiketi(),
-            bugun = bugun,
-            onKaydet = { vm.alimGuncelle(it); duzenlenen = null },
-            onIptal = { duzenlenen = null },
-        )
-    }
-    fiyatGirilen?.let { sonuc ->
-        ElleFiyatDialog(
-            varlik = sonuc,
-            onKaydet = { vm.elleFiyatGir(sonuc.asset.id, it); fiyatGirilen = null },
-            onIptal = { fiyatGirilen = null },
-        )
     }
 }
 
@@ -314,13 +260,10 @@ private fun DegerGrafigi(ekran: PortfoyEkranVerisi, vm: PortfoyViewModel) {
 private fun KategoriSatiri(
     kategori: CategoryResult,
     acik: Boolean,
-    acikVarlik: Long?,
     manuelFiyatli: Set<Long>,
     manuelZamanlar: Map<Long, Instant>,
     vm: PortfoyViewModel,
-    sil: (Long) -> Unit,
-    duzenle: (Transaction, com.portfoy.model.Asset) -> Unit,
-    fiyatGir: (AssetResult) -> Unit,
+    onVarlikTikla: (Long) -> Unit,
 ) {
     val piyasaKapali = kategori.category.piyasa?.let { !takvim.isOpen(it, Instant.now()) } == true
     Kutu {
@@ -344,13 +287,9 @@ private fun KategoriSatiri(
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     VarlikSatiri(
                         sonuc = varlik,
-                        acik = acikVarlik == varlik.asset.id,
                         elleFiyat = varlik.asset.id in manuelFiyatli,
                         elleFiyatZamani = manuelZamanlar[varlik.asset.id],
-                        vm = vm,
-                        sil = sil,
-                        duzenle = duzenle,
-                        fiyatGir = fiyatGir,
+                        onTikla = { onVarlikTikla(varlik.asset.id) },
                     )
                 }
             }
@@ -358,19 +297,16 @@ private fun KategoriSatiri(
     }
 }
 
+/** M17 — satıra tıklayınca artık burada açılmaz, ayrı bir varlık yönetimi ekranına gidilir. */
 @Composable
 private fun VarlikSatiri(
     sonuc: AssetResult,
-    acik: Boolean,
     elleFiyat: Boolean,
     elleFiyatZamani: Instant?,
-    vm: PortfoyViewModel,
-    sil: (Long) -> Unit,
-    duzenle: (Transaction, com.portfoy.model.Asset) -> Unit,
-    fiyatGir: (AssetResult) -> Unit,
+    onTikla: () -> Unit,
 ) {
     val nakit = sonuc.asset.category == Category.NAKIT
-    Column(Modifier.fillMaxWidth().clickable { vm.varligiAcKapat(sonuc.asset.id) }) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onTikla)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(sonuc.asset.code, fontWeight = FontWeight.Bold)
@@ -407,144 +343,4 @@ private fun VarlikSatiri(
             )
         }
     }
-    AnimatedVisibility(acik) {
-        VarlikDetayi(sonuc, elleFiyat, vm, sil, duzenle, fiyatGir)
-    }
-}
-
-/** Varlık detayı (W9): alım kayıtları, ağırlıklı ortalama maliyet, güncel fiyat, düzenle ve sil. */
-@Composable
-private fun VarlikDetayi(
-    sonuc: AssetResult,
-    elleFiyat: Boolean,
-    vm: PortfoyViewModel,
-    sil: (Long) -> Unit,
-    duzenle: (Transaction, com.portfoy.model.Asset) -> Unit,
-    fiyatGir: (AssetResult) -> Unit,
-) {
-    val ekran by vm.ekran.collectAsState()
-    val islemler = ekran.veri?.holdings?.firstOrNull { it.asset.id == sonuc.asset.id }?.transactions.orEmpty()
-    val nakit = sonuc.asset.category == Category.NAKIT
-
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (!nakit) {
-            SatirBilgi("Ağırlıklı ortalama maliyet", TrFormat.money(sonuc.unitCost))
-            SatirBilgi("Güncel fiyat", TrFormat.money(sonuc.currentPriceTl))
-            SatirBilgi("Toplam maliyet", TrFormat.money(sonuc.totalCost))
-            if (elleFiyat || sonuc.priceMissing) {
-                OutlinedButton(onClick = { fiyatGir(sonuc) }) { Text("Fiyatı elle güncelle") }
-            }
-        }
-        Text(if (nakit) "Nakit girişleri" else "Alım kayıtları", fontWeight = FontWeight.Bold)
-        islemler.sortedByDescending { it.tradeDate }.forEach { islem ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    val ayrinti = if (nakit) TrFormat.money(islem.quantity)
-                    else "${TrFormat.quantity(islem.quantity)} × ${TrFormat.money(islem.unitPriceTl)}" +
-                        if (islem.commissionTl.signum() > 0) " (+${TrFormat.money(islem.commissionTl)} komisyon)" else ""
-                    Text("${islem.tradeDate.tr()}  •  $ayrinti", style = MaterialTheme.typography.bodySmall)
-                    islem.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                }
-                IconButton(onClick = { duzenle(islem, sonuc.asset) }) { Icon(Icons.Filled.Edit, contentDescription = "Düzenle") }
-                IconButton(onClick = { sil(islem.id) }) { Icon(Icons.Filled.Delete, contentDescription = "Sil") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SatirBilgi(etiket: String, deger: String) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(etiket, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(deger, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-    }
-}
-
-private fun BigDecimal.metin(): String = stripTrailingZeros().toPlainString().replace('.', ',')
-
-@Composable
-private fun AlimDuzenleDialog(
-    islem: Transaction,
-    birim: UnitType,
-    birimAdi: String?,
-    bugun: LocalDate,
-    onKaydet: (Transaction) -> Unit,
-    onIptal: () -> Unit,
-) {
-    val nakit = birim == UnitType.TL
-    val durum = remember(islem.id) {
-        AlimFormDurumu(
-            fiyat = islem.unitPriceTl.metin(),
-            adet = islem.quantity.metin(),
-            komisyon = if (islem.commissionTl.signum() > 0) islem.commissionTl.metin() else "",
-            not = islem.note.orEmpty(),
-            tarih = islem.tradeDate,
-        )
-    }
-    AlertDialog(
-        onDismissRequest = onIptal,
-        title = { Text("Alım kaydını düzenle") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                AlimFormAlanlari(durum, birim, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi)
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                durum.denendi = true
-                val sonuc = durum.dogrula(bugun, nakit, null)
-                sonuc.degerler?.let { d ->
-                    onKaydet(
-                        islem.copy(
-                            quantity = d.adet,
-                            unitPriceTl = d.fiyat,
-                            commissionTl = d.komisyon,
-                            tradeDate = d.tarih,
-                            note = durum.not.takeIf { it.isNotBlank() },
-                        ),
-                    )
-                }
-            }) { Text("Kaydet") }
-        },
-        dismissButton = { TextButton(onClick = onIptal) { Text("Vazgeç") } },
-    )
-}
-
-/** W11 — Elle fiyat girişi. Kaynağı olmayan ya da fiyatı alınamayan varlıklar için kalıcı yedek. */
-@Composable
-private fun ElleFiyatDialog(varlik: AssetResult, onKaydet: (BigDecimal) -> Unit, onIptal: () -> Unit) {
-    var metin by remember { mutableStateOf(varlik.currentPriceTl.metin()) }
-    var denendi by remember { mutableStateOf(false) }
-    val deger = parseDecimal(metin)
-    val hata = denendi && (deger == null || deger.signum() <= 0)
-
-    AlertDialog(
-        onDismissRequest = onIptal,
-        title = { Text("${varlik.asset.code} — fiyatı elle güncelle") },
-        text = {
-            Column {
-                Text(
-                    "Son girilen fiyat: ${TrFormat.money(varlik.currentPriceTl)}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = metin,
-                    onValueChange = { metin = it },
-                    label = { Text("Güncel fiyat (₺)") },
-                    isError = hata,
-                    supportingText = if (hata) ({ Text("Sıfırdan büyük bir fiyat gir", fontWeight = FontWeight.Bold) }) else null,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                denendi = true
-                if (deger != null && deger.signum() > 0) onKaydet(deger)
-            }) { Text("Kaydet") }
-        },
-        dismissButton = { TextButton(onClick = onIptal) { Text("Vazgeç") } },
-    )
 }
