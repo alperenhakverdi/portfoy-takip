@@ -172,10 +172,6 @@ fun PerformansEkrani(onVarlikTikla: (Long) -> Unit, vm: PerformansViewModel = hi
                             ) {
                                 Column(Modifier.weight(1.4f).padding(start = 30.dp)) {
                                     Text(satir.varlik.code, fontWeight = FontWeight.Bold)
-                                    // Dönemin tamamında portföyde olmayan varlıklar listede kalır, yanlarında giriş tarihi yazar.
-                                    satir.girisTarihi?.let {
-                                        Text("giriş: ${it.tr()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                                    }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(TrFormat.signedPercent(satir.yuzde), style = MaterialTheme.typography.bodyMedium, maxLines = 1, color = getiriRengi(satir.yuzde))
