@@ -32,6 +32,7 @@ import com.portfoy.calc.dogrulaAlim
 import com.portfoy.calc.format.TrFormat
 import com.portfoy.calc.parseDecimal
 import com.portfoy.calc.purchaseTotal
+import com.portfoy.model.TransactionType
 import com.portfoy.model.UnitType
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -75,6 +76,9 @@ class AlimFormDurumu(
 /**
  * Alım formu alanları (bölüm 4.2): alış tarihi (varsayılan bugün), alış fiyatı, adet/gram/pay ya da nakit
  * tutarı, komisyon, not. Alt kısımda toplam maliyet anlık gösterilir. Nakit TL'de yalnızca tutar istenir.
+ *
+ * [tur] azaltma ise (M17) tüm metinler "alış" yerine "satış" der — kullanıcı elindeki bir varlığı
+ * azaltırken girdiği fiyatın satış fiyatı olduğu açık olsun diye (doğrulama mantığı aynı kalır).
  */
 @Composable
 fun AlimFormAlanlari(
@@ -86,13 +90,16 @@ fun AlimFormAlanlari(
     modifier: Modifier = Modifier,
     /** Dövizde miktar alanının birimi (USD, EUR). Diğer varlıklarda kullanılmaz. */
     birimAdi: String? = null,
+    tur: TransactionType = TransactionType.ALIS,
 ) {
     val nakit = birim == UnitType.TL
     val sonuc = durum.dogrula(bugun, nakit, kur)
     val hatalar = if (durum.denendi) sonuc.hatalar else null
+    val azaltma = tur == TransactionType.AZALTMA
+    val fiyatSozcugu = if (azaltma) "Satış" else "Alış"
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        TarihSecici(durum.tarih, bugun, hatalar?.tarih) { durum.tarih = it }
+        TarihSecici(durum.tarih, bugun, hatalar?.tarih, etiket = "$fiyatSozcugu tarihi") { durum.tarih = it }
 
         if (!nakit) {
             if (abd) {
@@ -101,7 +108,7 @@ fun AlimFormAlanlari(
                         Text("Fiyatı USD olarak gir", style = MaterialTheme.typography.bodyMedium)
                         Text(
                             if (kur == null) "Kur bilgisi yok, önce fiyatlar güncellenmeli"
-                            else "Alış tarihindeki kurla TL'ye çevrilir (kur: ${TrFormat.money(kur)})",
+                            else "$fiyatSozcugu tarihindeki kurla TL'ye çevrilir (kur: ${TrFormat.money(kur)})",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -110,14 +117,14 @@ fun AlimFormAlanlari(
                 }
             }
             if (durum.usdModu) {
-                Alan("Alış fiyatı (USD)", durum.usdFiyat, { durum.usdFiyat = it }, hatalar?.fiyat)
+                Alan("$fiyatSozcugu fiyatı (USD)", durum.usdFiyat, { durum.usdFiyat = it }, hatalar?.fiyat)
                 Text(
-                    "Alış fiyatı (₺): ${durum.tlFiyatMetni(kur).ifBlank { "—" }}",
+                    "$fiyatSozcugu fiyatı (₺): ${durum.tlFiyatMetni(kur).ifBlank { "—" }}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                Alan("Alış fiyatı (₺)", durum.fiyat, { durum.fiyat = it }, hatalar?.fiyat)
+                Alan("$fiyatSozcugu fiyatı (₺)", durum.fiyat, { durum.fiyat = it }, hatalar?.fiyat)
             }
         }
 
@@ -149,7 +156,7 @@ fun AlimFormAlanlari(
             if (f != null && a != null && f.signum() > 0 && a.signum() > 0) purchaseTotal(f, a) else null
         }
         Text(
-            "Toplam maliyet: ${TrFormat.money(onizleme)}",
+            "${if (azaltma) "Toplam tutar" else "Toplam maliyet"}: ${TrFormat.money(onizleme)}",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -172,11 +179,11 @@ private fun Alan(etiket: String, deger: String, degisti: (String) -> Unit, hata:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TarihSecici(tarih: LocalDate, bugun: LocalDate, hata: String?, degisti: (LocalDate) -> Unit) {
+private fun TarihSecici(tarih: LocalDate, bugun: LocalDate, hata: String?, etiket: String = "Alış tarihi", degisti: (LocalDate) -> Unit) {
     var acik by remember { mutableStateOf(false) }
     Column {
         OutlinedButton(onClick = { acik = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Alış tarihi: ${tarih.tr()}")
+            Text("$etiket: ${tarih.tr()}")
         }
         if (hata != null) {
             Text(hata, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 4.dp))

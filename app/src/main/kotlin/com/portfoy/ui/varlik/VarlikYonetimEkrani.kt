@@ -170,6 +170,7 @@ fun VarlikYonetimEkrani(
                 birimAdi = sonuc.asset.birimEtiketi(),
                 bugun = bugun,
                 komisyonGoster = true,
+                tur = TransactionType.ALIS,
                 onKaydet = { adet, fiyat, komisyon, tarih, not -> vm.ekle(adet, fiyat, komisyon, tarih, not); ekleDialogAcik = false },
                 onIptal = { ekleDialogAcik = false },
             )
@@ -183,6 +184,7 @@ fun VarlikYonetimEkrani(
                 birimAdi = sonuc.asset.birimEtiketi(),
                 bugun = bugun,
                 komisyonGoster = false,
+                tur = TransactionType.AZALTMA,
                 mevcutAdet = sonuc.quantity,
                 onKaydet = { adet, fiyat, _, tarih, not -> vm.azalt(adet, fiyat, tarih, not); azaltDialogAcik = false },
                 onIptal = { azaltDialogAcik = false },
@@ -276,7 +278,7 @@ private fun AlimDuzenleDialog(
         title = { Text(if (islem.type == TransactionType.AZALTMA) "Azaltma kaydını düzenle" else "Alım kaydını düzenle") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                AlimFormAlanlari(durum, birim ?: UnitType.ADET, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi)
+                AlimFormAlanlari(durum, birim ?: UnitType.ADET, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi, tur = islem.type)
             }
         },
         confirmButton = {
@@ -347,6 +349,7 @@ private fun HareketDialog(
     birimAdi: String?,
     bugun: LocalDate,
     komisyonGoster: Boolean,
+    tur: TransactionType,
     mevcutAdet: BigDecimal? = null,
     onKaydet: (adet: BigDecimal, fiyat: BigDecimal, komisyon: BigDecimal, tarih: LocalDate, not: String?) -> Unit,
     onIptal: () -> Unit,
@@ -366,7 +369,7 @@ private fun HareketDialog(
                     )
                     Spacer(Modifier.height(8.dp))
                 }
-                AlimFormAlanlari(durum, birim, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi)
+                AlimFormAlanlari(durum, birim, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi, tur = tur)
             }
         },
         confirmButton = {
