@@ -1030,8 +1030,34 @@ olarak tekrar ele alınabilir.
   nereden tetiklendiği ve nasıl göründüğü değişiyor (sekme değil, push edilen tam ekran).
 - `PortfoyViewModel`'deki eski `grafik`/`degerGrafigiAcik`/`donem` durumu (satır içi TL grafiği için
   vardı) kaldırılır — o grafik artık yeni ekranın parçası, ayrıca tutulmasına gerek kalmıyor.
-- Kategori satırına günlük değişim eklenirken satırın mevcut düzeni bozulmaz: büyük toplam değerin
-  sağında/altında küçük punto, renkli (`getiriRengi`) bir ek satır olarak eklenir.
+
+### Tasarım (kullanıcıyla netleşti, 2026-10-08)
+
+Performans sekmesi kalkınca Portföy ekranı hem "ne kadar param var" (büyüklük) hem "nasıl gidiyor"
+(getiri) sorularını tek ekranda cevaplamalı — ikisi de birinci sınıf, biri diğerinin gölgesinde kalmaz.
+
+**Blok 2 — özet kartı, yeni düzen (yukarıdan aşağı):**
+```
+┌─────────────────────────────────────┐
+│  503.263,96 ₺                       │  ← toplam değer (displaySmall, mevcut)
+│  ▲ %12,34    ▲ 61.200,00 ₺          │  ← TÜM ZAMANLAR getirisi (mevcut, konumu/stili değişmiyor)
+│  ─────────────────────────────────  │  ← ince ayraç (yeni)
+│  Bugün   ▲ %0,22    ▲ 1.108,14 ₺  📈│  ← YENİ: günlük değişim + grafik ikonu (aynı satırda, sağda)
+│  son güncelleme: 2 dk önce           │  ← GuncellemeBilgisi (mevcut)
+└─────────────────────────────────────┘
+```
+Sıralama mantığı: önce "büyük resim" (tüm zamanlar getirisi — ne kazandım/kaybettim), sonra "bugün ne
+oldu" (günlük değişim). Grafik ikonu artık büyük rakamın yanında değil, günlük değişim satırının
+sağında — tıklanınca `grafik` ekranı açılır (M19'da denenen yer, M21'de kalıcılaşıyor).
+
+**Kategori satırları (`KategoriSatiri`) — yeni düzen:**
+```
+[ikon] ABD                              503.263,96 ₺
+                                      ▲ %0,18  ▲ 904,00 ₺   ← YENİ: günlük değişim, küçük punto, sağa yaslı
+```
+Yalnızca **günlük değişim** eklenir — tüm zamanlar getirisi kategori satırında tekrar edilmez, çünkü
+bu bilgi zaten her varlığın kendi satırında (kategoriye dokununca açılan akordiyonda, `VarlikSatiri`)
+görünüyor. Kategori satırı böylece sade kalır, bilgi tekrarı olmaz.
 
 ### Alt görevler
 | # | İş |
@@ -1040,7 +1066,7 @@ olarak tekrar ele alınabilir.
 | M21.2 | Performans ekranının içeriği yeni `grafik` rotasına taşınır (dosya/paket adı implementasyon sırasında netleşir — ör. `ui/grafik/GrafikEkrani.kt`); `onVarlikTikla` davranışı korunur |
 | M21.3 | `PortfoyEkrani.kt` Blok 2: eski satır-içi `DegerGrafigi`/`AnimatedVisibility` kaldırılır; grafik ikonu artık `nav` ile yeni ekrana gider |
 | M21.4 | `PortfoyViewModel.kt`: `gunlukDegisim` (toplam, M19'dan yeniden kurulur) + yeni `kategoriGunlukDegisim: StateFlow<Map<Category, KategoriDonemGetirisi>>` (`kategoriGetirileri(BIR_GUN, bugun)`) |
-| M21.5 | `PortfoyEkrani.kt` Blok 2: toplam değerin altına günlük değişim satırı (TL + %) |
+| M21.5 | `PortfoyEkrani.kt` Blok 2: tüm zamanlar getirisinin altına ince ayraç + "Bugün" etiketli günlük değişim satırı (TL + %) + grafik ikonu aynı satırda |
 | M21.6 | `PortfoyEkrani.kt` `KategoriSatiri`: her kategoriye kendi günlük değişim satırı (TL + %); `piyasaKapali` metni kaldırılır |
 | M21.7 | Eski `PerformansViewModel`/`PerformansEkrani` dosyaları temizlenir (taşındıktan sonra tekrar eden kod kalmaz) |
 
