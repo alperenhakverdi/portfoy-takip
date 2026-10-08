@@ -30,6 +30,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M21 | Sekme birleştirme, Portföy detaylandırma | ✅ Bitti | Performans sekmesi kalktı, grafik ayrı ekran oldu; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
 | M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ✅ Bitti | Dokuz dönem zaten hazırdı; kısa etiket (1G, 1H, 1A…) eklendi |
 | M23 | Para birimi: rakama dokununca TL ↔ USD | ✅ Bitti | Ayrı düğme yok; özet kartı + Grafik ekranı, kategori satırları TL kalıyor |
+| M24 | Dağılım grafiği: yüzdeler halkanın kenarında | ✅ Bitti | Alttaki liste kalktı; her dilimden kılavuz çizgili etiket |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1225,6 +1226,39 @@ rakam yazıyor, ona dokununca değişsin" şeklindeydi, ekstra bir görsel ipucu
 olurdu. Kullanımda rakamı bulmak zor geliyorsa ayrı bir iyileştirme olarak eklenebilir.
 
 **Boyut:** S–M — kodun çoğu `24e9cf7`'de hazır, iş tetikleyiciyi değiştirmek.
+
+---
+
+## M24 — Dağılım grafiği: yüzdeler halkanın kenarında (kullanıcı geri bildirimi, 2026-10-08) — ✅ Bitti
+
+**İstek.** Dağılım kartında kategoriler halkanın altında alt alta listeleniyordu (renkli nokta +
+kategori adı + yüzde). Kullanıcı bunun yerine yüzdelerin **grafiğin kendi üzerinde**, her dilimden
+çıkan birer kılavuz çizgisinin ucunda görünmesini istedi ("ok çıkarılsın o kısımdan"); alttaki liste
+tamamen kalkacak.
+
+**Karar:**
+- Alttaki açıklama listesi ve onunla birlikte artık kullanılmayan `DilimIsareti` bileşeni kaldırıldı.
+- Etiketler `Canvas` içinde `TextMeasurer`/`drawText` ile çiziliyor: her dilimin orta açısından halka
+  kenarına bir nokta, oradan dışarı kısa bir dirsek, oradan etiketin yanına yatay bir kuyruk.
+- **Sayı her zaman halkaya yakın tarafta:** sağdaki etiketlerde önce yüzde (`%51,41 ABD`), soldakilerde
+  önce kategori adı (`Emtia %25,94`). Referans görseldeki düzenin mantığı bu; sol sütun sağa, sağ sütun
+  sola yaslandığı için sayı iki tarafta da halkaya bakar.
+- **Çakışma ayıklaması:** aynı taraftaki etiketler, doğal dikey yerlerinden başlayıp önce yukarıdan
+  aşağı, alta taşarlarsa geri yukarı itilerek ayrıştırılıyor (klasik pasta-etiketi algoritması). 7
+  kategoriden birkaçı çok küçük ve bitişik olduğunda (ör. Fon %1,32 + Döviz %2,93) etiketler yine de
+  okunur kalıyor, yalnızca kılavuz çizgileri halkaya yakın yerde yelpaze gibi açılıyor.
+- **Halka boyutu sabit oran değil, ölçülen metin genişliğine göre:** önce etiketler ölçülüp iki yandaki
+  en geniş metin bulunuyor, halka geri kalan yere sığdırılıyor. İlk denemede sabit %26'lık bir yan
+  boşluk kullanmıştım; "Nakit %9,94" gibi etiketler sığmayıp sol kenara yapışmıştı.
+- Erişilebilirlik: görsel liste kalktı ama tüm dağılım grafiğin `contentDescription`'ında yazılı
+  kalıyor, TalkBack eskisi gibi hepsini okuyor (M15 ilkesi korundu).
+
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-08):** Altı kategori de halkanın kenarında kılavuz
+çizgisiyle görünüyor (Fon %1,32, Döviz %2,93, BIST %8,46, Nakit %9,94, Emtia %25,94 solda; %51,41 ABD
+sağda); alttaki liste tamamen kalktı; etiketler kırpılmıyor ve üst üste binmiyor; hem koyu hem açık
+temada okunuyor; kart yüksekliği 180 dp'ye indirilerek alttaki ölü boşluk giderildi.
+
+**Boyut:** S–M — tek bir çizim bileşeni, yeni veri ya da hesaplama yok.
 
 ---
 

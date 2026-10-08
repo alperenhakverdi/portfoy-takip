@@ -4,18 +4,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,19 +31,44 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.portfoy.calc.AllocationSlice
 import com.portfoy.calc.format.TrFormat
-import com.portfoy.model.Category
 import com.portfoy.ui.tema.AppTema
 import com.portfoy.ui.tema.LocalReducedMotion
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sin
+
+/** M24 — halkanın kenarındaki bir etiketin yerleşimi: kılavuz çizgisi nereye gidecek, metin nerede duracak. */
+private class EtiketYerlesimi(
+    /** Dilimin orta açısı (derece, 0 = sağ, saat yönünde). */
+    val ortaAci: Float,
+    val sagda: Boolean,
+    val olcum: TextLayoutResult,
+    /** Çakışma ayıklamasından sonra belirlenen dikey merkez. */
+    var merkezY: Float,
+)
 
 /**
  * Kategori dağılımı halka grafiği. Her dilim kendi kategori rengini kullanır (M14.3) — gri
  * tonlar/desenler yerine, gerçek ve tutarlı bir renk kimliği. İlk çizimde 500 ms'lik bir sweep
  * animasyonuyla açılır (M14.6); sistemde "animasyonları azalt" açıksa bu animasyon atlanır.
+ *
+ * M24 — yüzdeler artık altta ayrı bir liste değil, halkanın kendi kenarında: her dilimden dışarı bir
+ * kılavuz çizgisi çıkar ve ucunda "%12,34 ABD" yazar. Sayı her zaman halkaya yakın taraftadır (sağda
+ * önce yüzde, solda önce kategori adı). Aynı taraftaki etiketler üst üste binmeyecek şekilde dikeyde
+ * ayrıştırılır. Ekran okuyucu için tüm dağılım [contentDescription]'da yazılı kalır.
  */
 @Composable
 fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) {
@@ -59,15 +80,50 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
         if (!azaltilmisAnimasyon) ilerleme.animateTo(1f, tween(500, easing = FastOutSlowInEasing))
     }
 
-    Canvas(
-        modifier
-            .aspectRatio(1f)
-            .semantics { contentDescription = "Portföy dağılımı: $aciklama" },
-    ) {
-        val kalinlik = size.minDimension * 0.22f
-        val cap = size.minDimension - kalinlik
-        val sol = (size.width - cap) / 2f
-        val ust = (size.height - cap) / 2f
+    val olcer = rememberTextMeasurer()
+    val stil = MaterialTheme.typography.labelSmall
+    val adRengi = MaterialTheme.colorScheme.onSurfaceVariant
+    val yuzdeRengi = MaterialTheme.colorScheme.onSurface
+    val kilavuzRengi = MaterialTheme.colorScheme.outline
+
+    Canvas(modifier.semantics { contentDescription = "Portföy dağılımı: $aciklama" }) {
+        if (dilimler.isEmpty()) return@Canvas
+
+        // 1) Etiketler ölçülür. Açılar animasyondan bağımsız, son hâline göre hesaplanır: etiketler
+        // yerinde durur, animasyon boyunca yalnızca belirir.
+        var aci = -90f
+        val yerlesim = dilimler.map { dilim ->
+            val tam = dilim.percent.toFloat() / 100f * 360f
+            val orta = aci + tam / 2f
+            aci += tam
+            val sagda = cos(orta * PI.toFloat() / 180f) >= 0f
+            val ad = dilim.category.etiket()
+            val yuzde = TrFormat.percent(dilim.percent)
+            // Sayı her zaman halkaya yakın tarafta: sağda önce yüzde, solda önce kategori adı.
+            val metin = buildAnnotatedString {
+                if (sagda) {
+                    withStyle(SpanStyle(color = yuzdeRengi, fontWeight = FontWeight.Bold)) { append(yuzde) }
+                    withStyle(SpanStyle(color = adRengi)) { append(" $ad") }
+                } else {
+                    withStyle(SpanStyle(color = adRengi)) { append("$ad ") }
+                    withStyle(SpanStyle(color = yuzdeRengi, fontWeight = FontWeight.Bold)) { append(yuzde) }
+                }
+            }
+            EtiketYerlesimi(orta, sagda, olcer.measure(metin, stil), 0f)
+        }
+
+        // 2) Halka, etiketlerden artan yere sığdırılır (sabit bir oran yerine gerçek metin genişlikleri).
+        val dirsek = 12.dp.toPx()
+        val kuyruk = 6.dp.toPx()
+        val pay = dirsek + kuyruk
+        val solGenislik = yerlesim.filter { !it.sagda }.maxOfOrNull { it.olcum.size.width }?.toFloat() ?: 0f
+        val sagGenislik = yerlesim.filter { it.sagda }.maxOfOrNull { it.olcum.size.width }?.toFloat() ?: 0f
+        val disCap = minOf(size.height, size.width - solGenislik - sagGenislik - 2f * pay).coerceAtLeast(1f)
+        val disYaricap = disCap / 2f
+        val kalinlik = disCap * 0.22f
+        val elipsCap = disCap - kalinlik
+        val merkez = Offset(solGenislik + pay + disYaricap, size.height / 2f)
+
         val boslukAcisi = if (dilimler.size > 1) 1.5f else 0f
         var baslangic = -90f
         dilimler.forEach { dilim ->
@@ -79,25 +135,63 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
                     startAngle = baslangic + boslukAcisi / 2f,
                     sweepAngle = tarama,
                     useCenter = false,
-                    topLeft = Offset(sol, ust),
-                    size = Size(cap, cap),
+                    topLeft = Offset(merkez.x - elipsCap / 2f, merkez.y - elipsCap / 2f),
+                    size = Size(elipsCap, elipsCap),
                     style = Stroke(width = kalinlik, cap = StrokeCap.Butt),
                 )
             }
             baslangic += dilim.percent.toFloat() / 100f * 360f
         }
-    }
-}
 
-/** Açıklama listesindeki dilim işareti: grafikteki dilimle aynı kategori rengi. */
-@Composable
-fun DilimIsareti(kategori: Category, modifier: Modifier = Modifier) {
-    val renkler = AppTema.renkler
-    Box(
-        modifier
-            .size(14.dp)
-            .background(renkler.kategoriRengi(kategori), shape = androidx.compose.foundation.shape.CircleShape),
-    )
+        // 3) Etiketlerin doğal dikey yeri dilimin orta açısıdır; aynı taraftakiler üst üste binmesin
+        // diye önce yukarıdan aşağı itilir, alta taşarsa geri yukarı çekilir.
+        yerlesim.forEach { it.merkezY = merkez.y + sin(it.ortaAci * PI.toFloat() / 180f) * disYaricap }
+        val aralik = 4.dp.toPx()
+        listOf(true, false).forEach { taraf ->
+            val sutun = yerlesim.filter { it.sagda == taraf }.sortedBy { it.merkezY }
+            var ustSinir = 0f
+            sutun.forEach {
+                val yarim = it.olcum.size.height / 2f
+                it.merkezY = max(it.merkezY, ustSinir + yarim)
+                ustSinir = it.merkezY + yarim + aralik
+            }
+            var altSinir = size.height
+            sutun.asReversed().forEach {
+                val yarim = it.olcum.size.height / 2f
+                it.merkezY = min(it.merkezY, altSinir - yarim)
+                altSinir = it.merkezY - yarim - aralik
+            }
+        }
+
+        // 4) Kılavuz çizgisi: halkanın kenarından dışa, oradan etiketin yanına.
+        yerlesim.forEach { e ->
+            val radyan = e.ortaAci * PI.toFloat() / 180f
+            val kenar = Offset(merkez.x + cos(radyan) * disYaricap, merkez.y + sin(radyan) * disYaricap)
+            val kirilma = Offset(
+                merkez.x + cos(radyan) * (disYaricap + dirsek),
+                merkez.y + sin(radyan) * (disYaricap + dirsek),
+            )
+            val sutunKenari = if (e.sagda) merkez.x + disYaricap + pay else merkez.x - disYaricap - pay
+            val metinX = if (e.sagda) sutunKenari else sutunKenari - e.olcum.size.width
+            val cizgiUcu = if (e.sagda) metinX - kuyruk / 2f else metinX + e.olcum.size.width + kuyruk / 2f
+
+            drawPath(
+                Path().apply {
+                    moveTo(kenar.x, kenar.y)
+                    lineTo(kirilma.x, kirilma.y)
+                    lineTo(cizgiUcu, e.merkezY)
+                },
+                color = kilavuzRengi,
+                alpha = ilerleme.value,
+                style = Stroke(width = 1.5f),
+            )
+            drawText(
+                e.olcum,
+                topLeft = Offset(metinX, e.merkezY - e.olcum.size.height / 2f),
+                alpha = ilerleme.value,
+            )
+        }
+    }
 }
 
 /**

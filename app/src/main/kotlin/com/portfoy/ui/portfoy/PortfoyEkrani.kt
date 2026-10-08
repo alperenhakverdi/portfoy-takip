@@ -56,7 +56,6 @@ import com.portfoy.calc.Tazelik
 import com.portfoy.data.repository.TazelemeZamanlayici
 import com.portfoy.calc.format.TrFormat
 import com.portfoy.model.Category
-import com.portfoy.ui.bilesenler.DilimIsareti
 import com.portfoy.ui.bilesenler.DonutGrafik
 import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.birimEtiketi
@@ -182,21 +181,10 @@ private fun PortfoyIcerigi(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Blok 1 — Dağılım grafiği (kategori bazında) ve açıklama listesi.
+        // Blok 1 — Dağılım grafiği. M24: yüzdeler altta liste değil, halkanın kenarında kılavuz çizgileriyle.
         item {
             Kutu {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    DonutGrafik(ozet.allocation, Modifier.width(190.dp))
-                }
-                Spacer(Modifier.height(12.dp))
-                ozet.allocation.forEach { dilim ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                        DilimIsareti(dilim.category)
-                        Spacer(Modifier.width(10.dp))
-                        Text(dilim.category.etiket(), Modifier.weight(1f))
-                        Text(TrFormat.percent(dilim.percent), fontWeight = FontWeight.Bold)
-                    }
-                }
+                DonutGrafik(ozet.allocation, Modifier.fillMaxWidth().height(180.dp))
             }
         }
 
