@@ -1240,6 +1240,9 @@ tamamen kalkacak.
 - Alttaki açıklama listesi ve onunla birlikte artık kullanılmayan `DilimIsareti` bileşeni kaldırıldı.
 - Etiketler `Canvas` içinde `TextMeasurer`/`drawText` ile çiziliyor: her dilimin orta açısından halka
   kenarına bir nokta, oradan dışarı kısa bir dirsek, oradan etiketin yanına yatay bir kuyruk.
+- **Kılavuz çizgisi, çıktığı dilimin kategori rengini taşıyor** (kullanıcı isteği). Böylece kaldırılan
+  listedeki renkli noktanın işi çizgiye devredilmiş oluyor: hangi etiketin hangi dilime ait olduğu
+  hem çizginin gittiği yerden hem renginden okunuyor.
 - **Sayı her zaman halkaya yakın tarafta:** sağdaki etiketlerde önce yüzde (`%51,41 ABD`), soldakilerde
   önce kategori adı (`Emtia %25,94`). Referans görseldeki düzenin mantığı bu; sol sütun sağa, sağ sütun
   sola yaslandığı için sayı iki tarafta da halkaya bakar.

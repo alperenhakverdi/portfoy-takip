@@ -56,6 +56,8 @@ private class EtiketYerlesimi(
     val ortaAci: Float,
     val sagda: Boolean,
     val olcum: TextLayoutResult,
+    /** Kılavuz çizgisinin rengi — çıktığı dilimin kategori rengiyle aynı. */
+    val renk: Color,
     /** Çakışma ayıklamasından sonra belirlenen dikey merkez. */
     var merkezY: Float,
 )
@@ -66,9 +68,10 @@ private class EtiketYerlesimi(
  * animasyonuyla açılır (M14.6); sistemde "animasyonları azalt" açıksa bu animasyon atlanır.
  *
  * M24 — yüzdeler artık altta ayrı bir liste değil, halkanın kendi kenarında: her dilimden dışarı bir
- * kılavuz çizgisi çıkar ve ucunda "%12,34 ABD" yazar. Sayı her zaman halkaya yakın taraftadır (sağda
- * önce yüzde, solda önce kategori adı). Aynı taraftaki etiketler üst üste binmeyecek şekilde dikeyde
- * ayrıştırılır. Ekran okuyucu için tüm dağılım [contentDescription]'da yazılı kalır.
+ * kılavuz çizgisi çıkar ve ucunda "%12,34 ABD" yazar. Çizgi, çıktığı dilimin kategori rengini taşır —
+ * kaldırılan açıklama listesindeki renkli noktanın işini bu üstlenir. Sayı her zaman halkaya yakın
+ * taraftadır (sağda önce yüzde, solda önce kategori adı). Aynı taraftaki etiketler üst üste binmeyecek
+ * şekilde dikeyde ayrıştırılır. Ekran okuyucu için tüm dağılım [contentDescription]'da yazılı kalır.
  */
 @Composable
 fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) {
@@ -84,7 +87,6 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
     val stil = MaterialTheme.typography.labelSmall
     val adRengi = MaterialTheme.colorScheme.onSurfaceVariant
     val yuzdeRengi = MaterialTheme.colorScheme.onSurface
-    val kilavuzRengi = MaterialTheme.colorScheme.outline
 
     Canvas(modifier.semantics { contentDescription = "Portföy dağılımı: $aciklama" }) {
         if (dilimler.isEmpty()) return@Canvas
@@ -109,7 +111,7 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
                     withStyle(SpanStyle(color = yuzdeRengi, fontWeight = FontWeight.Bold)) { append(yuzde) }
                 }
             }
-            EtiketYerlesimi(orta, sagda, olcer.measure(metin, stil), 0f)
+            EtiketYerlesimi(orta, sagda, olcer.measure(metin, stil), renkler.kategoriRengi(dilim.category), 0f)
         }
 
         // 2) Halka, etiketlerden artan yere sığdırılır (sabit bir oran yerine gerçek metin genişlikleri).
@@ -181,9 +183,9 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
                     lineTo(kirilma.x, kirilma.y)
                     lineTo(cizgiUcu, e.merkezY)
                 },
-                color = kilavuzRengi,
+                color = e.renk,
                 alpha = ilerleme.value,
-                style = Stroke(width = 1.5f),
+                style = Stroke(width = 2f),
             )
             drawText(
                 e.olcum,
