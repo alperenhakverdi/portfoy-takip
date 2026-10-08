@@ -8,6 +8,9 @@ fun currentValue(priceTl: BigDecimal, quantity: BigDecimal): BigDecimal = priceT
 /** ABD varlıklarının TL değeri: USD fiyat × güncel USD/TRY. */
 fun usdToTry(usdPrice: BigDecimal, usdTry: BigDecimal): BigDecimal = usdPrice * usdTry
 
+/** M19 — TL tutarı görüntüleme amacıyla USD'ye çevirir (depolama her zaman TL kalır). */
+fun tryToUsd(tryAmount: BigDecimal, usdTry: BigDecimal): BigDecimal = tryAmount.dividedBy(usdTry)
+
 /** Kâr/Zarar (TL) = güncel değer − toplam maliyet. */
 fun profitLoss(value: BigDecimal, cost: BigDecimal): BigDecimal = value - cost
 

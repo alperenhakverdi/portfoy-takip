@@ -100,6 +100,12 @@ class PozisyonVeDegerlemeTest {
     }
 
     @Test
+    fun `tl tutari usd ye cevrilir`() {
+        // M19 — 4.200 TL, kur 42 -> 100 USD.
+        assertBd("100", tryToUsd(bd("4200"), bd("42")))
+    }
+
+    @Test
     fun `kar zarar ve getiri yuzdesi`() {
         val value = currentValue(bd("120"), bd("10")) // 1200
         assertBd("200", profitLoss(value, bd("1000")))
