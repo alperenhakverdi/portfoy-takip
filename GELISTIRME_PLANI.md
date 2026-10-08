@@ -27,7 +27,9 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
 | M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
 | M20 | Kripto kategorisi (BTC, ETH) | ⏳ Planlandı | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
-| M21 | Sekme birleştirme, Portföy detaylandırma | ⏳ Planlandı | Performans sekmesi kalkıyor, grafik ayrı ekran oluyor, günlük değişim toplam+kategori bazlı |
+| M21 | Sekme birleştirme, Portföy detaylandırma | ⏳ Planlandı | Performans sekmesi kalkıyor, grafik ayrı ekran oluyor; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
+| M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ⏳ Planlandı | Dokuz dönem zaten hazır; iş yalnızca kısa etiket (1G, 1H, 1A…) |
+| M23 | Para birimi: rakama dokununca TL ↔ USD | ⏳ Planlandı | Ayrı düğme yok; M19'un geri alınan katmanı canlandırılıyor |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1008,20 +1010,13 @@ detay ekranı olacak:
   yerine ayrı bir tam ekrana gidiyor — tıpkı M17'deki varlık yönetimi ekranı gibi, geri tuşuyla
   dönülen bağımsız bir sayfa. Bu yeni ekranın içeriği, Performans sekmesinin tamamı (dönem seçici,
   büyük getiri başlığı, çizgi grafik, Yüzde/TL sıralama, kategori+varlık kırılımı).
-- Portföy ekranının özet kartı (Blok 2) genişliyor: toplam değerin hemen altına, **hem TL hem yüzde**
-  olarak günlük değişim satırı ekleniyor (bugünün getirisi — `GrafikDeposu.hesapla(Donem.BIR_GUN)`,
-  M19'da kurulup revert edilen `gunlukDegisim` deseni aynen yeniden kurulacak).
-- Aynı günlük değişim (TL + yüzde), **her kategori satırında da ayrı ayrı** gösterilecek (ABD, BIST,
-  Fon, Emtia, Döviz, Nakit, Kripto — her biri kendi 1-günlük değişimini gösterir). Veri zaten var:
-  Performans sekmesinin kullandığı `GrafikDeposu.kategoriGetirileri(donem, bugun)` fonksiyonu
-  `Donem.BIR_GUN` ile çağrılarak yeniden kullanılacak, yeni bir hesaplama yazılmayacak.
+- Getiri rakamları **her seviyede** (toplam, kategori, varlık) aynı biçimde ve **dönem seçilebilir**
+  şekilde gösterilecek — aşağıdaki tasarım bölümünde ayrıntısı var.
 - Kategori satırlarındaki "piyasa kapalı" etiketi kaldırılıyor (`KategoriSatiri`'deki
   `piyasaKapali` kontrolü ve metni).
 
-**Kapsam dışı (açıkça belirtildi/varsayıldı):** M19'da yapılıp geri alınan TL/USD para birimi geçiş
-düğmesi bu planın parçası değil — kullanıcı bu istekte TL/USD'den bahsetmedi, yalnızca aynı anda hem
-TL hem yüzde göstermek istedi (bu, para birimi seçmekten farklı bir şey). İstenirse ayrı bir milestone
-olarak tekrar ele alınabilir.
+**Kapsam dışı:** TL/USD para birimi geçişi bu milestone'da değil, **M23**'te ele alınıyor (orada
+tetikleyici ayrı bir düğme değil, rakamın kendisi oluyor).
 
 **Karar (önerim, aksini söylemezsen bu şekilde ilerlerim):**
 - Yeni rota: `grafik` (NavHost'ta `composable("grafik")`), Portföy ekranındaki grafik ikonuna/satırına
@@ -1034,49 +1029,80 @@ olarak tekrar ele alınabilir.
 ### Tasarım (kullanıcıyla netleşti, 2026-10-08)
 
 Performans sekmesi kalkınca Portföy ekranı hem "ne kadar param var" (büyüklük) hem "nasıl gidiyor"
-(getiri) sorularını tek ekranda cevaplamalı — ikisi de birinci sınıf, biri diğerinin gölgesinde kalmaz.
+(getiri) sorularını tek ekranda cevaplamalı. Bunun için getiri **her seviyede aynı biçimde** ve
+**dönem seçilebilir** gösterilir; böylece toplam → kategori → varlık boyunca tek bir okuma alışkanlığı
+oluşur.
 
-**Blok 2 — özet kartı, yeni düzen (yukarıdan aşağı):**
+**Ortak biçim — kâr/zarar her yerde `TL (yüzde)`:**
 ```
-┌─────────────────────────────────────┐
-│  503.263,96 ₺                       │  ← toplam değer (displaySmall, mevcut)
-│  ▲ %12,34    ▲ 61.200,00 ₺          │  ← TÜM ZAMANLAR getirisi (mevcut, konumu/stili değişmiyor)
-│  ─────────────────────────────────  │  ← ince ayraç (yeni)
-│  Bugün   ▲ %0,22    ▲ 1.108,14 ₺  📈│  ← YENİ: günlük değişim + grafik ikonu (aynı satırda, sağda)
-│  son güncelleme: 2 dk önce           │  ← GuncellemeBilgisi (mevcut)
-└─────────────────────────────────────┘
+▲ 6,01 ₺ (%0,09)
 ```
-Sıralama mantığı: önce "büyük resim" (tüm zamanlar getirisi — ne kazandım/kaybettim), sonra "bugün ne
-oldu" (günlük değişim). Grafik ikonu artık büyük rakamın yanında değil, günlük değişim satırının
-sağında — tıklanınca `grafik` ekranı açılır (M19'da denenen yer, M21'de kalıcılaşıyor).
+Soldaki rakam kâr/zararın TL karşılığı, parantez içindeki **aynı kârın** yüzdesi — ikisi aynı şeyin
+iki birimi. Yön oku ve renk mevcut `getiriRengi` kuralıyla aynı. Bu biçim özet kartında, kategori
+satırında ve varlık satırında birebir aynıdır.
 
-**Kategori satırları (`KategoriSatiri`) — yeni düzen:**
+**Ortak bileşen — dönem düğmesi:** Küçük, dokununca sırayla değişen bir düğme: **G → H → TÜM → G…**
+(günlük / haftalık / tümü). Yanındaki getiri rakamları seçilen döneme göre yeniden yazılır. Her
+satırın **kendi seçimi** vardır, biri diğerini etkilemez (ör. ABD günlük, Fon toplam görünebilir).
+Üç dönem de önceden hesaplanıp hazır tutulduğu için geçişler anında olur, her dokunuşta yeniden
+hesaplama beklenmez.
+
+**1) Özet kartı (Blok 2):**
 ```
-[ikon] ABD                              503.263,96 ₺
-                                      ▲ %0,18  ▲ 904,00 ₺   ← YENİ: günlük değişim, küçük punto, sağa yaslı
+┌────────────────────────────────────────────┐
+│  503.263,96 ₺                          📈  │  ← toplam değer + grafik ikonu (sağ üstte)
+│  ▲ 61.200,00 ₺ (%12,34)           [ TÜM ]  │  ← getiri: TL solda, yüzde parantezde + dönem düğmesi
+│  son güncelleme: 21.00                     │
+└────────────────────────────────────────────┘
 ```
-Yalnızca **günlük değişim** eklenir — tüm zamanlar getirisi kategori satırında tekrar edilmez, çünkü
-bu bilgi zaten her varlığın kendi satırında (kategoriye dokununca açılan akordiyonda, `VarlikSatiri`)
-görünüyor. Kategori satırı böylece sade kalır, bilgi tekrarı olmaz.
+TL ile yüzdenin **yeri değişti**: eskiden yüzde soldaydı, artık TL solda. Grafik ikonu büyük rakamın
+sağında, dönem düğmesi getiri satırının sağında — iki kontrol ayrı satırlarda durduğu için birbirine
+girmez.
+
+**2) Kategori satırı (`KategoriSatiri`):**
+```
+[v] [ikon] Fon                        100.000,00 ₺
+                        ▲ 15.000,00 ₺ (%15,00)  [ G ]
+```
+Üstte kategorinin toplam değeri (mevcut), altında aynı `TL (yüzde)` biçiminde kâr/zarar ve kendi
+dönem düğmesi. "piyasa kapalı" etiketi kaldırılır.
+
+**3) Varlık satırı (`VarlikSatiri`, akordiyon içi):**
+```
+AFT                                     6.650,00 ₺
+12,5 pay                     ▲ 6,01 ₺ (%0,09)
+```
+Aynı `TL (yüzde)` biçimi. Varlık satırları **bağlı oldukları kategorinin** dönem seçimini izler —
+kategori G'deyse altındaki varlıklar da günlük gösterir. Varlık satırına ayrı düğme konmaz; tutarlılık
+kendiliğinden sağlanır ve satır sade kalır.
+
+**Dokunma hedefleri — çakışma notu:** Kategori satırının kendisi zaten dokununca açılıp kapanıyor;
+dönem düğmesi bunun içinde ayrı bir dokunma hedefi olacak (Compose'da iç `clickable` olayı tüketir,
+satır açılmaz). Bu yüzden kategori/varlık satırlarındaki rakamlara **para birimi için dokunma
+eklenmez** — üçüncü bir davranış satırı belirsizleştirir. TL↔USD geçişi (M23) yalnızca özet kartı ve
+grafik ekranındaki rakamlarda olur.
 
 ### Alt görevler
 | # | İş |
 |---|---|
 | M21.1 | `Uygulama.kt`: `Sekme.PERFORMANS` ve ilgili `NavigationBarItem`/composable kaldırılır; alt bar yalnızca Ekle+Portföy |
-| M21.2 | Performans ekranının içeriği yeni `grafik` rotasına taşınır (dosya/paket adı implementasyon sırasında netleşir — ör. `ui/grafik/GrafikEkrani.kt`); `onVarlikTikla` davranışı korunur |
-| M21.3 | `PortfoyEkrani.kt` Blok 2: eski satır-içi `DegerGrafigi`/`AnimatedVisibility` kaldırılır; grafik ikonu artık `nav` ile yeni ekrana gider |
-| M21.4 | `PortfoyViewModel.kt`: `gunlukDegisim` (toplam, M19'dan yeniden kurulur) + yeni `kategoriGunlukDegisim: StateFlow<Map<Category, KategoriDonemGetirisi>>` (`kategoriGetirileri(BIR_GUN, bugun)`) |
-| M21.5 | `PortfoyEkrani.kt` Blok 2: tüm zamanlar getirisinin altına ince ayraç + "Bugün" etiketli günlük değişim satırı (TL + %) + grafik ikonu aynı satırda |
-| M21.6 | `PortfoyEkrani.kt` `KategoriSatiri`: her kategoriye kendi günlük değişim satırı (TL + %); `piyasaKapali` metni kaldırılır |
-| M21.7 | Eski `PerformansViewModel`/`PerformansEkrani` dosyaları temizlenir (taşındıktan sonra tekrar eden kod kalmaz) |
+| M21.2 | Performans ekranının içeriği yeni `grafik` rotasına taşınır (ör. `ui/grafik/GrafikEkrani.kt`); `onVarlikTikla` davranışı korunur |
+| M21.3 | `PortfoyEkrani.kt` Blok 2: eski satır-içi `DegerGrafigi`/`AnimatedVisibility` kaldırılır; grafik ikonu büyük rakamın sağında, `nav` ile yeni ekrana gider |
+| M21.4 | Yeni ortak bileşenler: `KarZararYazisi` (`TL (yüzde)` biçimi, renkli, yön oklu) ve `DonemDugmesi` (G/H/TÜM, dokununca sırayla değişir) |
+| M21.5 | `PortfoyViewModel.kt`: G/H/TÜM üç dönemin kategori+varlık getirileri önceden hesaplanır (`kategoriGetirileri` üç dönem için); özet kartı ve her kategori satırı için **ayrı** dönem seçimi durumu tutulur |
+| M21.6 | Blok 2 getiri satırı: TL sola alınır, yüzde parantez içine girer, sağına dönem düğmesi |
+| M21.7 | `KategoriSatiri`: değerin altına `TL (yüzde)` + dönem düğmesi; `piyasaKapali` metni kaldırılır |
+| M21.8 | `VarlikSatiri`: `TL (yüzde)` biçimine çevrilir, kategorinin dönem seçimini izler |
+| M21.9 | Eski `PerformansViewModel`/`PerformansEkrani` dosyaları temizlenir (taşındıktan sonra tekrar eden kod kalmaz) |
 
 **Kabul kriteri (doğrulanacak):** Alt barda yalnızca 2 sekme var; Portföy'de grafik ikonuna basınca
-ayrı bir tam ekran açılıp geri tuşuyla Portföy'e dönülüyor; toplam ve her kategori satırında günlük
-değişim doğru hesaplanıp TL+yüzde olarak görünüyor; "piyasa kapalı" metni hiçbir yerde yok; mevcut
-Performans işlevselliğinin (dönem seçimi, sıralama, kategori/varlık kırılımı) hiçbiri kaybolmadan yeni
-ekranda çalışıyor.
+ayrı bir tam ekran açılıp geri tuşuyla dönülüyor; özet kartı, kategori ve varlık satırlarının üçü de
+`TL (yüzde)` biçimini kullanıyor; dönem düğmeleri G/H/TÜM arasında geçiyor ve her satır kendi seçimini
+koruyor; varlık satırları kategorilerinin dönemini izliyor; "piyasa kapalı" metni hiçbir yerde yok;
+eski Performans işlevlerinin (dönem seçimi, sıralama, kırılım) hiçbiri kaybolmadan yeni ekranda
+çalışıyor.
 
-**Boyut:** L — navigasyon değişikliği + iki ekranın birleşimi + yeni hesaplama bağlantıları.
+**Boyut:** L — navigasyon değişikliği + iki ekranın birleşimi + üç seviyede yeni getiri gösterimi.
 
 ### Uygulama sırası (her aşamadan sonra derleme/test; önce M20 bitmiş olmalı — Kripto kategorisi kategori satırı listesine zaten dahil olsun diye)
 1. **Grafik ekranını taşı** — Performans ekranının dosyalarını (`PerformansEkrani.kt`,
@@ -1088,17 +1114,88 @@ ekranda çalışıyor.
 3. **Portföy ekranını sadeleştir** — eski satır içi `DegerGrafigi`/`AnimatedVisibility`/`donem` durumu
    `PortfoyViewModel`'den ve `PortfoyEkrani.kt`'den kaldırılır; grafik ikonu artık yalnızca `grafik`
    rotasına gider (M21.3). Derle, test düğmesi kaldırılır.
-4. **Günlük değişim — toplam** — `PortfoyViewModel.gunlukDegisim` (M19'dan yeniden kurulur) eklenir,
-   Blok 2'de toplam değerin altına TL+% satırı (M21.4 kısmen, M21.5).
-5. **Günlük değişim — kategori bazlı** — `kategoriGunlukDegisim` StateFlow'u eklenir,
-   `KategoriSatiri`'ye TL+% satırı eklenir; aynı adımda `piyasaKapali` metni kaldırılır (M21.4 kalanı,
-   M21.6).
-6. **Temizlik** — artık kullanılmayan eski Performans dosyaları/testleri silinir, kalıntı import/kod
-   kalmadığından emin olunur (M21.7).
-7. **Tam derleme + emülatör doğrulaması** — alt bar 2 sekme; grafik ekranı açılıp kapanıyor; toplam ve
-   her kategori satırında günlük değişim doğru; "piyasa kapalı" hiçbir yerde yok; eski Performans
-   işlevlerinin (dönem/sıralama/kırılım) hepsi yeni ekranda çalışıyor.
-8. Commit.
+4. **Ortak bileşenler** — `KarZararYazisi` ve `DonemDugmesi` yazılır (M21.4); önce tek başına, sahte
+   veriyle önizlenebilir hâlde. Biçim kararı (`TL (yüzde)`) tek yerde durur, üç seviye de bunu kullanır.
+5. **Veri katmanı** — `PortfoyViewModel`'de G/H/TÜM üç dönemin getirileri hesaplanıp hazır tutulur,
+   özet kartı ve her kategori için ayrı seçim durumu eklenir (M21.5). Üç dönemin aynı anda
+   hesaplanması ölçülür; yavaşlarsa `Dispatchers.Default` üzerinde zaten çalıştığı için ekran
+   kilitlenmez ama ilk gösterim gecikebilir — gerekirse TÜM önce, G/H arkadan gelir.
+6. **Üç seviyenin arayüzü** — sırayla özet kartı (M21.6), kategori satırı (M21.7), varlık satırı
+   (M21.8). Her biri ayrı ayrı emülatörde bakılır; `piyasaKapali` bu adımda kaldırılır.
+7. **Temizlik** — artık kullanılmayan eski Performans dosyaları/testleri silinir, kalıntı import/kod
+   kalmadığından emin olunur (M21.9).
+8. **Tam derleme + emülatör doğrulaması** — yukarıdaki kabul kriterinin tamamı tek tek denenir.
+9. Commit.
+
+---
+
+## M22 — Grafik ekranı: tam dönem seti ve kısa etiketler (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+
+**İstek.** Grafik ekranında 1 gün, 1 hafta, 1 ay, 3 ay, 6 ay, YTD, 1 yıl ve tümü arasında geçiş
+yapılabilsin; getiriler hem yüzde hem TL yazsın; etiketler kısaltılsın (1G, 1H, 1A, 3A, 6A…).
+
+**Mevcut durum — işin büyük kısmı zaten hazır.** `Donem` enum'ında dokuz dönem **zaten tanımlı**
+(1 Gün, 1 Hafta, 1 Ay, 3 Ay, 6 Ay, YTD, 1 Yıl, 3 Yıl, Tümü) ve hepsinin `baslangic()` hesabı yazılmış
+durumda; `DonemSecici` de `Donem.entries`in tamamını yatay kaydırmalı çip olarak gösteriyor. Getiri
+hem yüzde hem TL olarak ekranda zaten var. Yani eksik olan tek şey **etiketlerin uzunluğu**: uzun
+etiketler yüzünden çipler ekrana sığmıyor, kullanıcı yatay kaydırmadan hepsini göremiyor.
+
+**Karar:** `Donem`'e `kisaEtiket` alanı eklenir (1G, 1H, 1A, 3A, 6A, YTD, 1Y, 3Y, Tümü), `DonemSecici`
+bunu kullanır. Kısa etiketlerle çipler büyük ölçüde tek ekrana sığar. **3 Yıl listede kalır** —
+kullanıcının saydığı listede yoktu ama zaten çalışıyor ve kısa etiketle fazladan tek çip yer kaplıyor;
+çıkarmak için sebep yok.
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M22.1 | `Donem.kisaEtiket` eklenir (uzun `etiket` erişilebilirlik açıklaması olarak kalır) |
+| M22.2 | `DonemSecici` kısa etiketi gösterir; dokuz çipin sığdığı doğrulanır (küçük ekran dahil, M15 cihaz profilleriyle) |
+| M22.3 | Dokuz dönemin de doğru seri/getiri ürettiği emülatörde denenir (özellikle YTD ve Tümü) |
+
+**Kabul kriteri (doğrulanacak):** Grafik ekranında dokuz dönem kısa etiketlerle görünüyor; her birine
+basınca grafik ve getiri rakamları (hem yüzde hem TL) o döneme göre güncelleniyor; küçük ekranda da
+çipler okunabiliyor.
+
+**Boyut:** S — hesaplama tarafı hazır, iş yalnızca etiket ve yerleşim.
+
+---
+
+## M23 — Para birimi: rakama dokununca TL ↔ USD (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+
+**İstek.** Ayrı bir TL/USD düğmesi olmasın; getiri rakamının (ör. `%2,50`) üstüne dokununca sistem
+dolara geçsin.
+
+**M19'un geri dönüşü.** M19'da yapılıp geri alınan para birimi katmanı burada yeniden canlanıyor;
+tek fark, tetikleyicinin ayrı bir düğme değil **rakamın kendisi** olması (M19'daki sağ üst köşe
+düğmesi kullanıcı tarafından istenmedi). Geri alınan kod `24e9cf7` commit'inde duruyor ve oradan
+alınabilir: `ParaBirimiTercihi`, `ParaBirimiTercihiDeposu` (SharedPreferences ile kalıcı, M18'deki
+tema deseninin aynısı), `tryToUsd()`, `TrFormat.money(birim=)`, `PortfolioData.usdTryRate`.
+
+**Karar:**
+- Tercih **genel ve kalıcı**: bir yerde dolara geçilince uygulama genelinde dolar kalır, uygulama
+  kapanıp açılınca korunur.
+- Dokunma yalnızca **özet kartı** ve **grafik ekranı** rakamlarında. Kategori/varlık satırlarında
+  **değil** — o satırlarda zaten aç/kapa ve dönem düğmesi var, üçüncü bir dokunma davranışı
+  belirsizlik yaratır (M21 tasarım notu).
+- Kur yoksa sessizce TL'de kalınır, hata gösterilmez (M19'daki davranış).
+- Dokunulabilirliğin görünürlüğü: rakamın dokunulabilir olduğu dışarıdan belli olmadığı için ilk
+  gösterimde küçük bir ipucu gerekebilir (ör. rakamın yanında soluk `₺/$` işareti). Uygulama sırasında
+  emülatörde bakılıp karar verilecek.
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M23.1 | `24e9cf7`'den para birimi katmanı geri alınır (`git show 24e9cf7` ile dosya dosya) |
+| M23.2 | Özet kartındaki rakamlar dokunulabilir olur; dokunma TL↔USD çevirir |
+| M23.3 | Grafik ekranındaki getiri rakamları aynı davranışı alır |
+| M23.4 | Dokunulabilirlik ipucu (gerekiyorsa) eklenir |
+| M23.5 | Emülatör doğrulaması: geçiş anında oluyor, kalıcı, kur yokken çökmüyor |
+
+**Kabul kriteri (doğrulanacak):** Özet kartındaki ya da grafik ekranındaki getiri rakamına dokununca
+tüm uygulamada dolara geçiliyor; tekrar dokununca TL'ye dönüyor; uygulama kapanıp açılınca tercih
+korunuyor; kur alınamamışsa TL'de kalınıp hata gösterilmiyor.
+
+**Boyut:** S–M — kodun çoğu `24e9cf7`'de hazır, iş tetikleyiciyi değiştirmek.
 
 ---
 
