@@ -28,7 +28,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
 | M20 | Kripto kategorisi (BTC, ETH) | ✅ Bitti | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
 | M21 | Sekme birleştirme, Portföy detaylandırma | ✅ Bitti | Performans sekmesi kalktı, grafik ayrı ekran oldu; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
-| M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ⏳ Planlandı | Dokuz dönem zaten hazır; iş yalnızca kısa etiket (1G, 1H, 1A…) |
+| M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ✅ Bitti | Dokuz dönem zaten hazırdı; kısa etiket (1G, 1H, 1A…) eklendi |
 | M23 | Para birimi: rakama dokununca TL ↔ USD | ⏳ Planlandı | Ayrı düğme yok; M19'un geri alınan katmanı canlandırılıyor |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
@@ -1150,7 +1150,7 @@ geri dönülebilir.
 
 ---
 
-## M22 — Grafik ekranı: tam dönem seti ve kısa etiketler (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+## M22 — Grafik ekranı: tam dönem seti ve kısa etiketler (kullanıcı geri bildirimi, 2026-10-08) — ✅ Bitti
 
 **İstek.** Grafik ekranında 1 gün, 1 hafta, 1 ay, 3 ay, 6 ay, YTD, 1 yıl ve tümü arasında geçiş
 yapılabilsin; getiriler hem yüzde hem TL yazsın; etiketler kısaltılsın (1G, 1H, 1A, 3A, 6A…).
@@ -1173,9 +1173,9 @@ kullanıcının saydığı listede yoktu ama zaten çalışıyor ve kısa etiket
 | M22.2 | `DonemSecici` kısa etiketi gösterir; dokuz çipin sığdığı doğrulanır (küçük ekran dahil, M15 cihaz profilleriyle) |
 | M22.3 | Dokuz dönemin de doğru seri/getiri ürettiği emülatörde denenir (özellikle YTD ve Tümü) |
 
-**Kabul kriteri (doğrulanacak):** Grafik ekranında dokuz dönem kısa etiketlerle görünüyor; her birine
-basınca grafik ve getiri rakamları (hem yüzde hem TL) o döneme göre güncelleniyor; küçük ekranda da
-çipler okunabiliyor.
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-08):** Grafik ekranında dokuz dönem kısa etiketlerle
+(1G, 1H, 1A, 3A, 6A, YTD, 1Y, 3Y, Tümü) görünüyor, kaydırınca hepsi sığıyor; bir döneme (ör. 1Y)
+basınca çip seçili hâle geliyor ve getiri rakamları/grafik güncelleniyor; çökme yok.
 
 **Boyut:** S — hesaplama tarafı hazır, iş yalnızca etiket ve yerleşim.
 

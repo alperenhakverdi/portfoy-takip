@@ -56,7 +56,7 @@ fun DonemSecici(secili: Donem, onSec: (Donem) -> Unit, modifier: Modifier = Modi
             FilterChip(
                 selected = donem == secili,
                 onClick = { onSec(donem) },
-                label = { Text(donem.etiket) },
+                label = { Text(donem.kisaEtiket) },
             )
         }
     }
