@@ -26,7 +26,6 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M16 | UI temizliği (kullanıcı geri bildirimi) | ✅ Bitti | "Son eklenenler" kaldırıldı, grafik kartı notları sadeleşti, Performans satırları kısaldı |
 | M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
 | M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
-| M19 | Özet kartı yenileme: TL/USD, günlük değişim | ✅ Bitti | TL/USD düğmesi, günlük değişim satırı, grafik ikonu oraya taşındı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -926,46 +925,6 @@ bağlı olduğu için state paylaşımı sorunsuz çalıştı. Uygulama tamamen 
 tercih ("Koyu") korundu. Ardından "Sistem"e geri alındı, doğrulandı.
 
 **Boyut:** S–M — yeni bir ekran değil, küçük bir tercih + saklama katmanı.
-
----
-
-## M19 — Özet kartı yenileme: TL/USD geçişi, günlük değişim satırı (kullanıcı geri bildirimi, 2026-09-26) — ✅ Bitti
-
-**Sorun.** Kullanıcı Paramla uygulamasından referans ekran görüntüleri gösterdi: özet kartında
-TL/USD arasında geçiş yapılabiliyor, büyük rakamın altında bir "günlük değişim" satırı var ve bu
-satırın yanındaki grafik ikonuna basınca grafik açılıyor. Bizim eski tasarımımızda grafik aç/kapat
-ikonu büyük rakamın yanındaydı; kullanıcı bunu günlük değişim satırına **taşımak** istedi (kopya
-değil, taşıma — tek bir grafik tetikleyici). "Kar/Zarar" ve "portföy" adı gibi Paramla'ya özgü
-unsurlar bilinçli olarak alınmadı.
-
-**Kapsam kararları (uygulandı):**
-- Para birimi çevirisi yalnızca özet kartını kapsıyor (toplam değer, toplam getiri, günlük değişim).
-  Kategori/varlık satırları (Blok 3) TL kalıyor — depolama her zaman TL, bu ilk aşama için bilinçli
-  bir sınır.
-- Büyük toplam değer rakamı renksiz kalıyor (Paramla'daki gibi yeşil/kırmızı değil): onlardaki renk
-  "Kar/Zarar" moduna ait bir kâr rakamını temsil ediyor, bizimki mutlak portföy değeri — renklendirmek
-  yanıltıcı olurdu.
-- Günlük değişim hesaplaması için yeni bir mantık yazılmadı: Performans sekmesinde zaten var olan
-  "1 Gün" dönemi (`GrafikDeposu.hesapla(Donem.BIR_GUN, ...)`) yeniden kullanıldı.
-- Grafik aç/kapat ikonu büyük rakamın yanından günlük değişim satırına **taşındı**.
-
-### Alt görevler
-| # | İş |
-|---|---|
-| M19.1 | `ParaBirimiTercihi` (TL/USD) + `ParaBirimiTercihiDeposu` — M18'deki `TemaTercihiDeposu` ile birebir aynı `SharedPreferences` deseni |
-| M19.2 | `core/calc`: `tryToUsd()` (depolama TL kalır, görüntüleme için çevrim); `TrFormat.money()`/`signedMoney()`'e `birim` parametresi |
-| M19.3 | `PortfolioRepository`: `PortfolioData.usdTryRate` eklendi (son bilinen USD/TRY kuru) |
-| M19.4 | `PortfoyViewModel`: her zaman açık `gunlukDegisim` akışı (dönem seçiminden bağımsız, "1 Gün" sabit); `paraBirimi`/`paraBirimiSec()` |
-| M19.5 | `PortfoyEkrani`: sağ üstte TL/USD düğmesi (tema ikonunun yanında); özet kartı yeniden düzenlendi — büyük değer → getiri satırı → ayraç → "GÜNLÜK DEĞİŞİM" satırı (çevrilmiş tutar/yüzde + taşınan grafik ikonu) → son güncelleme → genişleyen grafik |
-
-**Kabul kriteri (doğrulandı, emülatör `portfoy_small`, 2026-09-26):** TL/USD düğmesi doğru render
-oluyor ve anında (yeniden başlatmadan) üç özet rakamını da doğru çeviriyor (örn. 503.017,38 ₺ ↔
-10.220,77 USD); tercih uygulama tamamen kapatılıp açıldığında korunuyor; günlük değişim satırı doğru
-hesaplanıp doğru renklendiriliyor; taşınan grafik ikonuna basınca dönem seçmeli grafik açılıp
-kapanıyor; kategori satırları (ABD, Emtia, Nakit, BIST) kapsam dışı bırakıldığı gibi TL'de kalıyor.
-
-**Boyut:** M — yeni ekran yok, mevcut desenlerin (M18 tercih deposu, Performans'ın 1 Gün hesabı)
-yeniden kullanımıyla sınırlı.
 
 ---
 
