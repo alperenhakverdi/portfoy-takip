@@ -31,6 +31,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ✅ Bitti | Dokuz dönem zaten hazırdı; kısa etiket (1G, 1H, 1A…) eklendi |
 | M23 | Para birimi: rakama dokununca TL ↔ USD | ✅ Bitti | Ayrı düğme yok; özet kartı + Grafik ekranı, kategori satırları TL kalıyor |
 | M24 | Dağılım grafiği: yüzdeler halkanın kenarında | ✅ Bitti | Alttaki liste kalktı; her dilimden kılavuz çizgili etiket |
+| M25 | ABD ve Kripto satırları: doğal para biriminde (USD) | ✅ Bitti | Kullanıcı tercihinden bağımsız, sabit kural; Portföy + Grafik |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1268,6 +1269,37 @@ sağda); alttaki liste tamamen kalktı; etiketler kırpılmıyor ve üst üste b
 temada okunuyor; kart yüksekliği 180 dp'ye indirilerek alttaki ölü boşluk giderildi.
 
 **Boyut:** S–M — tek bir çizim bileşeni, yeni veri ya da hesaplama yok.
+
+---
+
+## M25 — ABD ve Kripto satırları doğal para biriminde: USD (kullanıcı geri bildirimi, 2026-10-08) — ✅ Bitti
+
+**İstek.** Kategori/varlık satırlarında ABD ve Kripto hep TL'de gösteriliyordu (M23'te bilinçli kapsam
+dışı bırakılmıştı). Kullanıcı bu iki kategorinin kendi doğal para biriminde — USD — gösterilmesini
+istedi: zaten dolar cinsinden fiyatlanıyorlar, TL'ye çevirmek yerine dolar göstermek daha doğru.
+
+**Karar:** M23'teki genel TL/USD tercihinden (özet kartı, kullanıcı dokunuşuyla değişen) tamamen ayrı,
+**sabit bir kural**: `Category.ABD` ve `Category.KRIPTO` satırları (kategori toplamı + altındaki her
+varlık, hem Portföy hem Grafik ekranında) her zaman USD gösterir — kullanıcı tercihine bağlı değil,
+kullanıcı TL'yi seçmiş olsa bile bu iki kategori USD kalır. Kur yoksa (`usdTryRate == null`) mevcut
+`cevrilmisTutar()` zaten sessizce TL'ye düşüyor, aynı davranış burada da geçerli.
+
+`usdDogalMi(kategori): Boolean` ortak fonksiyonu `ui/para/ParaBirimiTercihi.kt`'ye eklendi (Portföy ve
+Grafik ekranlarının ikisi de kullanıyor, mantık tek yerde duruyor).
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M25.1 | `ui/para/ParaBirimiTercihi.kt`: `usdDogalMi()` eklendi |
+| M25.2 | `PortfoyEkrani.kt` `KategoriSatiri`/`VarlikSatiri`: ABD/Kripto için değer ve getiri USD'ye çevrilip gösteriliyor |
+| M25.3 | `GrafikEkrani.kt` kategori/varlık kırılımı: aynı kural |
+
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-08):** Portföy'de ABD kategori satırı "5.224,65 USD",
+altındaki GOOGL de "5.224,65 USD" (tek varlık olduğu için eşit); getiri satırı da USD
+("▼ 19,96 USD (%0,38)"); Emtia/Nakit/BIST/Döviz/Fon TL kalıyor. Grafik ekranının kategori
+kırılımında da ABD "201,99 USD" gösteriyor, diğerleri TL. Çökme yok.
+
+**Boyut:** S — mevcut `cevrilmisTutar()` altyapısının (M23) yeniden kullanımı, yeni hesaplama yok.
 
 ---
 

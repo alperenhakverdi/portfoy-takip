@@ -44,7 +44,9 @@ import com.portfoy.ui.bilesenler.CizgiGrafik
 import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.tr
+import com.portfoy.ui.para.ParaBirimiTercihi
 import com.portfoy.ui.para.cevrilmisTutar
+import com.portfoy.ui.para.usdDogalMi
 import com.portfoy.ui.tema.getiriRengi
 
 /**
@@ -142,8 +144,11 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
             }
 
             // Kategori kırılımı: satırda kategorinin toplam getirisi, dokununca altındaki varlıklar açılır.
+            // M25 — ABD ve Kripto'nun doğal para birimi dolar; bu iki kategoride TL yerine USD yazılır.
             items(ekran.kategoriler, key = { "kategori-${it.kategori}" }) { grup ->
                 val acik = grup.kategori in ekran.secim.acik
+                val usd = usdDogalMi(grup.kategori)
+                val (grupTl, grupBirim) = if (usd) cevrilmisTutar(grup.tl, ParaBirimiTercihi.USD, ekran.usdTryRate) else grup.tl to "₺"
                 Kutu(Modifier.clickable { vm.kategoriAcKapa(grup.kategori) }) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Row(Modifier.weight(1.4f), verticalAlignment = Alignment.CenterVertically) {
@@ -167,7 +172,7 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
                         // iki metnin üst üste binmesini önler, her biri satırın tamamını kullanabilir.
                         Column(horizontalAlignment = Alignment.End) {
                             Text(TrFormat.signedPercent(grup.yuzde), fontWeight = FontWeight.Bold, maxLines = 1, color = getiriRengi(grup.yuzde))
-                            Text(TrFormat.signedMoney(grup.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1, color = getiriRengi(grup.tl))
+                            Text(TrFormat.signedMoney(grupTl, grupBirim), style = MaterialTheme.typography.bodySmall, maxLines = 1, color = getiriRengi(grup.tl))
                         }
                     }
 
@@ -184,6 +189,7 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
                         Column {
                             grup.varliklar.forEach { satir ->
                                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                                val (satirTl, satirBirim) = if (usd) cevrilmisTutar(satir.tl, ParaBirimiTercihi.USD, ekran.usdTryRate) else satir.tl to "₺"
                                 Row(
                                     Modifier.fillMaxWidth().clickable { onVarlikTikla(satir.varlik.id) },
                                     verticalAlignment = Alignment.CenterVertically,
@@ -193,7 +199,7 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(TrFormat.signedPercent(satir.yuzde), style = MaterialTheme.typography.bodyMedium, maxLines = 1, color = getiriRengi(satir.yuzde))
-                                        Text(TrFormat.signedMoney(satir.tl), style = MaterialTheme.typography.bodySmall, maxLines = 1, color = getiriRengi(satir.tl))
+                                        Text(TrFormat.signedMoney(satirTl, satirBirim), style = MaterialTheme.typography.bodySmall, maxLines = 1, color = getiriRengi(satir.tl))
                                     }
                                 }
                             }

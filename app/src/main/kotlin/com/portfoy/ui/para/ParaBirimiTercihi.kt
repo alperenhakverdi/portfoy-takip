@@ -1,6 +1,7 @@
 package com.portfoy.ui.para
 
 import com.portfoy.calc.tryToUsd
+import com.portfoy.model.Category
 import java.math.BigDecimal
 
 /** M23 — Portföy/Grafik ekranlarındaki özet rakamların hangi para biriminde gösterileceği. Depolama her zaman TL kalır. */
@@ -20,3 +21,6 @@ fun cevrilmisTutar(tl: BigDecimal, tercih: ParaBirimiTercihi, usdTryKuru: BigDec
     }
     return tl to "₺"
 }
+
+/** M25 — doğal para birimi dolar olan kategoriler: satırları TL'ye çevirmek yerine USD gösterilir. */
+fun usdDogalMi(kategori: Category): Boolean = kategori == Category.ABD || kategori == Category.KRIPTO

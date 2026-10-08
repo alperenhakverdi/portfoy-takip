@@ -61,10 +61,13 @@ import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
+import com.portfoy.ui.para.ParaBirimiTercihi
 import com.portfoy.ui.para.cevrilmisTutar
+import com.portfoy.ui.para.usdDogalMi
 import com.portfoy.ui.tema.TemaTercihi
 import com.portfoy.ui.tema.TemaViewModel
 import com.portfoy.ui.tema.getiriRengi
+import java.math.BigDecimal
 import java.time.Instant
 import kotlinx.coroutines.launch
 
@@ -225,6 +228,7 @@ private fun PortfoyIcerigi(
                 getiri = donemsel.kategori(durum.kategoriDonemi(kategori.category), kategori.category),
                 manuelFiyatli = veri.manualPriceAssetIds,
                 manuelZamanlar = veri.manualPriceTimes,
+                usdTryKuru = veri.usdTryRate,
                 vm = vm,
                 onVarlikTikla = onVarlikTikla,
             )
@@ -316,9 +320,18 @@ private fun KategoriSatiri(
     getiri: com.portfoy.data.repository.KategoriDonemGetirisi?,
     manuelFiyatli: Set<Long>,
     manuelZamanlar: Map<Long, Instant>,
+    usdTryKuru: BigDecimal?,
     vm: PortfoyViewModel,
     onVarlikTikla: (Long) -> Unit,
 ) {
+    val usd = usdDogalMi(kategori.category)
+    val (gosterilenDeger, birim) = if (usd) cevrilmisTutar(kategori.value, ParaBirimiTercihi.USD, usdTryKuru)
+    else kategori.value to "₺"
+    val gosterilenGetiri = getiri?.let {
+        val tl = if (usd) cevrilmisTutar(it.tl, ParaBirimiTercihi.USD, usdTryKuru).first else it.tl
+        GetiriDegeri(tl, it.yuzde)
+    }
+
     Kutu {
         Row(
             Modifier.fillMaxWidth().clickable { vm.kategoriyiAcKapat(kategori.category) },
@@ -329,13 +342,14 @@ private fun KategoriSatiri(
             KategoriIkonu(kategori.category, Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
             Text(kategori.category.etiket(), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(TrFormat.money(kategori.value), style = MaterialTheme.typography.titleMedium)
+            Text(TrFormat.money(gosterilenDeger, birim), style = MaterialTheme.typography.titleMedium)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
             KarZararYazisi(
-                getiri?.let { GetiriDegeri(it.tl, it.yuzde) },
+                gosterilenGetiri,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(end = 8.dp),
+                birim = birim,
             )
             DonemDugmesi(donem, onTikla = { vm.kategoriDonemiDegistir(kategori.category) })
         }
@@ -347,6 +361,8 @@ private fun KategoriSatiri(
                         sonuc = varlik,
                         getiri = getiri?.varliklar?.firstOrNull { it.varlik.id == varlik.asset.id }
                             ?.let { GetiriDegeri(it.tl, it.yuzde) },
+                        usd = usd,
+                        usdTryKuru = usdTryKuru,
                         elleFiyat = varlik.asset.id in manuelFiyatli,
                         elleFiyatZamani = manuelZamanlar[varlik.asset.id],
                         onTikla = { onVarlikTikla(varlik.asset.id) },
@@ -362,18 +378,26 @@ private fun KategoriSatiri(
 private fun VarlikSatiri(
     sonuc: AssetResult,
     getiri: GetiriDegeri?,
+    usd: Boolean,
+    usdTryKuru: BigDecimal?,
     elleFiyat: Boolean,
     elleFiyatZamani: Instant?,
     onTikla: () -> Unit,
 ) {
     val nakit = sonuc.asset.category == Category.NAKIT
+    val (gosterilenDeger, birim) = if (usd) cevrilmisTutar(sonuc.currentValue, ParaBirimiTercihi.USD, usdTryKuru)
+    else sonuc.currentValue to "₺"
+    val gosterilenGetiri = if (usd) getiri?.let {
+        GetiriDegeri(cevrilmisTutar(it.tl, ParaBirimiTercihi.USD, usdTryKuru).first, it.yuzde)
+    } else getiri
+
     Column(Modifier.fillMaxWidth().clickable(onClick = onTikla)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(sonuc.asset.code, fontWeight = FontWeight.Bold)
                 if (!nakit) Text(sonuc.asset.name, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(TrFormat.money(sonuc.currentValue), fontWeight = FontWeight.Bold)
+            Text(TrFormat.money(gosterilenDeger, birim), fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(2.dp))
         if (!nakit) {
@@ -383,7 +407,7 @@ private fun VarlikSatiri(
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(1f),
                 )
-                KarZararYazisi(getiri, style = MaterialTheme.typography.bodySmall)
+                KarZararYazisi(gosterilenGetiri, style = MaterialTheme.typography.bodySmall, birim = birim)
             }
         }
         if (sonuc.priceMissing) Text("fiyat alınamadı", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
