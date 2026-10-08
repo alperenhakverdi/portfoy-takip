@@ -9,7 +9,7 @@ import kotlinx.coroutines.delay
 
 /** Hangi kaynak çiftinin hangi varlık türünü çekeceği. */
 enum class RouteKey {
-    US, BIST, FUND, COMMODITY, FX;
+    US, BIST, FUND, COMMODITY, FX, CRYPTO;
 
     companion object {
         fun of(asset: AssetRef): RouteKey? = when (asset.category) {
@@ -19,6 +19,7 @@ enum class RouteKey {
             Category.EMTIA -> COMMODITY
             Category.DOVIZ -> FX // döviz varlığı, çevrim kuruyla aynı kaynaklardan gelir
             Category.NAKIT -> null // nakit için kaynak yok, fiyat sabit 1,00 ₺
+            Category.KRIPTO -> CRYPTO
             null -> FX
         }
     }

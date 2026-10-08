@@ -96,6 +96,7 @@ class TazelemeZamanlayici(
         RefreshGroup.FUND -> Category.FON
         RefreshGroup.GOLD -> Category.EMTIA
         RefreshGroup.FX -> Category.DOVIZ
+        RefreshGroup.KRIPTO -> Category.KRIPTO
     }
 
     companion object {

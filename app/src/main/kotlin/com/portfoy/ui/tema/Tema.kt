@@ -42,6 +42,7 @@ data class AppRenkler(
     val kategoriEmtia: Color,
     val kategoriDoviz: Color,
     val kategoriNakit: Color,
+    val kategoriKripto: Color,
     val nakitBayrakKirmizi: Color,
 ) {
     /** Getiri işaretine göre renk: artı kazanç, eksi kayıp, sıfır/`null` ikincil metin (nötr). */
@@ -52,6 +53,7 @@ data class AppRenkler(
         Category.EMTIA -> kategoriEmtia
         Category.DOVIZ -> kategoriDoviz
         Category.NAKIT -> kategoriNakit
+        Category.KRIPTO -> kategoriKripto
     }
 }
 
@@ -73,6 +75,7 @@ private val AcikRenkler = AppRenkler(
     kategoriEmtia = Color(0xFFCA8A04),
     kategoriDoviz = Color(0xFF0891B2),
     kategoriNakit = Color(0xFF64748B),
+    kategoriKripto = Color(0xFFDB2777),
     nakitBayrakKirmizi = Color(0xFFE30A17),
 )
 
@@ -94,6 +97,7 @@ private val KoyuRenkler = AppRenkler(
     kategoriEmtia = Color(0xFFEAB308),
     kategoriDoviz = Color(0xFF22D3EE),
     kategoriNakit = Color(0xFF94A3B8),
+    kategoriKripto = Color(0xFFF472B6),
     nakitBayrakKirmizi = Color(0xFFE30A17),
 )
 

@@ -26,7 +26,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M16 | UI temizliği (kullanıcı geri bildirimi) | ✅ Bitti | "Son eklenenler" kaldırıldı, grafik kartı notları sadeleşti, Performans satırları kısaldı |
 | M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
 | M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
-| M20 | Kripto kategorisi (BTC, ETH) | ⏳ Planlandı | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
+| M20 | Kripto kategorisi (BTC, ETH) | ✅ Bitti | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
 | M21 | Sekme birleştirme, Portföy detaylandırma | ⏳ Planlandı | Performans sekmesi kalkıyor, grafik ayrı ekran oluyor; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
 | M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ⏳ Planlandı | Dokuz dönem zaten hazır; iş yalnızca kısa etiket (1G, 1H, 1A…) |
 | M23 | Para birimi: rakama dokununca TL ↔ USD | ⏳ Planlandı | Ayrı düğme yok; M19'un geri alınan katmanı canlandırılıyor |
@@ -932,7 +932,7 @@ tercih ("Koyu") korundu. Ardından "Sistem"e geri alındı, doğrulandı.
 
 ---
 
-## M20 — Kripto kategorisi: yalnızca Bitcoin ve Ethereum (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+## M20 — Kripto kategorisi: yalnızca Bitcoin ve Ethereum (kullanıcı geri bildirimi, 2026-10-08) — ✅ Bitti
 
 **İstek.** Yeni bir kategori: Kripto. Kapsam dar tutuluyor — yalnızca Bitcoin ve Ethereum, geniş bir
 kripto borsası taraması yok. `Category` modeli bu türden genişlemeye zaten hazır (M1'den beri:
@@ -971,10 +971,16 @@ kripto borsası taraması yok. `Category` modeli bu türden genişlemeye zaten h
 | M20.8 | UI: `KategoriIkonlari.kt` + `Tema.kt` (ikon/renk), `etiket()` ("Kripto"), `EkleEkrani.kt` kategori listesi + `aciklama()` ("Bitcoin, Ethereum") |
 | M20.9 | `Category.piyasa` (Portföy ekranındaki takvim uzantısı) — Kripto `null` döner, zaten "piyasa kapalı" kavramı olmayan kategoriler gibi davranır |
 
-**Kabul kriteri (doğrulanacak):** Ekle ekranında Kripto kategorisi seçilince arama yapmadan BTC ve
-ETH listelenir; eklenince fiyat çekilip TL karşılığı doğru hesaplanır; Portföy ekranında Kripto
-kategorisi diğerleri gibi görünür; geçmiş seri (grafik) çalışır; kur yokken uygulama çökmez, sessizce
-atlar.
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-08):** Ekle ekranında Kripto kategorisi pembe Bitcoin
+ikonuyla ve "Bitcoin, Ethereum" açıklamasıyla görünüyor; içine girince BTC ve ETH arama yapmadan
+doğrudan listeleniyor; BTC'ye dokununca "BTC — Bitcoin • Kripto" başlıklı alım ekranı açılıp fiyat
+çekimi doğru rotaya (Yahoo, `BTC-USD`) gidiyor. **Canlı fiyat çekimi bu oturumda doğrulanamadı** —
+emülatörde önceden teşhis edilen Avast SSL kesintisi (bu kez Windows host'un tarayıcı güvenini değil,
+Android emülatörünün kendi sertifika deposunu etkiliyor) o an TÜM kaynakları (TRUNCGIL, TCMB_DAILY,
+YAHOO) aynı `Trust anchor for certification path not found` hatasıyla engelliyordu — Kripto'ya özgü
+değil, o anki ağ erişiminin tamamını kapsayan ortam sorunu. Kod yolunun doğru çalıştığı (rota, yeniden
+deneme, hata günlüğü) loglardan teyit edildi. Birim testlerin tamamı (yeni `RouteKey`/`Yahoo
+sembol`/`RefreshSchedule` testleri dahil) geçti.
 
 **Boyut:** M — yeni bir ekran yok ama fiyat/geçmiş/tazeleme katmanlarının üçüne de dokunuyor.
 

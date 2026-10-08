@@ -31,7 +31,7 @@ class GunlukSayac(private val cap: Int, private val clock: Clock, private val zo
 /** Zincirdeki bir kaynak. [varlik] doluysa çağrıdaki varlık yerine bu sembol sorulur (ör. Yahoo'da `GC=F`). */
 data class GecmisKaynagi(val kaynak: PriceSource, val varlik: AssetRef? = null)
 
-enum class GecmisAnahtari { KUR, ABD, BIST, FON, ONS_ALTIN, ONS_GUMUS }
+enum class GecmisAnahtari { KUR, ABD, BIST, FON, ONS_ALTIN, ONS_GUMUS, KRIPTO }
 
 /**
  * Geçmiş kapanış serilerini kaynaklardan alır. Her tür için bir kaynak zinciri vardır; ilki boş ya da hatalı dönerse
@@ -44,6 +44,7 @@ enum class GecmisAnahtari { KUR, ABD, BIST, FON, ONS_ALTIN, ONS_GUMUS }
  * | BIST | Yahoo |
  * | Fon | TEFAS |
  * | Gram altın/gümüş | ons (Twelve Data → Yahoo) × USD/TRY geçmişi ÷ 31,1035 (Truncgil geçmiş vermez) |
+ * | Kripto | Yahoo (tek kaynak, yedeksiz — M20'de basit başlangıç) |
  *
  * Kaynak çağrıları günlük geçmiş bütçesinden düşülür; bütçe yetmezse [BudgetExceededException] döner ve iş ertesi güne kalır.
  */
@@ -57,6 +58,7 @@ class HistoryRouter(
         asset.category == Category.BIST -> zincir(GecmisAnahtari.BIST, asset, from, to)
         asset.category == Category.FON -> zincir(GecmisAnahtari.FON, asset, from, to)
         asset.category == Category.EMTIA -> emtia(asset, from, to)
+        asset.category == Category.KRIPTO -> zincir(GecmisAnahtari.KRIPTO, asset, from, to)
         else -> Result.failure(UnsupportedOperationException("Geçmiş seri bu varlık için yok: ${asset.code}"))
     }
 

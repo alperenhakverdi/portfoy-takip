@@ -108,6 +108,7 @@ object DepoModulu {
             RouteKey.FUND to Route(tefas),
             RouteKey.COMMODITY to Route(truncgil, OnsEmtiaSource(yahoo)),
             RouteKey.FX to Route(truncgil, tcmb),
+            RouteKey.CRYPTO to Route(yahoo),
         ),
         budget = CallBudget(CallBudget.DEFAULT_DAILY_CAPS, clock, UygulamaZamanDilimi),
         health = SourceHealth(),
@@ -116,8 +117,9 @@ object DepoModulu {
     )
 
     /**
-     * Geçmiş seri zincirleri: kur EVDS → Yahoo, ABD Twelve Data → Yahoo, BIST Yahoo, fon TEFAS. Gram altın/gümüş, ons serisi
-     * (Twelve Data spot → Yahoo vadeli) ile kur serisinden türetilir; Truncgil geçmiş vermez.
+     * Geçmiş seri zincirleri: kur EVDS → Yahoo, ABD Twelve Data → Yahoo, BIST Yahoo, fon TEFAS, kripto Yahoo
+     * (tek kaynak). Gram altın/gümüş, ons serisi (Twelve Data spot → Yahoo vadeli) ile kur serisinden türetilir;
+     * Truncgil geçmiş vermez.
      */
     @Provides
     @Singleton
@@ -141,6 +143,7 @@ object DepoModulu {
                 GecmisKaynagi(twelve, AssetRef("XAG/USD", null)),
                 GecmisKaynagi(yahoo, AssetRef("SI=F", null)),
             ),
+            GecmisAnahtari.KRIPTO to listOf(GecmisKaynagi(yahoo)),
         ),
         sayac = GunlukSayac(CallBudget.HISTORY_DAILY_CAP, clock, UygulamaZamanDilimi),
     )

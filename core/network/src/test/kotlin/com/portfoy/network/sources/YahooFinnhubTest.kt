@@ -53,6 +53,15 @@ class YahooFinnhubTest {
     }
 
     @Test
+    fun `yahoo kripto sembolu USD cifti olarak istenir`() = runTest {
+        val http = SahteHttp.sabit(SahteHttp.fixture("yahoo_aapl.json"))
+        YahooSource(http).getQuotes(listOf(AssetRef("BTC", Category.KRIPTO), AssetRef("ETH", Category.KRIPTO)))
+
+        assertTrue(http.istekler[0].url.contains("/chart/BTC-USD?"))
+        assertTrue(http.istekler[1].url.contains("/chart/ETH-USD?"))
+    }
+
+    @Test
     fun `yahoo gecmis seri tarih sirali, bos kapanislar atlanir`() = runTest {
         val http = SahteHttp.sabit(SahteHttp.fixture("yahoo_aapl.json"))
         val mumlar = YahooSource(http).getHistory(aapl, LocalDate.of(2026, 8, 20), LocalDate.of(2026, 9, 21)).getOrThrow()

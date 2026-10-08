@@ -37,7 +37,7 @@ data class RefreshReport(
  *
  * - Aynı varlık için [autoMinAge] içinde ikinci istek atılmaz; önbellekten okunur (doküman 9.3/5).
  *   Elle yenilemede (pull-to-refresh) bu süre [manualMinAge]'dir.
- * - ABD fiyatları güncel USD/TRY ile TL'ye çevrilir. `priceTl` çevrim anındaki kurla saklanır.
+ * - ABD ve Kripto fiyatları (ikisi de USD) güncel USD/TRY ile TL'ye çevrilir. `priceTl` çevrim anındaki kurla saklanır.
  * - Elle fiyat girilen (`MANUEL`) varlıklar ve nakit tazelemeye girmez.
  * - Kaynak başarısız olursa hiçbir şey silinmez; son bilinen fiyat geçerli kalır.
  */
@@ -71,8 +71,8 @@ class PriceRepository(
         val limited = mutableSetOf<RouteKey>()
         var updated = 0
 
-        // Kur önce: ABD fiyatlarının TL karşılığı buna bağlıdır.
-        if (due.any { it.category == Category.ABD }) {
+        // Kur önce: ABD ve Kripto fiyatlarının TL karşılığı buna bağlıdır.
+        if (due.any { it.category == Category.ABD || it.category == Category.KRIPTO }) {
             val fxLatest = quoteDao.latestFor(FX_USDTRY_ID)
             if (fxLatest == null || Duration.between(fxLatest.timestamp, now) >= minAge) {
                 when (val outcome = router.quotes(RouteKey.FX, listOf(AssetRef.USDTRY))) {
@@ -86,7 +86,7 @@ class PriceRepository(
 
         for ((key, group) in due.groupBy { RouteKey.of(it.toRef()) }) {
             if (key == null) continue
-            if (key == RouteKey.US && usdTry == null) {
+            if ((key == RouteKey.US || key == RouteKey.CRYPTO) && usdTry == null) {
                 fxMissing = true
                 continue
             }

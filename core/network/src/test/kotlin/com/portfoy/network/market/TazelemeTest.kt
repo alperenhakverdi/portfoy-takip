@@ -102,12 +102,22 @@ class TazelemeTest {
     }
 
     @Test
-    fun `hafta sonu ve tatilde hicbir grup calismaz`() {
+    fun `hafta sonu ve tatilde kripto disinda hicbir grup calismaz`() {
         val cumartesi = LocalDate.of(2026, 9, 19)
-        RefreshGroup.entries.forEach { assertTrue("$it", program.slots(it, cumartesi).isEmpty()) }
+        (RefreshGroup.entries - RefreshGroup.KRIPTO).forEach { assertTrue("$it", program.slots(it, cumartesi).isEmpty()) }
         assertTrue(program.slots(RefreshGroup.BIST, LocalDate.of(2026, 10, 29)).isEmpty())
         assertTrue(program.slots(RefreshGroup.FUND, LocalDate.of(2026, 10, 29)).isEmpty())
         assertTrue(program.slots(RefreshGroup.US, LocalDate.of(2026, 7, 3)).isEmpty())
+    }
+
+    @Test
+    fun `kripto hafta sonu dahil gunun her saati 30 dakikada bir`() {
+        val cumartesi = LocalDate.of(2026, 9, 19)
+        val turlar = program.slots(RefreshGroup.KRIPTO, cumartesi)
+        assertEquals(48, turlar.size) // 00:00 - 23:30
+        assertEquals("00:00", tsi(turlar.first()))
+        assertEquals("23:30", tsi(turlar.last()))
+        assertTrue(turlar.all { it.kind == RoundKind.INTRADAY })
     }
 
     @Test

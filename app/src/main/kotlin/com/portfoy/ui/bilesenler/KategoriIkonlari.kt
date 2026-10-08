@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.CurrencyBitcoin
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -43,6 +44,7 @@ private fun Category.simge(): ImageVector = when (this) {
     Category.ABD -> Icons.Filled.Public
     Category.FON -> Icons.Filled.AccountBalance // "kumbara" yerine banka: fon bir kurumun ürünüdür
     Category.DOVIZ -> Icons.Filled.AttachMoney
+    Category.KRIPTO -> Icons.Filled.CurrencyBitcoin
     Category.EMTIA, Category.NAKIT -> error("Bu kategorinin kendi çizimi var, simge() çağrılmaz")
 }
 

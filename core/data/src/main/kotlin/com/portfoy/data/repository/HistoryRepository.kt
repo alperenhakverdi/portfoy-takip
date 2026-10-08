@@ -26,7 +26,7 @@ data class GecmisSonucu(val eklenen: Int, val hata: Throwable? = null) {
  * - Çekim **alış tarihinden** bugüne, en fazla 5 yıl geriye yapılır (doküman karar 3 ve 20).
  * - Zaten saklanan günler tekrar çekilmez: yalnızca eksik başlangıç ve son günler istenir. Bu yüzden her açılışta
  *   yeniden çekim olmaz (doküman 9.3/2).
- * - ABD fiyatları **o günün kuruyla** TL'ye çevrilir; bugünkü kurla çarpmak TL'nin değer kaybı yüzünden geçmiş değerleri
+ * - ABD ve Kripto fiyatları (ikisi de USD) **o günün kuruyla** TL'ye çevrilir; bugünkü kurla çarpmak TL'nin değer kaybı yüzünden geçmiş değerleri
  *   olduğundan yüksek gösterirdi. USD/TRY serisi tek sefer çekilir ([FX_USDTRY_ID]) ve tüm varlıklarca paylaşılır;
  *   portföye döviz olarak USD eklenirse o seri kopyalanır, yeniden çekilmez.
  * - Hafta sonu ve tatil günleri için kayıt yoktur; grafik hesabı son işlem gününün değeriyle düzleştirir.
@@ -54,7 +54,7 @@ class HistoryRepository(
         }
 
         var kur: List<Candle> = emptyList()
-        if (asset.category == Category.ABD) {
+        if (asset.category == Category.ABD || asset.category == Category.KRIPTO) {
             ensureFx(aralik.start, bugun).let { if (!it.basarili) return it }
             kur = historyDao.range(FX_USDTRY_ID, aralik.start.minusDays(KUR_GERI_BAKIS), bugun).map { Candle(it.date, it.close) }
         }
@@ -62,7 +62,7 @@ class HistoryRepository(
         val ref = AssetRef(asset.code, asset.category, asset.fundKind)
         return doldur(asset.id, ref, aralik.start, bugun) { mum ->
             when (asset.category) {
-                Category.ABD -> sonBilinenKur(kur, mum.date)?.let { mum.close * it }
+                Category.ABD, Category.KRIPTO -> sonBilinenKur(kur, mum.date)?.let { mum.close * it }
                 else -> mum.close
             }
         }

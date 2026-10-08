@@ -8,7 +8,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /** Tazeleme grupları: her birinin kendi ritmi ve takvimi vardır. */
-enum class RefreshGroup { US, BIST, FUND, GOLD, FX }
+enum class RefreshGroup { US, BIST, FUND, GOLD, FX, KRIPTO }
 
 enum class RoundKind { OPEN, INTRADAY, CLOSE, DAILY }
 
@@ -23,6 +23,7 @@ data class Slot(val time: Instant, val kind: RoundKind)
  * | Fon (TEFAS) | günde 1 kez, 21:15 (fiyat 21:00'de açıklanır) |
  * | Altın/gümüş | 08:00–22:00 arası 30 dk, hafta içi |
  * | USD/TRY | 09:00–19:00 arası saat başı, hafta içi (TCMB saat başı yayınlar) |
+ * | Kripto | 00:00–23:30 arası 30 dk, haftanın her günü (24/7 işlem görür, hafta sonu kısıtı yok) |
  *
  * Kapanış (ve fon) turu **kaçırılırsa telafi edilir**: uygulama akşam açılsa bile o günün kapanış turu
  * yapılır. Gün içi turlar telafi edilmez; birden fazla tur kaçmışsa yalnızca sonuncusu çalışır.
@@ -45,6 +46,10 @@ class RefreshSchedule(private val calendar: MarketCalendar = MarketCalendar()) {
         RefreshGroup.FX ->
             if (!calendar.isTradingDay(Market.BIST, date)) emptyList()
             else (9..19).map { Slot(at(date, LocalTime.of(it, 0)), RoundKind.INTRADAY) }
+        RefreshGroup.KRIPTO ->
+            // 24/7 işlem görür: hafta sonu/tatil kısıtı yok, altın/gümüşle aynı 30 dakikalık aralık.
+            // Sabit 48 tur (00:00–23:30): LocalTime gece yarısında sardığı için takeWhile kullanılmaz.
+            (0 until 48).map { Slot(at(date, LocalTime.of(0, 0).plusMinutes(it * 30L)), RoundKind.INTRADAY) }
     }
 
     /**

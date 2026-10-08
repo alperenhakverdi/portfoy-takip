@@ -96,6 +96,7 @@ private fun Category.aciklama(): String = when (this) {
     Category.EMTIA -> "Gram altın, gram gümüş"
     Category.DOVIZ -> "USD/TRY, EUR/TRY"
     Category.NAKIT -> "Türk Lirası nakit (yalnızca tutar)"
+    Category.KRIPTO -> "Bitcoin, Ethereum"
 }
 
 private val KATEGORILER = listOf(
@@ -104,6 +105,7 @@ private val KATEGORILER = listOf(
     Category.FON,
     Category.EMTIA,
     Category.DOVIZ,
+    Category.KRIPTO,
     Category.NAKIT,
 )
 

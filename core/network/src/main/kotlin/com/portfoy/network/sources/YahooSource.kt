@@ -69,6 +69,7 @@ class YahooSource(
         asset.fxCurrency != null -> "${asset.fxCurrency}TRY=X"
         asset.category == Category.BIST -> "${asset.code}.IS"
         asset.category == Category.ABD -> asset.code.replace('.', '-') // BRK.B → BRK-B
+        asset.category == Category.KRIPTO -> "${asset.code}-USD" // BTC → BTC-USD
         asset.category == null -> asset.code // ham sembol: GC=F, SI=F
         else -> null
     }

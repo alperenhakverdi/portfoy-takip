@@ -11,6 +11,7 @@ fun Category.etiket(): String = when (this) {
     Category.EMTIA -> "Emtia"
     Category.DOVIZ -> "Döviz"
     Category.NAKIT -> "Nakit"
+    Category.KRIPTO -> "Kripto"
 }
 
 /** Miktarın yanında yazılan birim: "10 adet", "5,5 gram", "120 pay". Nakitte birim yazılmaz. */
