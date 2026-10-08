@@ -29,9 +29,8 @@ object TrFormat {
     private fun format(pattern: String, value: BigDecimal): String =
         DecimalFormat(pattern, symbols).apply { roundingMode = RoundingMode.HALF_UP }.format(value)
 
-    /** [birim] M19'da TL/USD görüntüleme geçişi için — depolama her zaman TL, bu yalnız ekranda yazar. */
-    fun money(value: BigDecimal?, birim: String = "₺"): String =
-        if (value == null) EMPTY else "${format("#,##0.00", value)} $birim"
+    fun money(value: BigDecimal?): String =
+        if (value == null) EMPTY else "${format("#,##0.00", value)} ₺"
 
     fun percent(value: BigDecimal?): String =
         if (value == null) EMPTY else "%${format("#,##0.00", value)}"
@@ -46,9 +45,9 @@ object TrFormat {
     }
 
     /** "▲ 18.430,50 ₺" / "▼ 250,00 ₺"; sıfır yön işaretsizdir. */
-    fun signedMoney(value: BigDecimal?, birim: String = "₺"): String {
+    fun signedMoney(value: BigDecimal?): String {
         if (value == null) return EMPTY
-        return direction(value) + money(value.abs(), birim)
+        return direction(value) + money(value.abs())
     }
 
     /** İşaret, ekranda görünecek (yuvarlanmış) değere göre belirlenir: "▲ %0,00" görünmesin. */

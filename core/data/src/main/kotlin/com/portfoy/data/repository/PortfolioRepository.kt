@@ -39,8 +39,6 @@ data class PortfolioData(
     val manualPriceTimes: Map<Long, Instant> = emptyMap(),
     /** USD/TRY kurunun son güncellenme zamanı; ABD varlıklarının TL değeri bu kurla hesaplanır. */
     val fxTime: Instant? = null,
-    /** M19 — son bilinen USD/TRY kuru; TL→USD görüntüleme çevrimi için (depolama TL kalır). */
-    val usdTryRate: BigDecimal? = null,
 )
 
 class PortfolioRepository(
@@ -71,7 +69,6 @@ class PortfolioRepository(
             manualPriceAssetIds = quotes.filter { it.source == "MANUEL" }.map { it.assetId }.toSet(),
             manualPriceTimes = quotes.filter { it.source == "MANUEL" }.associate { it.assetId to it.timestamp },
             fxTime = quotes.firstOrNull { it.assetId == com.portfoy.data.db.FX_USDTRY_ID }?.timestamp,
-            usdTryRate = quotes.firstOrNull { it.assetId == com.portfoy.data.db.FX_USDTRY_ID }?.priceTl,
         )
     }
 

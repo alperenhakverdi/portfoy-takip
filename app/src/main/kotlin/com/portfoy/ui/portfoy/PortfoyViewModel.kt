@@ -13,8 +13,6 @@ import com.portfoy.data.repository.GrafikVerisi
 import com.portfoy.data.repository.PortfolioData
 import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.model.Category
-import com.portfoy.ui.para.ParaBirimiTercihi
-import com.portfoy.ui.para.ParaBirimiTercihiDeposu
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.portfoy.di.UygulamaZamanDilimi
 import java.time.Clock
@@ -66,7 +64,6 @@ class PortfoyViewModel @Inject constructor(
     private val depo: PortfolioRepository,
     private val yonetici: TazelemeYoneticisi,
     private val grafikDeposu: GrafikDeposu,
-    private val paraBirimiDeposu: ParaBirimiTercihiDeposu,
     gecmis: GecmisYoneticisi,
     private val saat: Clock,
 ) : ViewModel() {
@@ -104,23 +101,6 @@ class PortfoyViewModel @Inject constructor(
         }
         .flowOn(Dispatchers.Default) // seri hesabı ana iş parçacığında yapılmaz
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GrafikDurumu())
-
-    /**
-     * M19 — günlük değişim satırı: dönem seçiminden bağımsız, her zaman "1 Gün" (Performans
-     * sekmesindeki aynı hesaplama yeniden kullanılır). Grafik kapalıyken de hesaplanır çünkü artık
-     * her zaman görünen bir özet satırı.
-     */
-    val gunlukDegisim: StateFlow<GrafikVerisi?> = combine(
-        depo.observePortfolio(),
-        gecmis.guncellendi.onStart { emit(Unit) },
-    ) { _, _ -> Unit }
-        .mapLatest { grafikDeposu.hesapla(Donem.BIR_GUN, saat.instant().atZone(UygulamaZamanDilimi).toLocalDate()) }
-        .flowOn(Dispatchers.Default)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
-    val paraBirimi: StateFlow<ParaBirimiTercihi> = paraBirimiDeposu.tercih
-
-    fun paraBirimiSec(yeni: ParaBirimiTercihi) = paraBirimiDeposu.ayarla(yeni)
 
     fun kategoriyiAcKapat(kategori: Category) = durum.update {
         it.copy(acikKategoriler = if (kategori in it.acikKategoriler) it.acikKategoriler - kategori else it.acikKategoriler + kategori)

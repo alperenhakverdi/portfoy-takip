@@ -44,7 +44,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,15 +66,12 @@ import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
 import com.portfoy.ui.bilesenler.tr
-import com.portfoy.calc.tryToUsd
-import com.portfoy.ui.para.ParaBirimiTercihi
 import com.portfoy.ui.tema.TemaTercihi
 import com.portfoy.ui.tema.TemaViewModel
 import com.portfoy.ui.tema.getiriRengi
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -97,18 +93,9 @@ fun PortfoyEkrani(
     val bugun = remember { LocalDate.now(UygulamaZamanDilimi) }
     var temaDialogAcik by remember { mutableStateOf(false) }
 
-    val paraBirimi by vm.paraBirimi.collectAsState()
-
     Column(Modifier.fillMaxSize()) {
-        // M18 — tema tercihi (sağ) + M19 — TL/USD görüntüleme geçişi (solunda).
-        Row(
-            Modifier.fillMaxWidth().padding(end = 4.dp, top = 4.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ParaBirimiDugmesi(paraBirimi, onClick = {
-                vm.paraBirimiSec(if (paraBirimi == ParaBirimiTercihi.TL) ParaBirimiTercihi.USD else ParaBirimiTercihi.TL)
-            })
+        // M18 — tema tercihi: sağ üstte küçük bir ikon, üç seçenekli diyalog açar.
+        Row(Modifier.fillMaxWidth().padding(end = 4.dp, top = 4.dp), horizontalArrangement = Arrangement.End) {
             IconButton(onClick = { temaDialogAcik = true }) {
                 Icon(Icons.Filled.DarkMode, contentDescription = "Tema tercihi")
             }
@@ -128,7 +115,7 @@ fun PortfoyEkrani(
                     Text("Yükleniyor…")
                 }
                 ozet.isEmpty -> BosDurum(onEkleGit)
-                else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla, paraBirimi)
+                else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla)
             }
         }
     }
@@ -167,33 +154,6 @@ private fun TemaSecenegi(etiket: String, deger: TemaTercihi, secili: TemaTercihi
     }
 }
 
-/** M19 — üst özet kartının TL mi USD mi gösterileceğini değiştiren küçük buton. */
-@Composable
-private fun ParaBirimiDugmesi(secili: ParaBirimiTercihi, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .padding(end = 4.dp)
-            .clip(MaterialTheme.shapes.small)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            if (secili == ParaBirimiTercihi.TL) "TL" else "USD",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-        )
-    }
-}
-
-/** M19 — TL tutarı, kur varsa ve kullanıcı USD seçtiyse USD'ye çevirir; yoksa sessizce TL kalır. */
-private fun cevrilmisTutar(tl: BigDecimal, paraBirimi: ParaBirimiTercihi, usdTryKuru: BigDecimal?): Pair<BigDecimal, String> {
-    if (paraBirimi == ParaBirimiTercihi.USD && usdTryKuru != null && usdTryKuru.signum() > 0) {
-        return tryToUsd(tl, usdTryKuru) to "USD"
-    }
-    return tl to "₺"
-}
-
 /** Blok 4 — Boş durum: grafikler ve kategori listesi yerine yönlendirme. */
 @Composable
 private fun BosDurum(onEkleGit: () -> Unit) {
@@ -214,11 +174,9 @@ private fun PortfoyIcerigi(
     ozet: PortfolioSummary,
     vm: PortfoyViewModel,
     onVarlikTikla: (Long) -> Unit,
-    paraBirimi: ParaBirimiTercihi,
 ) {
     val veri = ekran.veri!!
     val durum = ekran.durum
-    val gunlukDegisim by vm.gunlukDegisim.collectAsState()
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -243,42 +201,24 @@ private fun PortfoyIcerigi(
             }
         }
 
-        // Blok 2 — Toplam portföy değeri (M19: TL/USD, günlük değişim + grafik tetikleyici burada).
+        // Blok 2 — Toplam portföy değeri.
         item {
-            val (deger, birim) = cevrilmisTutar(ozet.totalValue, paraBirimi, veri.usdTryRate)
-            val (kazanc, _) = cevrilmisTutar(ozet.profitLoss, paraBirimi, veri.usdTryRate)
             Kutu(kalinCerceve = true) {
-                Text(
-                    TrFormat.money(deger, birim),
-                    style = MaterialTheme.typography.displaySmall,
-                )
-                Text(
-                    "${TrFormat.signedPercent(ozet.returnPercent)}   ${TrFormat.signedMoney(kazanc, birim)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = getiriRengi(ozet.returnPercent),
-                )
-                Spacer(Modifier.height(10.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("GÜNLÜK DEĞİŞİM", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (gunlukDegisim != null) {
-                            val (gunlukTl, gunlukBirim) = cevrilmisTutar(gunlukDegisim!!.toplamTl, paraBirimi, veri.usdTryRate)
-                            Text(
-                                "${TrFormat.signedMoney(gunlukTl, gunlukBirim)}   ${TrFormat.signedPercent(gunlukDegisim!!.toplamYuzde)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = getiriRengi(gunlukDegisim!!.toplamYuzde),
-                            )
-                        } else {
-                            Text("—", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                    Text(
+                        TrFormat.money(ozet.totalValue),
+                        style = MaterialTheme.typography.displaySmall,
+                        modifier = Modifier.weight(1f),
+                    )
                     IconButton(onClick = vm::degerGrafiginiAcKapat) {
                         Icon(Icons.AutoMirrored.Outlined.ShowChart, contentDescription = "Toplam değer grafiği")
                     }
                 }
+                Text(
+                    "${TrFormat.signedPercent(ozet.returnPercent)}   ${TrFormat.signedMoney(ozet.profitLoss)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = getiriRengi(ozet.returnPercent),
+                )
                 Spacer(Modifier.height(6.dp))
                 GuncellemeBilgisi(ekran, veri.lastUpdate, veri.fxTime, ozet)
 
