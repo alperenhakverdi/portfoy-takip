@@ -13,8 +13,6 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.PieChart
-import androidx.compose.material.icons.automirrored.filled.ShowChart
-import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -37,15 +35,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.portfoy.ui.ekle.EkleEkrani
-import com.portfoy.ui.performans.PerformansEkrani
+import com.portfoy.ui.grafik.GrafikEkrani
 import com.portfoy.ui.portfoy.PortfoyEkrani
 import com.portfoy.ui.tema.Animasyon
 import com.portfoy.ui.varlik.VarlikYonetimEkrani
 import kotlinx.coroutines.launch
 
 /**
- * Alt bardaki sekmeler, soldan sağa: Ekle, Performans, Portföy. Yalnızca ikon vardır, metin etiketi yoktur.
- * Aktif sekmenin ikonu dolgulu, pasif sekmelerinki çizgiseldir.
+ * Alt bardaki sekmeler, soldan sağa: Ekle, Portföy (M21 — Performans sekmesi kaldırıldı, grafik
+ * Portföy'den açılan ayrı bir ekrana taşındı). Yalnızca ikon vardır, metin etiketi yoktur. Aktif
+ * sekmenin ikonu dolgulu, pasif sekmelerinki çizgiseldir.
  */
 private enum class Sekme(
     val rota: String,
@@ -54,7 +53,6 @@ private enum class Sekme(
     val cizgi: ImageVector,
 ) {
     EKLE("ekle", "Ekle", Icons.Filled.AddCircle, Icons.Outlined.AddCircleOutline),
-    PERFORMANS("performans", "Performans", Icons.AutoMirrored.Filled.ShowChart, Icons.AutoMirrored.Outlined.ShowChart),
     PORTFOY("portfoy", "Portföy", Icons.Filled.PieChart, Icons.Outlined.PieChart),
 }
 
@@ -108,13 +106,11 @@ fun Uygulama() {
                     scope.launch { snackbar.showSnackbar("Alım kaydedildi") }
                 })
             }
-            composable(Sekme.PERFORMANS.rota) {
-                PerformansEkrani(onVarlikTikla = { id -> nav.navigate("varlik/$id") })
-            }
             composable(Sekme.PORTFOY.rota) {
                 PortfoyEkrani(
                     onEkleGit = { nav.sekmeyeGit(Sekme.EKLE.rota) },
                     onVarlikTikla = { id -> nav.navigate("varlik/$id") },
+                    onGrafikGit = { nav.navigate("grafik") },
                     snackbar = snackbar,
                 )
             }
@@ -123,6 +119,9 @@ fun Uygulama() {
                 arguments = listOf(navArgument("assetId") { type = NavType.LongType }),
             ) {
                 VarlikYonetimEkrani(onGeri = { nav.popBackStack() }, snackbar = snackbar)
+            }
+            composable("grafik") {
+                GrafikEkrani(onGeri = { nav.popBackStack() }, onVarlikTikla = { id -> nav.navigate("varlik/$id") })
             }
         }
     }

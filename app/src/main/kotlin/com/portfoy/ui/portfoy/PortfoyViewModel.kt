@@ -9,12 +9,13 @@ import com.portfoy.calc.Donem
 import com.portfoy.calc.PortfolioSummary
 import com.portfoy.calc.summarize
 import com.portfoy.data.repository.GrafikDeposu
-import com.portfoy.data.repository.GrafikVerisi
+import com.portfoy.data.repository.KategoriDonemGetirisi
 import com.portfoy.data.repository.PortfolioData
 import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.model.Category
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.portfoy.di.UygulamaZamanDilimi
+import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
@@ -29,18 +30,50 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
- * Sekmeler arası geçişte korunan ekran durumu: açık kategoriler, toplam değer grafiği ve seçili
- * dönem. ViewModel sekme değişse de yaşadığı için bu durum kaybolmaz. Varlık detayı artık ayrı
- * bir ekranda (M17, [com.portfoy.ui.varlik.VarlikYonetimEkrani]) — burada durumu tutulmaz.
+ * M21 — getiri her satırda (özet kartı, her kategori) kendi dönemini seçer: Günlük/Haftalık/Tümü.
+ * Dokununca sırayla değişir, üçü de önceden hesaplanıp hazır tutulur ki geçiş anında olsun.
+ */
+enum class GetiriDonemi(val donem: Donem, val kisaEtiket: String) {
+    GUNLUK(Donem.BIR_GUN, "G"),
+    HAFTALIK(Donem.BIR_HAFTA, "H"),
+    TUMU(Donem.TUMU, "TÜM"),
+    ;
+
+    fun sonraki(): GetiriDonemi = entries[(ordinal + 1) % entries.size]
+}
+
+/** Bir dönemdeki kâr/zarar: TL ve (hesaplanabiliyorsa) yüzde. Ekranda hep `TL (yüzde)` biçiminde yazılır. */
+data class GetiriDegeri(val tl: BigDecimal, val yuzde: BigDecimal?)
+
+/**
+ * Üç dönemin (Günlük/Haftalık/Tümü) önceden hesaplanmış getirileri — hem toplam portföy hem kategori
+ * kırılımı (kategorinin altındaki varlıklarla birlikte). Üçü de hazır tutulduğu için dönem düğmesine
+ * basınca yeniden hesaplama beklenmez.
+ */
+data class DonemselGetiriler(
+    val toplam: Map<GetiriDonemi, GetiriDegeri> = emptyMap(),
+    val kategoriler: Map<GetiriDonemi, List<KategoriDonemGetirisi>> = emptyMap(),
+) {
+    fun kategori(donem: GetiriDonemi, kategori: Category): KategoriDonemGetirisi? =
+        kategoriler[donem]?.firstOrNull { it.kategori == kategori }
+}
+
+/**
+ * Sekmeler arası geçişte korunan ekran durumu: açık kategoriler ve her satırın (özet kartı + her
+ * kategori) seçili dönemi. ViewModel sekme değişse de yaşadığı için bu durum kaybolmaz. Varlık detayı
+ * ayrı bir ekranda (M17), toplam değer grafiği de ayrı bir ekranda (M21) — burada durumu tutulmaz.
  */
 data class PortfoyDurumu(
     val acikKategoriler: Set<Category> = emptySet(),
-    val degerGrafigiAcik: Boolean = false,
-    val donem: Donem = Donem.VARSAYILAN,
-)
+    /** Özet kartındaki toplam getirinin dönemi; varsayılan Tümü (önce "büyük resim"). */
+    val ozetDonemi: GetiriDonemi = GetiriDonemi.TUMU,
+    /** Her kategorinin kendi dönem seçimi; haritada yoksa Günlük sayılır. */
+    val kategoriDonemleri: Map<Category, GetiriDonemi> = emptyMap(),
+) {
+    fun kategoriDonemi(kategori: Category): GetiriDonemi = kategoriDonemleri[kategori] ?: GetiriDonemi.GUNLUK
+}
 
 data class PortfoyEkranVerisi(
     val yuklendi: Boolean = false,
@@ -49,13 +82,6 @@ data class PortfoyEkranVerisi(
     val enEskiIslem: LocalDate? = null,
     val durum: PortfoyDurumu = PortfoyDurumu(),
     val tazeleme: TazelemeDurumu = TazelemeDurumu(),
-)
-
-/** Toplam değer grafiğinin verisi. Grafik kapalıyken hesaplanmaz. */
-data class GrafikDurumu(
-    val veri: GrafikVerisi? = null,
-    /** Geçmiş fiyat serileri arka planda tamamlanıyor. */
-    val gecmisYukleniyor: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -86,40 +112,39 @@ class PortfoyViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PortfoyEkranVerisi())
 
     /**
-     * Toplam portföy değerinin (TL) zaman grafiği. Fiyat, işlem ya da geçmiş seri değiştikçe yeniden hesaplanır;
-     * grafik kapalıyken hesap yapılmaz.
+     * Günlük/Haftalık/Tümü dönemlerinin tamamı önceden hesaplanır — hem toplam portföy hem kategori
+     * kırılımı (varlıklarıyla birlikte). Özet kartı ve her kategori satırı kendi dönem düğmesiyle
+     * buradan okur; dönem değişince yeniden hesaplama gerekmez.
      */
-    val grafik: StateFlow<GrafikDurumu> = combine(
-        durum,
+    val donemselGetiriler: StateFlow<DonemselGetiriler> = combine(
         depo.observePortfolio(),
         gecmis.guncellendi.onStart { emit(Unit) },
-        gecmis.yukleniyor,
-    ) { d, _, _, yukleniyor -> Triple(d.degerGrafigiAcik, d.donem, yukleniyor) }
-        .mapLatest { (acik, donem, yukleniyor) ->
-            if (!acik) GrafikDurumu()
-            else GrafikDurumu(grafikDeposu.hesapla(donem, saat.instant().atZone(UygulamaZamanDilimi).toLocalDate()), yukleniyor)
+    ) { _, _ -> Unit }
+        .mapLatest {
+            val bugun = saat.instant().atZone(UygulamaZamanDilimi).toLocalDate()
+            val toplam = mutableMapOf<GetiriDonemi, GetiriDegeri>()
+            val kategoriler = mutableMapOf<GetiriDonemi, List<KategoriDonemGetirisi>>()
+            for (secim in GetiriDonemi.entries) {
+                grafikDeposu.hesapla(secim.donem, bugun)?.let { toplam[secim] = GetiriDegeri(it.toplamTl, it.toplamYuzde) }
+                kategoriler[secim] = grafikDeposu.kategoriGetirileri(secim.donem, bugun)
+            }
+            DonemselGetiriler(toplam, kategoriler)
         }
-        .flowOn(Dispatchers.Default) // seri hesabı ana iş parçacığında yapılmaz
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GrafikDurumu())
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DonemselGetiriler())
 
     fun kategoriyiAcKapat(kategori: Category) = durum.update {
         it.copy(acikKategoriler = if (kategori in it.acikKategoriler) it.acikKategoriler - kategori else it.acikKategoriler + kategori)
     }
 
-    fun degerGrafiginiAcKapat() = durum.update { it.copy(degerGrafigiAcik = !it.degerGrafigiAcik) }
+    fun ozetDonemiDegistir() = durum.update { it.copy(ozetDonemi = it.ozetDonemi.sonraki()) }
 
-    fun donemSec(donem: Donem) = durum.update { it.copy(donem = donem) }
+    fun kategoriDonemiDegistir(kategori: Category) = durum.update {
+        it.copy(kategoriDonemleri = it.kategoriDonemleri + (kategori to it.kategoriDonemi(kategori).sonraki()))
+    }
 
     /** Aşağı çekerek yenileme. */
     suspend fun yenile(): Boolean = yonetici.manuelTazele()
 
     fun onForeground() = yonetici.onForeground()
 }
-
-/** Piyasası olan kategoriler için takvim; "piyasa kapalı" etiketi buna göre gösterilir. */
-internal val Category.piyasa: com.portfoy.network.market.Market?
-    get() = when (this) {
-        Category.ABD -> com.portfoy.network.market.Market.US
-        Category.BIST -> com.portfoy.network.market.Market.BIST
-        else -> null
-    }

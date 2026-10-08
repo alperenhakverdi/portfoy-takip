@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
@@ -26,12 +27,12 @@ import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -54,43 +55,32 @@ import com.portfoy.calc.PortfolioSummary
 import com.portfoy.calc.Tazelik
 import com.portfoy.data.repository.TazelemeZamanlayici
 import com.portfoy.calc.format.TrFormat
-import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.model.Category
-import com.portfoy.network.market.MarketCalendar
-import com.portfoy.ui.bilesenler.CizgiGrafik
 import com.portfoy.ui.bilesenler.DilimIsareti
-import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.DonutGrafik
 import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
-import com.portfoy.ui.bilesenler.tr
 import com.portfoy.ui.tema.TemaTercihi
 import com.portfoy.ui.tema.TemaViewModel
 import com.portfoy.ui.tema.getiriRengi
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import java.time.Instant
-import java.time.LocalDate
 import kotlinx.coroutines.launch
 
-private val takvim = MarketCalendar()
-
-/** Sekme 3 — Portföy. Uygulamanın ana ekranı. */
+/** Sekme 2 — Portföy. Uygulamanın ana ekranı. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PortfoyEkrani(
     onEkleGit: () -> Unit,
     onVarlikTikla: (Long) -> Unit,
+    onGrafikGit: () -> Unit,
     snackbar: SnackbarHostState,
     vm: PortfoyViewModel = hiltViewModel(),
     temaVm: TemaViewModel = hiltViewModel(),
 ) {
     val ekran by vm.ekran.collectAsState()
     val scope = rememberCoroutineScope()
-    val bugun = remember { LocalDate.now(UygulamaZamanDilimi) }
     var temaDialogAcik by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
@@ -115,7 +105,7 @@ fun PortfoyEkrani(
                     Text("Yükleniyor…")
                 }
                 ozet.isEmpty -> BosDurum(onEkleGit)
-                else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla)
+                else -> PortfoyIcerigi(ekran, ozet, vm, onVarlikTikla, onGrafikGit)
             }
         }
     }
@@ -174,9 +164,11 @@ private fun PortfoyIcerigi(
     ozet: PortfolioSummary,
     vm: PortfoyViewModel,
     onVarlikTikla: (Long) -> Unit,
+    onGrafikGit: () -> Unit,
 ) {
     val veri = ekran.veri!!
     val durum = ekran.durum
+    val donemsel by vm.donemselGetiriler.collectAsState()
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -201,7 +193,7 @@ private fun PortfoyIcerigi(
             }
         }
 
-        // Blok 2 — Toplam portföy değeri.
+        // Blok 2 — Toplam portföy değeri + getiri (M21: dönem seçilebilir, grafik ayrı ekranda).
         item {
             Kutu(kalinCerceve = true) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -210,26 +202,20 @@ private fun PortfoyIcerigi(
                         style = MaterialTheme.typography.displaySmall,
                         modifier = Modifier.weight(1f),
                     )
-                    IconButton(onClick = vm::degerGrafiginiAcKapat) {
-                        Icon(Icons.AutoMirrored.Outlined.ShowChart, contentDescription = "Toplam değer grafiği")
+                    IconButton(onClick = onGrafikGit) {
+                        Icon(Icons.AutoMirrored.Outlined.ShowChart, contentDescription = "Grafik")
                     }
                 }
-                Text(
-                    "${TrFormat.signedPercent(ozet.returnPercent)}   ${TrFormat.signedMoney(ozet.profitLoss)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = getiriRengi(ozet.returnPercent),
-                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    KarZararYazisi(
+                        donemsel.toplam[durum.ozetDonemi],
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    DonemDugmesi(durum.ozetDonemi, onTikla = vm::ozetDonemiDegistir)
+                }
                 Spacer(Modifier.height(6.dp))
                 GuncellemeBilgisi(ekran, veri.lastUpdate, veri.fxTime, ozet)
-
-                AnimatedVisibility(durum.degerGrafigiAcik) {
-                    Column {
-                        Spacer(Modifier.height(12.dp))
-                        HorizontalDivider()
-                        Spacer(Modifier.height(12.dp))
-                        DegerGrafigi(ekran, vm)
-                    }
-                }
             }
         }
 
@@ -238,6 +224,8 @@ private fun PortfoyIcerigi(
             KategoriSatiri(
                 kategori = kategori,
                 acik = kategori.category in durum.acikKategoriler,
+                donem = durum.kategoriDonemi(kategori.category),
+                getiri = donemsel.kategori(durum.kategoriDonemi(kategori.category), kategori.category),
                 manuelFiyatli = veri.manualPriceAssetIds,
                 manuelZamanlar = veri.manualPriceTimes,
                 vm = vm,
@@ -251,7 +239,7 @@ private fun PortfoyIcerigi(
 private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?, kurZamani: Instant?, ozet: PortfolioSummary) {
     val eski = ekran.tazeleme.sonRapor?.hasProblems == true || ozet.categories.any { k -> k.assets.any { it.priceMissing } }
     Text(
-        "son güncelleme: " + (sonGuncelleme?.let { TrFormat.lastUpdate(it, Instant.now(), UygulamaZamanDilimi) } ?: "henüz güncellenmedi"),
+        "son güncelleme: " + (sonGuncelleme?.let { TrFormat.lastUpdate(it, Instant.now(), com.portfoy.di.UygulamaZamanDilimi) } ?: "henüz güncellenmedi"),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -283,26 +271,41 @@ private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?
 }
 
 /**
- * Toplam portföy değerinin zaman grafiği (TL), saklanan geçmiş fiyat serilerinden geriye dönük hesaplanır. Performans
- * sekmesindeki grafik ise getiri yüzdesini gösterir; ikisi farklı şeyleri anlatır ve karıştırılmamalıdır.
+ * M21 — kâr/zarar her yerde aynı biçimde: TL solda, yüzde parantez içinde. Yön oku ve renk TL'nin
+ * işaretinden gelir (ikisi aynı kârın iki birimi, ayrı ayrı yön taşımaz). Veri yoksa "—".
  */
 @Composable
-private fun DegerGrafigi(ekran: PortfoyEkranVerisi, vm: PortfoyViewModel) {
-    val grafik by vm.grafik.collectAsState()
-    val veri = grafik.veri
+private fun KarZararYazisi(
+    getiri: GetiriDegeri?,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium,
+    modifier: Modifier = Modifier,
+) {
+    if (getiri == null) {
+        Text(TrFormat.EMPTY, style = style, modifier = modifier, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    Text(
+        "${TrFormat.signedMoney(getiri.tl)} (${TrFormat.percent(getiri.yuzde?.abs())})",
+        style = style,
+        modifier = modifier,
+        color = getiriRengi(getiri.tl),
+        maxLines = 1,
+    )
+}
 
-    DonemSecici(ekran.durum.donem, vm::donemSec)
-    Spacer(Modifier.height(10.dp))
-
-    if (veri == null || veri.noktalar.size < 2) {
+/** M21 — dönem düğmesi: dokununca Günlük → Haftalık → Tümü → Günlük sırasıyla değişir. */
+@Composable
+private fun DonemDugmesi(secim: GetiriDonemi, onTikla: () -> Unit) {
+    Surface(
+        onClick = onTikla,
+        shape = RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
         Text(
-            if (grafik.gecmisYukleniyor) "Geçmiş fiyatlar yükleniyor…" else "Grafik için en az iki günlük veri gerekir.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    } else {
-        CizgiGrafik(
-            degerler = veri.noktalar.map { it.valueTl.toDouble() },
-            etiket = { i -> "${veri.noktalar[i].date.tr()} • ${TrFormat.money(veri.noktalar[i].valueTl)}" },
+            secim.kisaEtiket,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -311,12 +314,13 @@ private fun DegerGrafigi(ekran: PortfoyEkranVerisi, vm: PortfoyViewModel) {
 private fun KategoriSatiri(
     kategori: CategoryResult,
     acik: Boolean,
+    donem: GetiriDonemi,
+    getiri: com.portfoy.data.repository.KategoriDonemGetirisi?,
     manuelFiyatli: Set<Long>,
     manuelZamanlar: Map<Long, Instant>,
     vm: PortfoyViewModel,
     onVarlikTikla: (Long) -> Unit,
 ) {
-    val piyasaKapali = kategori.category.piyasa?.let { !takvim.isOpen(it, Instant.now()) } == true
     Kutu {
         Row(
             Modifier.fillMaxWidth().clickable { vm.kategoriyiAcKapat(kategori.category) },
@@ -326,18 +330,25 @@ private fun KategoriSatiri(
             Spacer(Modifier.width(4.dp))
             KategoriIkonu(kategori.category, Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
-            Column(Modifier.weight(1f)) {
-                Text(kategori.category.etiket(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                if (piyasaKapali) Text("piyasa kapalı", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(kategori.category.etiket(), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(TrFormat.money(kategori.value), style = MaterialTheme.typography.titleMedium)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            KarZararYazisi(
+                getiri?.let { GetiriDegeri(it.tl, it.yuzde) },
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            DonemDugmesi(donem, onTikla = { vm.kategoriDonemiDegistir(kategori.category) })
         }
         AnimatedVisibility(acik) {
             Column {
                 kategori.assets.forEach { varlik ->
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     VarlikSatiri(
                         sonuc = varlik,
+                        getiri = getiri?.varliklar?.firstOrNull { it.varlik.id == varlik.asset.id }
+                            ?.let { GetiriDegeri(it.tl, it.yuzde) },
                         elleFiyat = varlik.asset.id in manuelFiyatli,
                         elleFiyatZamani = manuelZamanlar[varlik.asset.id],
                         onTikla = { onVarlikTikla(varlik.asset.id) },
@@ -352,6 +363,7 @@ private fun KategoriSatiri(
 @Composable
 private fun VarlikSatiri(
     sonuc: AssetResult,
+    getiri: GetiriDegeri?,
     elleFiyat: Boolean,
     elleFiyatZamani: Instant?,
     onTikla: () -> Unit,
@@ -366,23 +378,16 @@ private fun VarlikSatiri(
             Text(TrFormat.money(sonuc.currentValue), fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(2.dp))
-        val miktar = if (nakit) "" else "${TrFormat.quantity(sonuc.quantity)} ${sonuc.asset.birimEtiketi()}"
-        // Miktar nötr, getiri kısmı renkli: tek satırda iki farklı renk gerektiği için AnnotatedString.
-        val getiriRenk = getiriRengi(sonuc.returnPercent)
-        Text(
-            buildAnnotatedString {
-                if (miktar.isNotBlank()) append(miktar)
-                if (!nakit) {
-                    if (miktar.isNotBlank()) append("   •   ")
-                    withStyle(SpanStyle(color = getiriRenk)) {
-                        append(TrFormat.signedPercent(sonuc.returnPercent))
-                        append("  ")
-                        append(TrFormat.signedMoney(sonuc.profitLoss))
-                    }
-                }
-            },
-            style = MaterialTheme.typography.bodySmall,
-        )
+        if (!nakit) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${TrFormat.quantity(sonuc.quantity)} ${sonuc.asset.birimEtiketi()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                KarZararYazisi(getiri, style = MaterialTheme.typography.bodySmall)
+            }
+        }
         if (sonuc.priceMissing) Text("fiyat alınamadı", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
         if (elleFiyat) {
             // Elle girilen fiyat otomatik güncellenmez; 7 günü geçtiyse kullanıcı uyarılır (karar 9).

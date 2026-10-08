@@ -1,4 +1,4 @@
-package com.portfoy.ui.performans
+package com.portfoy.ui.grafik
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,17 +34,17 @@ import kotlinx.coroutines.flow.update
 /** Sıralama ölçütü: kullanıcı yüzde ile TL arasında değiştirebilir. */
 enum class Siralama { YUZDE, TL }
 
-data class PerformansSecimi(
+data class GrafikSecimi(
     val donem: Donem = Donem.VARSAYILAN,
     val siralama: Siralama = Siralama.YUZDE,
     /** Açılmış (içindeki varlıklar görünen) kategoriler. */
     val acik: Set<Category> = emptySet(),
 )
 
-data class PerformansEkranVerisi(
+data class GrafikEkranVerisi(
     val yuklendi: Boolean = false,
     val ozet: PortfolioSummary? = null,
-    val secim: PerformansSecimi = PerformansSecimi(),
+    val secim: GrafikSecimi = GrafikSecimi(),
     /** Seçilen dönemdeki getiri; hesaplanamıyorsa `null` (ekranda "—"). */
     val toplamYuzde: BigDecimal? = null,
     val toplamTl: BigDecimal = BigDecimal.ZERO,
@@ -58,23 +58,24 @@ data class PerformansEkranVerisi(
 )
 
 /**
- * Performans sekmesinin verisi: portföy, kategori ve varlık bazında dönemsel getiri, saklanan geçmiş fiyat
- * serilerinden geriye dönük hesaplanır. Geçmiş seriler arka planda tamamlandıkça ekran kendiliğinden yenilenir.
+ * M21 — eskiden Performans sekmesiydi; artık Portföy ekranındaki grafik ikonundan açılan ayrı bir
+ * ekran. Portföy, kategori ve varlık bazında dönemsel getiri, saklanan geçmiş fiyat serilerinden
+ * geriye dönük hesaplanır. Geçmiş seriler arka planda tamamlandıkça ekran kendiliğinden yenilenir.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class PerformansViewModel @Inject constructor(
+class GrafikViewModel @Inject constructor(
     depo: PortfolioRepository,
     private val grafik: GrafikDeposu,
     gecmis: GecmisYoneticisi,
     private val saat: Clock,
 ) : ViewModel() {
 
-    private val secim = MutableStateFlow(PerformansSecimi())
+    private val secim = MutableStateFlow(GrafikSecimi())
 
-    private data class Girdi(val secim: PerformansSecimi, val veri: PortfolioData, val gecmisYukleniyor: Boolean)
+    private data class Girdi(val secim: GrafikSecimi, val veri: PortfolioData, val gecmisYukleniyor: Boolean)
 
-    val ekran: StateFlow<PerformansEkranVerisi> = combine(
+    val ekran: StateFlow<GrafikEkranVerisi> = combine(
         secim,
         depo.observePortfolio(),
         gecmis.guncellendi.onStart { emit(Unit) },
@@ -82,7 +83,7 @@ class PerformansViewModel @Inject constructor(
     ) { s, veri, _, yukleniyor -> Girdi(s, veri, yukleniyor) }
         .mapLatest { g ->
             val ozet = summarize(g.veri.holdings)
-            if (ozet.isEmpty) return@mapLatest PerformansEkranVerisi(yuklendi = true, ozet = ozet, secim = g.secim)
+            if (ozet.isEmpty) return@mapLatest GrafikEkranVerisi(yuklendi = true, ozet = ozet, secim = g.secim)
 
             val bugun = saat.instant().atZone(UygulamaZamanDilimi).toLocalDate()
             val toplam = grafik.hesapla(g.secim.donem, bugun)
@@ -94,7 +95,7 @@ class PerformansViewModel @Inject constructor(
                         Siralama.TL -> compareByDescending { it.tl }
                     },
                 )
-            PerformansEkranVerisi(
+            GrafikEkranVerisi(
                 yuklendi = true,
                 ozet = ozet,
                 secim = g.secim,
@@ -108,7 +109,7 @@ class PerformansViewModel @Inject constructor(
             )
         }
         .flowOn(Dispatchers.Default) // getiri hesabı ana iş parçacığında yapılmaz
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PerformansEkranVerisi())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GrafikEkranVerisi())
 
     private fun sirala(satirlar: List<VarlikDonemGetirisi>, siralama: Siralama): List<VarlikDonemGetirisi> =
         when (siralama) {

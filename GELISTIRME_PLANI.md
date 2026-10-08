@@ -27,7 +27,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
 | M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
 | M20 | Kripto kategorisi (BTC, ETH) | ✅ Bitti | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
-| M21 | Sekme birleştirme, Portföy detaylandırma | ⏳ Planlandı | Performans sekmesi kalkıyor, grafik ayrı ekran oluyor; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
+| M21 | Sekme birleştirme, Portföy detaylandırma | ✅ Bitti | Performans sekmesi kalktı, grafik ayrı ekran oldu; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
 | M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ⏳ Planlandı | Dokuz dönem zaten hazır; iş yalnızca kısa etiket (1G, 1H, 1A…) |
 | M23 | Para birimi: rakama dokununca TL ↔ USD | ⏳ Planlandı | Ayrı düğme yok; M19'un geri alınan katmanı canlandırılıyor |
 
@@ -1004,7 +1004,7 @@ sembol`/`RefreshSchedule` testleri dahil) geçti.
 
 ---
 
-## M21 — Sekme birleştirme: Performans kalkıyor, Portföy detaylandırılıyor (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+## M21 — Sekme birleştirme: Performans kalkıyor, Portföy detaylandırılıyor (kullanıcı geri bildirimi, 2026-10-08) — ✅ Bitti
 
 **İstek.** İki sekmeli yapı (Performans + Portföy) tek sekmeye iniyor. Kullanıcının ifadesiyle "3.
 sekme" = Portföy (yüzdelerin, kategori kırılımının olduğu ana ekran) bundan sonra uygulamanın tek
@@ -1101,12 +1101,27 @@ grafik ekranındaki rakamlarda olur.
 | M21.8 | `VarlikSatiri`: `TL (yüzde)` biçimine çevrilir, kategorinin dönem seçimini izler |
 | M21.9 | Eski `PerformansViewModel`/`PerformansEkrani` dosyaları temizlenir (taşındıktan sonra tekrar eden kod kalmaz) |
 
-**Kabul kriteri (doğrulanacak):** Alt barda yalnızca 2 sekme var; Portföy'de grafik ikonuna basınca
-ayrı bir tam ekran açılıp geri tuşuyla dönülüyor; özet kartı, kategori ve varlık satırlarının üçü de
-`TL (yüzde)` biçimini kullanıyor; dönem düğmeleri G/H/TÜM arasında geçiyor ve her satır kendi seçimini
-koruyor; varlık satırları kategorilerinin dönemini izliyor; "piyasa kapalı" metni hiçbir yerde yok;
-eski Performans işlevlerinin (dönem seçimi, sıralama, kırılım) hiçbiri kaybolmadan yeni ekranda
-çalışıyor.
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-08):** Alt barda yalnızca 2 sekme (Ekle, Portföy) var;
+Portföy'de grafik ikonuna basınca ayrı bir tam ekran ("← Grafik") açılıp geri tuşuyla durum korunarak
+dönülüyor; özet kartı, kategori ve varlık satırlarının üçü de `TL (yüzde)` biçiminde (ör. "▲ 10.499,31
+₺ (%4,23)"); dönem düğmeleri G/H/TÜM arasında anında geçiyor (önceden hesaplandığı için bekleme yok)
+ve her satır kendi seçimini koruyor (ABD "H" iken Emtia "G" kalabiliyor); varlık satırı (GOOGL)
+kategorisinin ("H") dönemini doğru izliyor; "piyasa kapalı" hiçbir yerde yok; Nakit'in sıfır getirisi
+nötr gri renkte, kayıp (BIST örneğinde) kırmızı ▼ ile doğru gösteriliyor; eski Performans
+işlevlerinin (dönem seçimi, sıralama, kategori/varlık kırılımı) hiçbiri kaybolmadan yeni ekranda
+çalışıyor; çökme yok.
+
+**Not — bilinçli bir hesaplama değişikliği:** Özet kartındaki "tüm zamanlar" getirisi artık (dönem
+seçilebilir olduğu için) G/H ile **aynı yöntemi** kullanıyor: zaman ağırlıklı (Dietz) dönem getirisi
+(`GrafikDeposu.hesapla`/`kategoriGetirileri`, Performans sekmesinin hep kullandığı hesap). M21
+öncesinde Blok 2'deki "tüm zamanlar" rakamı **farklı bir yöntemle** hesaplanıyordu: basit maliyet-bazlı
+getiri (`güncel değer − toplam maliyet`, `PortfolioSummary.returnPercent`, geçmiş seriye hiç
+bakmıyordu). İkisi genelde yakın ama **aynı değil** — Dietz, parayı ne zaman yatırdığına göre ağırlıklandırır,
+basit hesap yatırım zamanlamasını hiç dikkate almaz. Üç dönem arasında tek, tutarlı bir yöntem olsun
+diye (kullanıcının "tam bir sistem" isteğiyle uyumlu) Dietz'i seçtim; `PortfolioSummary.returnPercent`
+artık Blok 2'de kullanılmıyor (varlık/kategori satırlarının güncel değeri hâlâ ondan geliyor, yalnızca
+getiri rakamı değişti). Farklı görünürse sebebi budur — istenirse TÜM seçiliyken eski basit hesaba
+geri dönülebilir.
 
 **Boyut:** L — navigasyon değişikliği + iki ekranın birleşimi + üç seviyede yeni getiri gösterimi.
 
