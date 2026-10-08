@@ -62,6 +62,7 @@ import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.etiket
+import com.portfoy.ui.para.cevrilmisTutar
 import com.portfoy.ui.tema.TemaTercihi
 import com.portfoy.ui.tema.TemaViewModel
 import com.portfoy.ui.tema.getiriRengi
@@ -169,6 +170,12 @@ private fun PortfoyIcerigi(
     val veri = ekran.veri!!
     val durum = ekran.durum
     val donemsel by vm.donemselGetiriler.collectAsState()
+    val paraBirimi by vm.paraBirimi.collectAsState()
+    val (gosterilenDeger, birim) = cevrilmisTutar(ozet.totalValue, paraBirimi, veri.usdTryRate)
+    val secilenGetiri = donemsel.toplam[durum.ozetDonemi]
+    val gosterilenGetiri = secilenGetiri?.let {
+        GetiriDegeri(cevrilmisTutar(it.tl, paraBirimi, veri.usdTryRate).first, it.yuzde)
+    }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -197,10 +204,11 @@ private fun PortfoyIcerigi(
         item {
             Kutu(kalinCerceve = true) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // M23 — rakama dokununca TL↔USD değişir (ayrı bir düğme yok).
                     Text(
-                        TrFormat.money(ozet.totalValue),
+                        TrFormat.money(gosterilenDeger, birim),
                         style = MaterialTheme.typography.displaySmall,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).clickable(onClick = vm::paraBirimiDegistir),
                     )
                     IconButton(onClick = onGrafikGit) {
                         Icon(Icons.AutoMirrored.Outlined.ShowChart, contentDescription = "Grafik")
@@ -208,9 +216,10 @@ private fun PortfoyIcerigi(
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     KarZararYazisi(
-                        donemsel.toplam[durum.ozetDonemi],
+                        gosterilenGetiri,
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).clickable(onClick = vm::paraBirimiDegistir),
+                        birim = birim,
                     )
                     DonemDugmesi(durum.ozetDonemi, onTikla = vm::ozetDonemiDegistir)
                 }
@@ -279,13 +288,14 @@ private fun KarZararYazisi(
     getiri: GetiriDegeri?,
     style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium,
     modifier: Modifier = Modifier,
+    birim: String = "₺",
 ) {
     if (getiri == null) {
         Text(TrFormat.EMPTY, style = style, modifier = modifier, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
     Text(
-        "${TrFormat.signedMoney(getiri.tl)} (${TrFormat.percent(getiri.yuzde?.abs())})",
+        "${TrFormat.signedMoney(getiri.tl, birim)} (${TrFormat.percent(getiri.yuzde?.abs())})",
         style = style,
         modifier = modifier,
         color = getiriRengi(getiri.tl),

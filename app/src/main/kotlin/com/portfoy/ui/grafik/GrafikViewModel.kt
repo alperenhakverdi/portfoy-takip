@@ -14,6 +14,8 @@ import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.data.repository.VarlikDonemGetirisi
 import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.model.Category
+import com.portfoy.ui.para.ParaBirimiTercihi
+import com.portfoy.ui.para.ParaBirimiTercihiDeposu
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.math.BigDecimal
 import java.time.Clock
@@ -55,6 +57,8 @@ data class GrafikEkranVerisi(
     val gecmisYukleniyor: Boolean = false,
     /** Kategori kırılımı; her kategorinin altında varlıkları. */
     val kategoriler: List<KategoriDonemGetirisi> = emptyList(),
+    /** M23 — TL↔USD görüntüleme çevrimi için son bilinen kur. */
+    val usdTryRate: BigDecimal? = null,
 )
 
 /**
@@ -67,11 +71,17 @@ data class GrafikEkranVerisi(
 class GrafikViewModel @Inject constructor(
     depo: PortfolioRepository,
     private val grafik: GrafikDeposu,
+    private val paraBirimiDeposu: ParaBirimiTercihiDeposu,
     gecmis: GecmisYoneticisi,
     private val saat: Clock,
 ) : ViewModel() {
 
     private val secim = MutableStateFlow(GrafikSecimi())
+
+    /** M23 — Portföy ekranıyla aynı, kalıcı tercih (tek bir SharedPreferences kaynağı paylaşılır). */
+    val paraBirimi: StateFlow<ParaBirimiTercihi> = paraBirimiDeposu.tercih
+
+    fun paraBirimiDegistir() = paraBirimiDeposu.degistir()
 
     private data class Girdi(val secim: GrafikSecimi, val veri: PortfolioData, val gecmisYukleniyor: Boolean)
 
@@ -106,6 +116,7 @@ class GrafikViewModel @Inject constructor(
                 tahmini = toplam?.tahmini == true,
                 gecmisYukleniyor = g.gecmisYukleniyor,
                 kategoriler = kategoriler,
+                usdTryRate = g.veri.usdTryRate,
             )
         }
         .flowOn(Dispatchers.Default) // getiri hesabı ana iş parçacığında yapılmaz

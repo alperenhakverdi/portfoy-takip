@@ -44,6 +44,7 @@ import com.portfoy.ui.bilesenler.CizgiGrafik
 import com.portfoy.ui.bilesenler.DonemSecici
 import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.tr
+import com.portfoy.ui.para.cevrilmisTutar
 import com.portfoy.ui.tema.getiriRengi
 
 /**
@@ -74,6 +75,8 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
         }
 
         val donem = ekran.secim.donem
+        val paraBirimi by vm.paraBirimi.collectAsState()
+        val (gosterilenTl, birim) = cevrilmisTutar(ekran.toplamTl, paraBirimi, ekran.usdTryRate)
 
         LazyColumn(
             Modifier.fillMaxSize(),
@@ -90,7 +93,13 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
                         style = MaterialTheme.typography.headlineSmall,
                         color = getiriRengi(ekran.toplamYuzde),
                     )
-                    Text(TrFormat.signedMoney(ekran.toplamTl), style = MaterialTheme.typography.titleMedium, color = getiriRengi(ekran.toplamTl))
+                    // M23 — rakama dokununca TL↔USD değişir (ayrı bir düğme yok).
+                    Text(
+                        TrFormat.signedMoney(gosterilenTl, birim),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = getiriRengi(ekran.toplamTl),
+                        modifier = Modifier.clickable(onClick = vm::paraBirimiDegistir),
+                    )
                     Spacer(Modifier.height(12.dp))
 
                     if (ekran.getiri.size < 2) {

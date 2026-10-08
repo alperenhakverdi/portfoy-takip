@@ -13,6 +13,8 @@ import com.portfoy.data.repository.KategoriDonemGetirisi
 import com.portfoy.data.repository.PortfolioData
 import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.model.Category
+import com.portfoy.ui.para.ParaBirimiTercihi
+import com.portfoy.ui.para.ParaBirimiTercihiDeposu
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.portfoy.di.UygulamaZamanDilimi
 import java.math.BigDecimal
@@ -90,11 +92,17 @@ class PortfoyViewModel @Inject constructor(
     private val depo: PortfolioRepository,
     private val yonetici: TazelemeYoneticisi,
     private val grafikDeposu: GrafikDeposu,
+    private val paraBirimiDeposu: ParaBirimiTercihiDeposu,
     gecmis: GecmisYoneticisi,
     private val saat: Clock,
 ) : ViewModel() {
 
     private val durum = MutableStateFlow(PortfoyDurumu())
+
+    /** M23 — özet kartındaki rakamlara dokununca TL↔USD değişir; tercih kalıcıdır. */
+    val paraBirimi: StateFlow<ParaBirimiTercihi> = paraBirimiDeposu.tercih
+
+    fun paraBirimiDegistir() = paraBirimiDeposu.degistir()
 
     val ekran: StateFlow<PortfoyEkranVerisi> = combine(
         depo.observePortfolio(),

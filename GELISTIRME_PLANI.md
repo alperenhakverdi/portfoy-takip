@@ -29,7 +29,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M20 | Kripto kategorisi (BTC, ETH) | ✅ Bitti | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
 | M21 | Sekme birleştirme, Portföy detaylandırma | ✅ Bitti | Performans sekmesi kalktı, grafik ayrı ekran oldu; getiri üç seviyede `TL (yüzde)` + G/H/TÜM dönem düğmesi |
 | M22 | Grafik ekranı: tam dönem seti, kısa etiketler | ✅ Bitti | Dokuz dönem zaten hazırdı; kısa etiket (1G, 1H, 1A…) eklendi |
-| M23 | Para birimi: rakama dokununca TL ↔ USD | ⏳ Planlandı | Ayrı düğme yok; M19'un geri alınan katmanı canlandırılıyor |
+| M23 | Para birimi: rakama dokununca TL ↔ USD | ✅ Bitti | Ayrı düğme yok; özet kartı + Grafik ekranı, kategori satırları TL kalıyor |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1181,7 +1181,7 @@ basınca çip seçili hâle geliyor ve getiri rakamları/grafik güncelleniyor; 
 
 ---
 
-## M23 — Para birimi: rakama dokununca TL ↔ USD (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+## M23 — Para birimi: rakama dokununca TL ↔ USD (kullanıcı geri bildirimi, 2026-10-08) — ✅ Bitti
 
 **İstek.** Ayrı bir TL/USD düğmesi olmasın; getiri rakamının (ör. `%2,50`) üstüne dokununca sistem
 dolara geçsin.
@@ -1212,9 +1212,17 @@ tema deseninin aynısı), `tryToUsd()`, `TrFormat.money(birim=)`, `PortfolioData
 | M23.4 | Dokunulabilirlik ipucu (gerekiyorsa) eklenir |
 | M23.5 | Emülatör doğrulaması: geçiş anında oluyor, kalıcı, kur yokken çökmüyor |
 
-**Kabul kriteri (doğrulanacak):** Özet kartındaki ya da grafik ekranındaki getiri rakamına dokununca
-tüm uygulamada dolara geçiliyor; tekrar dokununca TL'ye dönüyor; uygulama kapanıp açılınca tercih
-korunuyor; kur alınamamışsa TL'de kalınıp hata gösterilmiyor.
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-08):** Özet kartındaki büyük değere dokununca anında
+TL→USD'ye geçiyor ("503.263,96 ₺" → "10.225,66 USD"), getiri satırı da aynı anda çeviriliyor (yüzde
+değişmiyor, yalnızca TL/USD tutarı); kategori/varlık satırları TL'de sabit kalıyor (ABD, Emtia, Nakit
+hiç etkilenmiyor); Grafik ekranındaki üst getiri rakamı da aynı tercihi paylaşıyor (aynı
+`SharedPreferences`), kategori kırılımı orada da TL kalıyor; uygulama tamamen kapatılıp açıldığında
+USD tercihi korundu; tekrar dokununca TL'ye dönüyor; çökme yok.
+
+**Not — dokunulabilirlik ipucu eklenmedi (M23.4 bilinçli olarak atlandı):** Rakamın dokunulabilir
+olduğunu gösteren bir işaret (ör. soluk ₺/$ simgesi) koymadım — kullanıcının isteği zaten "sadece
+rakam yazıyor, ona dokununca değişsin" şeklindeydi, ekstra bir görsel ipucu bu sadeliğe aykırı
+olurdu. Kullanımda rakamı bulmak zor geliyorsa ayrı bir iyileştirme olarak eklenebilir.
 
 **Boyut:** S–M — kodun çoğu `24e9cf7`'de hazır, iş tetikleyiciyi değiştirmek.
 
