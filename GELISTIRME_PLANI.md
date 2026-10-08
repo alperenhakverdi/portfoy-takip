@@ -26,6 +26,8 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M16 | UI temizliği (kullanıcı geri bildirimi) | ✅ Bitti | "Son eklenenler" kaldırıldı, grafik kartı notları sadeleşti, Performans satırları kısaldı |
 | M17 | Varlık yönetimi ekranı | ✅ Bitti | Tıklayınca ayrı tam ekran; alım/azaltma hareketleri (migration gerekmedi — kolon zaten vardı) |
 | M18 | Tema tercihi: açık/koyu/sistem | ✅ Bitti | Portföy'de küçük ikon + 3 seçenekli diyalog; SharedPreferences ile kalıcı |
+| M20 | Kripto kategorisi (BTC, ETH) | ⏳ Planlandı | Sabit 2 varlık, arama yok; Yahoo kaynağı, 24/7 tazeleme |
+| M21 | Sekme birleştirme, Portföy detaylandırma | ⏳ Planlandı | Performans sekmesi kalkıyor, grafik ayrı ekran oluyor, günlük değişim toplam+kategori bazlı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -925,6 +927,112 @@ bağlı olduğu için state paylaşımı sorunsuz çalıştı. Uygulama tamamen 
 tercih ("Koyu") korundu. Ardından "Sistem"e geri alındı, doğrulandı.
 
 **Boyut:** S–M — yeni bir ekran değil, küçük bir tercih + saklama katmanı.
+
+---
+
+## M20 — Kripto kategorisi: yalnızca Bitcoin ve Ethereum (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+
+**İstek.** Yeni bir kategori: Kripto. Kapsam dar tutuluyor — yalnızca Bitcoin ve Ethereum, geniş bir
+kripto borsası taraması yok. `Category` modeli bu türden genişlemeye zaten hazır (M1'den beri:
+"ileride kripto/döviz" notu), yalnızca yeni bir dal eklemek yeterli.
+
+**Karar (önerim, aksini söylemezsen bu şekilde ilerlerim):**
+- Sabit 2 varlık: Döviz kategorisindeki USD/EUR ile birebir aynı desen (`VarsayilanVarliklar`'da sabit
+  kayıt, arama gerekmez — kategori 600 varlık sınırının çok altında olduğu için Ekle ekranı zaten
+  doğrudan listeler, özel bir kısayol mekanizması gerekmiyor).
+- Fiyat kaynağı: Yahoo Finance (`BTC-USD`, `ETH-USD` — Yahoo'nun `chart` ucu bu sembolleri doğrudan
+  destekliyor, ons altın/gümüşte kullanılan "ham sembol" deseniyle aynı yöntem). Başlangıçta **tek
+  kaynak, yedeksiz** — ABD/BIST'teki gibi iki kademeli zincir değil. Kripto 24/7 işlem gördüğü için
+  piyasa takvimi (açılış/kapanış) kavramı yok; sabit aralıklı tazeleme yeterli.
+- Tazeleme: altın/gümüşle aynı mekanik (30 dakikada bir) ama hafta sonu kısıtı olmadan, günün her
+  saati — `RefreshGroup.KRIPTO` yeni bir sabit-aralık grubu olarak eklenir.
+- TL karşılığı: mevcut USD→TL çevrim mantığı zaten kaynağın para birimine bakıyor
+  (`quote.currency == "USD"` ise kurla çarpılıyor) — ABD'ye özel değil, tek değişiklik bu kontrolün
+  kur eksikken "atla" güvenliğinin (`fxMissing`) şu an yalnızca `RouteKey.US`'u kapsaması; Kripto da
+  eklenmeli.
+- Geçmiş seri: ABD'nin yaptığı gibi (USD seri × günlük USD/TRY kuru = TL) — `HistoryRepository`'deki
+  dönüşüm ABD'ye özel yazılmış, Kripto için aynı yola eklenir.
+- İkon/renk: `Icons.Filled.CurrencyBitcoin` (Material ikon seti içinde hazır var), M14.3 paletine yeni
+  bir kategori rengi (ör. amber/turuncu — Bitcoin'in marka rengine yakın ama paletin geri kalanıyla
+  tutarlı, mevcut renklerle çakışmayan bir ton seçilecek).
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M20.1 | `core/model`: `Category.KRIPTO` eklenir |
+| M20.2 | `VarsayilanVarliklar.kt`: BTC, ETH sabit kayıt olarak eklenir (kod "BTC"/"ETH", `UnitType.ADET`) |
+| M20.3 | `network/sources/YahooSource.kt`: `sembol()`'e `Category.KRIPTO -> "${kod}-USD"` dalı |
+| M20.4 | `SourceRouter.kt`: `RouteKey.CRYPTO` eklenir, `RouteKey.of()`'a `Category.KRIPTO -> CRYPTO` dalı; DI (`DepoModulu.kt`) rotası Yahoo'ya bağlanır |
+| M20.5 | `PriceRepository.kt`: `fxMissing` koruması `RouteKey.US`'un yanına `RouteKey.CRYPTO`'yu da alır (kur yoksa atlanır, hata gösterilmez) |
+| M20.6 | `RefreshSchedule.kt`/`TazelemeZamanlayici.kt`: `RefreshGroup.KRIPTO` — hafta sonu kısıtı olmadan 00:00–23:30 arası 30 dakikalık sabit aralık; `kategori()` eşlemesine `KRIPTO -> Category.KRIPTO` |
+| M20.7 | `HistoryRouter.kt`: `GecmisAnahtari.KRIPTO`, `getHistory()`'e `Category.KRIPTO -> zincir(GecmisAnahtari.KRIPTO, ...)` dalı; `HistoryRepository.kt`'deki ABD'nin USD×kur dönüşümü Kripto'yu da kapsayacak şekilde genelleşir |
+| M20.8 | UI: `KategoriIkonlari.kt` + `Tema.kt` (ikon/renk), `etiket()` ("Kripto"), `EkleEkrani.kt` kategori listesi + `aciklama()` ("Bitcoin, Ethereum") |
+| M20.9 | `Category.piyasa` (Portföy ekranındaki takvim uzantısı) — Kripto `null` döner, zaten "piyasa kapalı" kavramı olmayan kategoriler gibi davranır |
+
+**Kabul kriteri (doğrulanacak):** Ekle ekranında Kripto kategorisi seçilince arama yapmadan BTC ve
+ETH listelenir; eklenince fiyat çekilip TL karşılığı doğru hesaplanır; Portföy ekranında Kripto
+kategorisi diğerleri gibi görünür; geçmiş seri (grafik) çalışır; kur yokken uygulama çökmez, sessizce
+atlar.
+
+**Boyut:** M — yeni bir ekran yok ama fiyat/geçmiş/tazeleme katmanlarının üçüne de dokunuyor.
+
+---
+
+## M21 — Sekme birleştirme: Performans kalkıyor, Portföy detaylandırılıyor (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
+
+**İstek.** İki sekmeli yapı (Performans + Portföy) tek sekmeye iniyor. Kullanıcının ifadesiyle "3.
+sekme" = Portföy (yüzdelerin, kategori kırılımının olduğu ana ekran) bundan sonra uygulamanın tek
+detay ekranı olacak:
+- Performans sekmesi (dönem seçmeli grafik, yüzde/TL sıralama, kategori+varlık bazlı getiri listesi)
+  kaldırılıyor; alt barda yalnızca **Ekle** ve **Portföy** kalıyor.
+- Performans'taki detaylı grafik kaybolmuyor, **taşınıyor**: Portföy ekranındaki grafik artık satır
+  içinde açılıp kapanmıyor (M19'da denenen inline genişleme modeli burada terk ediliyor), bunun
+  yerine ayrı bir tam ekrana gidiyor — tıpkı M17'deki varlık yönetimi ekranı gibi, geri tuşuyla
+  dönülen bağımsız bir sayfa. Bu yeni ekranın içeriği, Performans sekmesinin tamamı (dönem seçici,
+  büyük getiri başlığı, çizgi grafik, Yüzde/TL sıralama, kategori+varlık kırılımı).
+- Portföy ekranının özet kartı (Blok 2) genişliyor: toplam değerin hemen altına, **hem TL hem yüzde**
+  olarak günlük değişim satırı ekleniyor (bugünün getirisi — `GrafikDeposu.hesapla(Donem.BIR_GUN)`,
+  M19'da kurulup revert edilen `gunlukDegisim` deseni aynen yeniden kurulacak).
+- Aynı günlük değişim (TL + yüzde), **her kategori satırında da ayrı ayrı** gösterilecek (ABD, BIST,
+  Fon, Emtia, Döviz, Nakit, Kripto — her biri kendi 1-günlük değişimini gösterir). Veri zaten var:
+  Performans sekmesinin kullandığı `GrafikDeposu.kategoriGetirileri(donem, bugun)` fonksiyonu
+  `Donem.BIR_GUN` ile çağrılarak yeniden kullanılacak, yeni bir hesaplama yazılmayacak.
+- Kategori satırlarındaki "piyasa kapalı" etiketi kaldırılıyor (`KategoriSatiri`'deki
+  `piyasaKapali` kontrolü ve metni).
+
+**Kapsam dışı (açıkça belirtildi/varsayıldı):** M19'da yapılıp geri alınan TL/USD para birimi geçiş
+düğmesi bu planın parçası değil — kullanıcı bu istekte TL/USD'den bahsetmedi, yalnızca aynı anda hem
+TL hem yüzde göstermek istedi (bu, para birimi seçmekten farklı bir şey). İstenirse ayrı bir milestone
+olarak tekrar ele alınabilir.
+
+**Karar (önerim, aksini söylemezsen bu şekilde ilerlerim):**
+- Yeni rota: `grafik` (NavHost'ta `composable("grafik")`), Portföy ekranındaki grafik ikonuna/satırına
+  basınca `nav.navigate("grafik")` ile açılır. Performans ekranının ViewModel'i (dönem/sıralama/açık
+  kategori durumu) aynen bu yeni ekrana taşınır — hesaplama mantığında değişiklik yok, yalnızca
+  nereden tetiklendiği ve nasıl göründüğü değişiyor (sekme değil, push edilen tam ekran).
+- `PortfoyViewModel`'deki eski `grafik`/`degerGrafigiAcik`/`donem` durumu (satır içi TL grafiği için
+  vardı) kaldırılır — o grafik artık yeni ekranın parçası, ayrıca tutulmasına gerek kalmıyor.
+- Kategori satırına günlük değişim eklenirken satırın mevcut düzeni bozulmaz: büyük toplam değerin
+  sağında/altında küçük punto, renkli (`getiriRengi`) bir ek satır olarak eklenir.
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M21.1 | `Uygulama.kt`: `Sekme.PERFORMANS` ve ilgili `NavigationBarItem`/composable kaldırılır; alt bar yalnızca Ekle+Portföy |
+| M21.2 | Performans ekranının içeriği yeni `grafik` rotasına taşınır (dosya/paket adı implementasyon sırasında netleşir — ör. `ui/grafik/GrafikEkrani.kt`); `onVarlikTikla` davranışı korunur |
+| M21.3 | `PortfoyEkrani.kt` Blok 2: eski satır-içi `DegerGrafigi`/`AnimatedVisibility` kaldırılır; grafik ikonu artık `nav` ile yeni ekrana gider |
+| M21.4 | `PortfoyViewModel.kt`: `gunlukDegisim` (toplam, M19'dan yeniden kurulur) + yeni `kategoriGunlukDegisim: StateFlow<Map<Category, KategoriDonemGetirisi>>` (`kategoriGetirileri(BIR_GUN, bugun)`) |
+| M21.5 | `PortfoyEkrani.kt` Blok 2: toplam değerin altına günlük değişim satırı (TL + %) |
+| M21.6 | `PortfoyEkrani.kt` `KategoriSatiri`: her kategoriye kendi günlük değişim satırı (TL + %); `piyasaKapali` metni kaldırılır |
+| M21.7 | Eski `PerformansViewModel`/`PerformansEkrani` dosyaları temizlenir (taşındıktan sonra tekrar eden kod kalmaz) |
+
+**Kabul kriteri (doğrulanacak):** Alt barda yalnızca 2 sekme var; Portföy'de grafik ikonuna basınca
+ayrı bir tam ekran açılıp geri tuşuyla Portföy'e dönülüyor; toplam ve her kategori satırında günlük
+değişim doğru hesaplanıp TL+yüzde olarak görünüyor; "piyasa kapalı" metni hiçbir yerde yok; mevcut
+Performans işlevselliğinin (dönem seçimi, sıralama, kategori/varlık kırılımı) hiçbiri kaybolmadan yeni
+ekranda çalışıyor.
+
+**Boyut:** L — navigasyon değişikliği + iki ekranın birleşimi + yeni hesaplama bağlantıları.
 
 ---
 
