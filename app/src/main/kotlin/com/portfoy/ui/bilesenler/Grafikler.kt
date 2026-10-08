@@ -44,6 +44,7 @@ import com.portfoy.calc.format.TrFormat
 import com.portfoy.ui.tema.AppTema
 import com.portfoy.ui.tema.LocalReducedMotion
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -91,19 +92,38 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
     Canvas(modifier.semantics { contentDescription = "Portföy dağılımı: $aciklama" }) {
         if (dilimler.isEmpty()) return@Canvas
 
-        // 1) Etiketler ölçülür. Açılar animasyondan bağımsız, son hâline göre hesaplanır: etiketler
-        // yerinde durur, animasyon boyunca yalnızca belirir.
+        // 1) Dilim orta açıları. Animasyondan bağımsız, son hâline göre: etiketler yerinde durur,
+        // animasyon boyunca yalnızca belirir.
         var aci = -90f
-        val yerlesim = dilimler.map { dilim ->
-            val tam = dilim.percent.toFloat() / 100f * 360f
-            val orta = aci + tam / 2f
-            aci += tam
-            val sagda = cos(orta * PI.toFloat() / 180f) >= 0f
+        val acilar = dilimler.map { dilim ->
+            val orta = aci + dilim.percent.toFloat() / 100f * 360f / 2f
+            aci += dilim.percent.toFloat() / 100f * 360f
+            orta
+        }
+
+        // 2) Hangi etiket hangi sütuna düşecek. Yalnız yarım daireye bakmak yetmiyor: küçük dilimler
+        // yan yana olduğunda hepsi aynı sütuna yığılıp kılavuz çizgileri uzuyor ve iç içe geçiyor.
+        // Bu yüzden sütunlar eşitlenir; taşan taraftan, dikey eksene en yakın (yatayda en az yer
+        // kaplayan) etiket karşı sütuna geçer.
+        val sagda = BooleanArray(dilimler.size) { cos(acilar[it] * PI.toFloat() / 180f) >= 0f }
+        while (true) {
+            val sag = sagda.count { it }
+            val sol = sagda.size - sag
+            if (abs(sag - sol) <= 1) break
+            val solKalabalik = sol > sag
+            val aday = sagda.indices
+                .filter { sagda[it] != solKalabalik }
+                .minByOrNull { abs(cos(acilar[it] * PI.toFloat() / 180f)) } ?: break
+            sagda[aday] = solKalabalik
+        }
+
+        val yerlesim = dilimler.mapIndexed { i, dilim ->
+            val sag = sagda[i]
             val ad = dilim.category.etiket()
             val yuzde = TrFormat.percent(dilim.percent)
             // Sayı her zaman halkaya yakın tarafta: sağda önce yüzde, solda önce kategori adı.
             val metin = buildAnnotatedString {
-                if (sagda) {
+                if (sag) {
                     withStyle(SpanStyle(color = yuzdeRengi, fontWeight = FontWeight.Bold)) { append(yuzde) }
                     withStyle(SpanStyle(color = adRengi)) { append(" $ad") }
                 } else {
@@ -111,7 +131,7 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
                     withStyle(SpanStyle(color = yuzdeRengi, fontWeight = FontWeight.Bold)) { append(yuzde) }
                 }
             }
-            EtiketYerlesimi(orta, sagda, olcer.measure(metin, stil), renkler.kategoriRengi(dilim.category), 0f)
+            EtiketYerlesimi(acilar[i], sag, olcer.measure(metin, stil), renkler.kategoriRengi(dilim.category), 0f)
         }
 
         // 2) Halka, etiketlerden artan yere sığdırılır (sabit bir oran yerine gerçek metin genişlikleri).
@@ -168,10 +188,13 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
         // 4) Kılavuz çizgisi: halkanın kenarından dışa, oradan etiketin yanına.
         yerlesim.forEach { e ->
             val radyan = e.ortaAci * PI.toFloat() / 180f
+            // Tepeye/dibe yakın dilimlerin kırılma noktası daha dışarıda: etiketleri yandaki sütuna
+            // kadar uzun bir yol kat ettikleri için, kısa dirsekte çizgi halkanın kenarını sıyırıyor.
+            val dirsekBoyu = dirsek * (1f + 0.9f * (1f - abs(cos(radyan))))
             val kenar = Offset(merkez.x + cos(radyan) * disYaricap, merkez.y + sin(radyan) * disYaricap)
             val kirilma = Offset(
-                merkez.x + cos(radyan) * (disYaricap + dirsek),
-                merkez.y + sin(radyan) * (disYaricap + dirsek),
+                merkez.x + cos(radyan) * (disYaricap + dirsekBoyu),
+                merkez.y + sin(radyan) * (disYaricap + dirsekBoyu),
             )
             val sutunKenari = if (e.sagda) merkez.x + disYaricap + pay else merkez.x - disYaricap - pay
             val metinX = if (e.sagda) sutunKenari else sutunKenari - e.olcum.size.width

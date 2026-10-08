@@ -1247,9 +1247,15 @@ tamamen kalkacak.
   önce kategori adı (`Emtia %25,94`). Referans görseldeki düzenin mantığı bu; sol sütun sağa, sağ sütun
   sola yaslandığı için sayı iki tarafta da halkaya bakar.
 - **Çakışma ayıklaması:** aynı taraftaki etiketler, doğal dikey yerlerinden başlayıp önce yukarıdan
-  aşağı, alta taşarlarsa geri yukarı itilerek ayrıştırılıyor (klasik pasta-etiketi algoritması). 7
-  kategoriden birkaçı çok küçük ve bitişik olduğunda (ör. Fon %1,32 + Döviz %2,93) etiketler yine de
-  okunur kalıyor, yalnızca kılavuz çizgileri halkaya yakın yerde yelpaze gibi açılıyor.
+  aşağı, alta taşarlarsa geri yukarı itilerek ayrıştırılıyor (klasik pasta-etiketi algoritması).
+- **Sütun dengeleme (ikinci tur düzeltme):** etiketi yalnız bulunduğu yarım daireye göre yerleştirmek
+  yetmedi. Dilimler büyükten küçüğe sıralandığı için küçükler hep yan yana geliyor ve altı etiketin
+  beşi sol sütuna yığılıyordu; kılavuz çizgileri uzayıp halkanın tepesinde demet hâline geliyordu.
+  Artık sütunlar eşitleniyor: taşan taraftan, dikey eksene en yakın (yatayda en az yer kaplayan)
+  etiket karşı sütuna geçiyor. 5–1 yerine 3–3 dağılım çıkıyor, çizgiler kısalıyor.
+- **Değişken dirsek boyu:** tepeye/dibe yakın dilimlerin kırılma noktası daha dışarıda
+  (`dirsek × (1 + 0,9 × (1 − |cos|))`). Bu etiketler yandaki sütuna kadar uzun bir yol kat ettiği
+  için, sabit kısa dirsekte çizgi halkanın kenarını sıyırıyordu.
 - **Halka boyutu sabit oran değil, ölçülen metin genişliğine göre:** önce etiketler ölçülüp iki yandaki
   en geniş metin bulunuyor, halka geri kalan yere sığdırılıyor. İlk denemede sabit %26'lık bir yan
   boşluk kullanmıştım; "Nakit %9,94" gibi etiketler sığmayıp sol kenara yapışmıştı.
