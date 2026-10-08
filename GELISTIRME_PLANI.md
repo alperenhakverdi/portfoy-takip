@@ -976,6 +976,24 @@ atlar.
 
 **Boyut:** M — yeni bir ekran yok ama fiyat/geçmiş/tazeleme katmanlarının üçüne de dokunuyor.
 
+### Uygulama sırası (her aşamadan sonra derleme/test)
+1. **Model + tohum veri** — `Category.KRIPTO`; `VarsayilanVarliklar.kt`'ye BTC/ETH (M20.1–M20.2). Bu
+   aşamadan sonra proje derlenir ama kripto henüz fiyat çekmez (kaynak bağlı değil).
+2. **Fiyat kaynağı + yönlendirme** — `YahooSource.sembol()`, `RouteKey.CRYPTO`, `DepoModulu.kt`'de rota
+   kaydı (M20.3–M20.4). `core/network` testleri (`SourceRouter`/`YahooSource` testleri varsa) çalıştırılır.
+3. **Tazeleme** — `RefreshGroup.KRIPTO`, `RefreshSchedule.slots()`, `TazelemeZamanlayici.kategori()`
+   (M20.6). `RefreshSchedule`/`TazelemeZamanlayici` testleri çalıştırılır (yeni grup için en az bir test
+   eklenir: 24 saat boyunca slot üretiyor mu, hafta sonu dahil mi).
+4. **`fxMissing` düzeltmesi** — `PriceRepository.kt` (M20.5); mevcut `PriceRepository` testleri + yeni bir
+   "kur yokken Kripto atlanır" testi.
+5. **Geçmiş seri** — `GecmisAnahtari.KRIPTO`, `HistoryRouter.kt`, `HistoryRepository.kt`'deki USD×kur
+   dönüşümünün genelleşmesi (M20.7).
+6. **Arayüz** — ikon/renk/etiket, `EkleEkrani.kt` kategori listesi (M20.8–M20.9).
+7. **Tam derleme + emülatör doğrulaması** — Ekle → Kripto → BTC/ETH ekle, fiyatın çekildiğini, Portföy'de
+   göründüğünü doğrula. Not: yeni eklenen varlığın geçmiş serisi ilk günlerde boş olabilir (geçmiş
+   doldurma `GecmisYoneticisi` arka planda zamanla tamamlar) — bu beklenen davranıştır, hata değildir.
+8. Commit.
+
 ---
 
 ## M21 — Sekme birleştirme: Performans kalkıyor, Portföy detaylandırılıyor (kullanıcı geri bildirimi, 2026-10-08) — ⏳ Planlandı
@@ -1033,6 +1051,28 @@ Performans işlevselliğinin (dönem seçimi, sıralama, kategori/varlık kırı
 ekranda çalışıyor.
 
 **Boyut:** L — navigasyon değişikliği + iki ekranın birleşimi + yeni hesaplama bağlantıları.
+
+### Uygulama sırası (her aşamadan sonra derleme/test; önce M20 bitmiş olmalı — Kripto kategorisi kategori satırı listesine zaten dahil olsun diye)
+1. **Grafik ekranını taşı** — Performans ekranının dosyalarını (`PerformansEkrani.kt`,
+   `PerformansViewModel.kt`) yeni bir `ui/grafik` paketine taşı/yeniden adlandır; davranışta değişiklik
+   yok, yalnızca konum ve (gerekirse) isim (M21.2). Derle.
+2. **Navigasyon** — `Uygulama.kt`'de `Sekme.PERFORMANS` ve alt bar girişi kaldırılır; `composable("grafik")`
+   rotası eklenir (M21.1). Portföy'den `nav.navigate("grafik")` ile geçici bir test düğmesiyle erişimi
+   doğrula (henüz eski inline grafik kaldırılmadan, iki yol bir arada kısa süreliğine var olabilir).
+3. **Portföy ekranını sadeleştir** — eski satır içi `DegerGrafigi`/`AnimatedVisibility`/`donem` durumu
+   `PortfoyViewModel`'den ve `PortfoyEkrani.kt`'den kaldırılır; grafik ikonu artık yalnızca `grafik`
+   rotasına gider (M21.3). Derle, test düğmesi kaldırılır.
+4. **Günlük değişim — toplam** — `PortfoyViewModel.gunlukDegisim` (M19'dan yeniden kurulur) eklenir,
+   Blok 2'de toplam değerin altına TL+% satırı (M21.4 kısmen, M21.5).
+5. **Günlük değişim — kategori bazlı** — `kategoriGunlukDegisim` StateFlow'u eklenir,
+   `KategoriSatiri`'ye TL+% satırı eklenir; aynı adımda `piyasaKapali` metni kaldırılır (M21.4 kalanı,
+   M21.6).
+6. **Temizlik** — artık kullanılmayan eski Performans dosyaları/testleri silinir, kalıntı import/kod
+   kalmadığından emin olunur (M21.7).
+7. **Tam derleme + emülatör doğrulaması** — alt bar 2 sekme; grafik ekranı açılıp kapanıyor; toplam ve
+   her kategori satırında günlük değişim doğru; "piyasa kapalı" hiçbir yerde yok; eski Performans
+   işlevlerinin (dönem/sıralama/kırılım) hepsi yeni ekranda çalışıyor.
+8. Commit.
 
 ---
 
