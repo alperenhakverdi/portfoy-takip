@@ -34,6 +34,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M25 | ABD ve Kripto satırları: doğal para biriminde (USD) | ✅ Bitti | Kullanıcı tercihinden bağımsız, sabit kural; Portföy + Grafik |
 | M26 | USD girişi Kripto'ya genişledi, varlık ekranı USD gösteriyor | ✅ Bitti | Ekle/Düzenle formları varsayılan USD; "+ Ekle" diyaloğundaki eski tutarsızlık da düzeltildi |
 | M27 | Özet kartının dönemi kategorilere yayılıyor | ✅ Bitti | Üstteki G/H/TÜM değişince hepsi senkronlanır; tek tek dokunmak yine bağımsız |
+| M28 | Dağılım grafiği: kılavuz çizgileri kesişmiyor | ✅ Bitti | Üç parçalı yönlendirme (kol → yatay → dikey), sütun dengeleme sonrası çaprazlaşma gitti |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1376,6 +1377,29 @@ geçiyor. Emtia'ya tek başına dokununca yalnızca o H'ye geçiyor, diğerleri 
 senkronize oluyor. Çökme yok.
 
 **Boyut:** XS — iki satırlık değişiklik, yeni hesaplama yok.
+
+---
+
+## M28 — Dağılım grafiği: kılavuz çizgileri artık kesişmiyor (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**Sorun.** M24'teki sütun dengeleme (büyükten küçüğe sıralı dilimlerin 5-1 yerine 3-3 dağılması) bir
+dilimi doğal yönünün tersi tarafa atadığında, kılavuz çizgisi hâlâ dilimin **gerçek açısında** dışarı
+çıkıp doğrudan (tek çapraz çizgiyle) karşı taraftaki metne gidiyordu. Fon ve Döviz ikisi de üstte,
+ikisi de sağa atanınca, iki çapraz çizgi birbirini kesiyor ve çok keskin bir dönüş oluşturuyordu.
+
+**Karar:** Kılavuz çizgisi tek çapraz segment yerine üç parçaya bölündü: (1) dilimden gerçek açısında
+kısa bir kol çıkar, (2) oradan **kendi doğal yüksekliğinde tamamen yatay** olarak atandığı sütuna
+gider, (3) sütunda kısa bir dikey adımla üst üste binmeyi önleyen son satırına oturur. Yatay parça
+halkanın dışında (yarıçap + kol boyu) sabit kaldığı için halkayı hiç kesmez; iki dilim karşı tarafa
+atansa bile farklı yüksekliklerdeki yatay parçalar birbirine paralel kalır, kesişmez. Bunun için
+önceki "dirsekBoyu" (tepe/dip dilimlerde kol uzatma) geçici çözümü artık gereksiz, kaldırıldı — sabit
+kol boyu yeterli çünkü yeni yönlendirme zaten halkayı sıyırma riskini ortadan kaldırıyor.
+
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-09):** Fon ve Döviz'in çizgileri artık paralel iki
+yatay hat olarak gidiyor, kesişmiyor; keskin çapraz dönüş yok. Hem koyu hem açık temada doğrulandı.
+Çökme yok.
+
+**Boyut:** XS — tek bir çizim bloğu, geometri düzeltmesi.
 
 ---
 

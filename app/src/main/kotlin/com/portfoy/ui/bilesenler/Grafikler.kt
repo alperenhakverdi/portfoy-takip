@@ -185,16 +185,18 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
             }
         }
 
-        // 4) Kılavuz çizgisi: halkanın kenarından dışa, oradan etiketin yanına.
+        // 4) Kılavuz çizgisi: üç parça — dilimden gerçek açısında kısa bir kol çıkar, sonra KENDİ
+        // yüksekliğinde yatay olarak atandığı sütuna gider, en son kısa bir dikey adımla etiketin
+        // satırına oturur. Yatay parça hep dilimin doğal yüksekliğinde (halkanın dışında) kaldığı için
+        // halkayı asla kesmez; sütun dengeleme bir dilimi karşı tarafa attığında bile (iki parça artık
+        // birbirinden bağımsız yönde ilerlediği için) çizgiler çaprazlaşmaz — ilk sürümde kol da karşı
+        // sütuna doğrudan çapraz gidiyordu, bitişik küçük dilimlerde (Fon, Döviz) kesişiyordu.
         yerlesim.forEach { e ->
             val radyan = e.ortaAci * PI.toFloat() / 180f
-            // Tepeye/dibe yakın dilimlerin kırılma noktası daha dışarıda: etiketleri yandaki sütuna
-            // kadar uzun bir yol kat ettikleri için, kısa dirsekte çizgi halkanın kenarını sıyırıyor.
-            val dirsekBoyu = dirsek * (1f + 0.9f * (1f - abs(cos(radyan))))
             val kenar = Offset(merkez.x + cos(radyan) * disYaricap, merkez.y + sin(radyan) * disYaricap)
             val kirilma = Offset(
-                merkez.x + cos(radyan) * (disYaricap + dirsekBoyu),
-                merkez.y + sin(radyan) * (disYaricap + dirsekBoyu),
+                merkez.x + cos(radyan) * (disYaricap + dirsek),
+                merkez.y + sin(radyan) * (disYaricap + dirsek),
             )
             val sutunKenari = if (e.sagda) merkez.x + disYaricap + pay else merkez.x - disYaricap - pay
             val metinX = if (e.sagda) sutunKenari else sutunKenari - e.olcum.size.width
@@ -204,6 +206,7 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
                 Path().apply {
                     moveTo(kenar.x, kenar.y)
                     lineTo(kirilma.x, kirilma.y)
+                    lineTo(cizgiUcu, kirilma.y)
                     lineTo(cizgiUcu, e.merkezY)
                 },
                 color = e.renk,
