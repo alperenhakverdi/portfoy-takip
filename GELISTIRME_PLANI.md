@@ -33,6 +33,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M24 | Dağılım grafiği: yüzdeler halkanın kenarında | ✅ Bitti | Alttaki liste kalktı; her dilimden kılavuz çizgili etiket |
 | M25 | ABD ve Kripto satırları: doğal para biriminde (USD) | ✅ Bitti | Kullanıcı tercihinden bağımsız, sabit kural; Portföy + Grafik |
 | M26 | USD girişi Kripto'ya genişledi, varlık ekranı USD gösteriyor | ✅ Bitti | Ekle/Düzenle formları varsayılan USD; "+ Ekle" diyaloğundaki eski tutarsızlık da düzeltildi |
+| M27 | Özet kartının dönemi kategorilere yayılıyor | ✅ Bitti | Üstteki G/H/TÜM değişince hepsi senkronlanır; tek tek dokunmak yine bağımsız |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1347,6 +1348,34 @@ gösterdi; varlık ekranına girince "+ Ekle" diyaloğu da varsayılan USD; üst
 ortalama maliyet, güncel fiyat, toplam maliyet) hepsi USD. Test kaydı silindi, çökme yok.
 
 **Boyut:** S — mevcut USD altyapısının (M19/M23/M25) ABD'den Kripto'ya ve ikinci bir ekrana genişlemesi.
+
+---
+
+## M27 — Özet kartının dönemi kategorilere yayılıyor (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**İstek.** Özet kartında G/H/TÜM arasında geçince alttaki kategoriler de otomatik aynı döneme geçsin;
+ama kategoriye tek tek dokunmak yine bağımsız çalışmaya devam etsin (mevcut sistem bozulmasın).
+
+**Karar:** `PortfoyDurumu.kategoriDonemi()`'nin varsayılanı sabit `GUNLUK` yerine artık `ozetDonemi`'ni
+izliyor — kategori haritada kendi kaydı yoksa özet kartını takip eder. `ozetDonemiDegistir()` özet
+kartının dönemini değiştirirken `kategoriDonemleri` haritasını da sıfırlıyor, yani önceden elle
+ayrılmış kategoriler dahil **hepsi** yeni döneme döner. Bir kategoriye tek tek dokunmak
+`kategoriDonemiDegistir()`'i çağırmaya devam ediyor — bu, haritaya yalnızca o kategori için bir kayıt
+düşürüyor ve bir sonraki özet kartı değişikliğine kadar o kategoriyi bağımsızlaştırıyor.
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M27.1 | `kategoriDonemi()` varsayılanı `GUNLUK` → `ozetDonemi` |
+| M27.2 | `ozetDonemiDegistir()`: `kategoriDonemleri = emptyMap()` eklendi |
+
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-09):** Uygulama açılışında özet kartı TÜM, tüm
+kategoriler de TÜM gösteriyor (senkron başlangıç). Özet kartına basınca (TÜM→G) tüm kategoriler G'ye
+geçiyor. Emtia'ya tek başına dokununca yalnızca o H'ye geçiyor, diğerleri G'de kalıyor (bağımsız
+çalışma korunmuş). Özet kartına tekrar basınca (G→H) Emtia'nın bağımsız H'si dahil **hepsi** yeniden
+senkronize oluyor. Çökme yok.
+
+**Boyut:** XS — iki satırlık değişiklik, yeni hesaplama yok.
 
 ---
 

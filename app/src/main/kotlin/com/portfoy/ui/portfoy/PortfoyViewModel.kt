@@ -66,15 +66,20 @@ data class DonemselGetiriler(
  * Sekmeler arası geçişte korunan ekran durumu: açık kategoriler ve her satırın (özet kartı + her
  * kategori) seçili dönemi. ViewModel sekme değişse de yaşadığı için bu durum kaybolmaz. Varlık detayı
  * ayrı bir ekranda (M17), toplam değer grafiği de ayrı bir ekranda (M21) — burada durumu tutulmaz.
+ *
+ * M27 — özet kartının dönem düğmesi "hepsini birden ayarla" gibi davranır: değiştiğinde tüm
+ * kategorilerin kendi seçimi sıfırlanır, hepsi özet kartıyla aynı dönemi gösterir. Bir kategoriye
+ * tek tek dokunmak yine onu bağımsızlaştırır (`kategoriDonemleri`'ne o kategori için ayrı bir kayıt
+ * düşer) — ta ki özet kartı tekrar değişip haritayı sıfırlayana kadar.
  */
 data class PortfoyDurumu(
     val acikKategoriler: Set<Category> = emptySet(),
     /** Özet kartındaki toplam getirinin dönemi; varsayılan Tümü (önce "büyük resim"). */
     val ozetDonemi: GetiriDonemi = GetiriDonemi.TUMU,
-    /** Her kategorinin kendi dönem seçimi; haritada yoksa Günlük sayılır. */
+    /** Özet kartından ayrılmış (elle değiştirilmiş) kategorilerin kendi dönemi; yoksa özet kartını izler. */
     val kategoriDonemleri: Map<Category, GetiriDonemi> = emptyMap(),
 ) {
-    fun kategoriDonemi(kategori: Category): GetiriDonemi = kategoriDonemleri[kategori] ?: GetiriDonemi.GUNLUK
+    fun kategoriDonemi(kategori: Category): GetiriDonemi = kategoriDonemleri[kategori] ?: ozetDonemi
 }
 
 data class PortfoyEkranVerisi(
@@ -145,7 +150,8 @@ class PortfoyViewModel @Inject constructor(
         it.copy(acikKategoriler = if (kategori in it.acikKategoriler) it.acikKategoriler - kategori else it.acikKategoriler + kategori)
     }
 
-    fun ozetDonemiDegistir() = durum.update { it.copy(ozetDonemi = it.ozetDonemi.sonraki()) }
+    /** M27 — özet kartının dönemi değişince tüm kategoriler onu izlemeye döner (elle ayrılmış olanlar dahil). */
+    fun ozetDonemiDegistir() = durum.update { it.copy(ozetDonemi = it.ozetDonemi.sonraki(), kategoriDonemleri = emptyMap()) }
 
     fun kategoriDonemiDegistir(kategori: Category) = durum.update {
         it.copy(kategoriDonemleri = it.kategoriDonemleri + (kategori to it.kategoriDonemi(kategori).sonraki()))
