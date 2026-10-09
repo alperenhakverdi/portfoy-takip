@@ -215,7 +215,7 @@ private fun PortfoyIcerigi(
                     DonemDugmesi(durum.ozetDonemi, onTikla = vm::ozetDonemiDegistir)
                 }
                 Spacer(Modifier.height(6.dp))
-                GuncellemeBilgisi(ekran, veri.lastUpdate, veri.fxTime, ozet)
+                GuncellemeBilgisi(veri.lastUpdate, veri.fxTime, ozet)
             }
         }
 
@@ -237,20 +237,12 @@ private fun PortfoyIcerigi(
 }
 
 @Composable
-private fun GuncellemeBilgisi(ekran: PortfoyEkranVerisi, sonGuncelleme: Instant?, kurZamani: Instant?, ozet: PortfolioSummary) {
-    val eski = ekran.tazeleme.sonRapor?.hasProblems == true || ozet.categories.any { k -> k.assets.any { it.priceMissing } }
+private fun GuncellemeBilgisi(sonGuncelleme: Instant?, kurZamani: Instant?, ozet: PortfolioSummary) {
     Text(
         "son güncelleme: " + (sonGuncelleme?.let { TrFormat.lastUpdate(it, Instant.now(), com.portfoy.di.UygulamaZamanDilimi) } ?: "henüz güncellenmedi"),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    if (eski) {
-        Text(
-            "veriler güncel değil",
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-        )
-    }
     // ABD varlıkları son bilinen kurla çevrilir; kur birkaç günden eskiyse bu belirtilir (hafta sonu tatili sayılmaz).
     val abdVar = ozet.categories.any { it.category == Category.ABD }
     if (abdVar && kurZamani != null && Tazelik.kurEskiMi(kurZamani, Instant.now())) {

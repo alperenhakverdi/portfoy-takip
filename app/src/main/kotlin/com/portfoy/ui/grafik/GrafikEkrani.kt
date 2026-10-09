@@ -106,7 +106,7 @@ fun GrafikEkrani(onGeri: () -> Unit, onVarlikTikla: (Long) -> Unit, vm: GrafikVi
 
                     if (ekran.getiri.size < 2) {
                         Text(
-                            if (ekran.gecmisYukleniyor) "Geçmiş fiyatlar yükleniyor…" else "Grafik için en az iki günlük veri gerekir.",
+                            if (ekran.gecmisYukleniyor) "Geçmiş fiyatlar yükleniyor…" else "Bu dönemde henüz tek günlük veri var; grafik yarından sonra çizilmeye başlar. Getiri yukarıda güncel.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
