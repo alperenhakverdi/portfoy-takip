@@ -9,14 +9,17 @@ import com.portfoy.calc.AssetResult
 import com.portfoy.calc.summarize
 import com.portfoy.data.repository.PortfolioRepository
 import com.portfoy.data.repository.PriceRepository
+import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.model.Transaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -28,6 +31,8 @@ data class VarlikYonetimVerisi(
     val islemler: List<Transaction> = emptyList(),
     val elleFiyat: Boolean = false,
     val elleFiyatZamani: Instant? = null,
+    /** M26 — ABD/Kripto özetini USD göstermek için son bilinen kur. */
+    val usdTryRate: BigDecimal? = null,
 )
 
 /**
@@ -60,10 +65,23 @@ class VarlikYonetimViewModel @Inject constructor(
                     islemler = holding.transactions,
                     elleFiyat = assetId in veri.manualPriceAssetIds,
                     elleFiyatZamani = veri.manualPriceTimes[assetId],
+                    usdTryRate = veri.usdTryRate,
                 )
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VarlikYonetimVerisi())
+
+    /** M26 — "+ Ekle"/"− Azalt"/düzenle formlarında ABD/Kripto için USD girişi; seçilen tarihteki kur. */
+    private val _kur = MutableStateFlow<BigDecimal?>(null)
+    val kur: StateFlow<BigDecimal?> = _kur.asStateFlow()
+
+    fun kurGuncelle(tarih: LocalDate) {
+        viewModelScope.launch {
+            val bugun = LocalDate.now(UygulamaZamanDilimi)
+            if (tarih.isBefore(bugun.minusDays(3))) gecmis.kurGecmisiniHazirla(tarih, UygulamaZamanDilimi)
+            _kur.value = depo.usdTryOn(tarih)
+        }
+    }
 
     fun alimGuncelle(islem: Transaction) {
         viewModelScope.launch { depo.updatePurchase(islem) }

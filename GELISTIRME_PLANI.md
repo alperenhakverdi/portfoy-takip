@@ -32,6 +32,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M23 | Para birimi: rakama dokununca TL ↔ USD | ✅ Bitti | Ayrı düğme yok; özet kartı + Grafik ekranı, kategori satırları TL kalıyor |
 | M24 | Dağılım grafiği: yüzdeler halkanın kenarında | ✅ Bitti | Alttaki liste kalktı; her dilimden kılavuz çizgili etiket |
 | M25 | ABD ve Kripto satırları: doğal para biriminde (USD) | ✅ Bitti | Kullanıcı tercihinden bağımsız, sabit kural; Portföy + Grafik |
+| M26 | USD girişi Kripto'ya genişledi, varlık ekranı USD gösteriyor | ✅ Bitti | Ekle/Düzenle formları varsayılan USD; "+ Ekle" diyaloğundaki eski tutarsızlık da düzeltildi |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1300,6 +1301,52 @@ altındaki GOOGL de "5.224,65 USD" (tek varlık olduğu için eşit); getiri sat
 kırılımında da ABD "201,99 USD" gösteriyor, diğerleri TL. Çökme yok.
 
 **Boyut:** S — mevcut `cevrilmisTutar()` altyapısının (M23) yeniden kullanımı, yeni hesaplama yok.
+
+---
+
+## M26 — USD girişi Kripto'ya da genişletildi, varlık ekranı USD gösteriyor (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**İstek.** İki parça: (1) Kripto kategorisi Portföy'de hâlâ TL gösteriyordu (M25 kodu doğruydu ama
+portföyde hiç Kripto varlığı olmadığı için hiç doğrulanmamıştı); (2) "+" ile eklerken hem ABD hem
+Kripto için fiyat alanı dolar olarak görünmeli — önceden yalnızca ABD'de, kapalı (opt-in) bir anahtar
+vardı.
+
+**M25'in doğrulanması.** Portföye gerçekten bir Kripto varlığı (BTC) eklenip test edildi: kategori
+satırı "816,72 USD" gösterdi — kod zaten doğruydu, yalnızca test verisi eksikti. Doğrulamadan sonra
+test kaydı silindi, örnek portföy eski hâline döndü.
+
+**Karar:**
+- `AlimFormu.kt`: `abd: Boolean` parametresi `usd: Boolean` olarak genelleşti; `AlimFormDurumu`'na
+  `usdModu` başlangıç değeri eklendi (artık dışarıdan açık başlatılabiliyor).
+- `EkleEkrani.kt`: ABD ve Kripto için form **varsayılan USD modunda** açılıyor (`usdModu = usdDogal`);
+  kur güncelleme tetikleyicisi (`kurGuncelle`) de ikisini kapsıyor; önerilen fiyat (canlı çekilen, TL)
+  USD moddaysa USD'ye çevrilip o alana yazılıyor.
+- `VarlikYonetimEkrani.kt` — önceden gözden kaçmış bir tutarsızlık da düzeltildi: "+ Ekle"/"− Azalt"/
+  düzenle diyalogları `abd = false, kur = null` olarak **sabit** kodlanmıştı, yani ABD'de bile USD
+  girişi hiç çalışmıyordu. `VarlikYonetimViewModel`'e `kurGuncelle()` eklendi (EkleViewModel'deki
+  aynı desen), üç diyalog da artık kategoriye göre USD moduyla açılıyor.
+- Aynı ekranın üst özet kısmı (büyük değer, getiri, ağırlıklı maliyet, güncel fiyat, toplam maliyet)
+  de ABD/Kripto için USD gösterecek şekilde güncellendi — tutarlılık için (kullanıcı bunu özellikle
+  istemedi ama her yer USD'yken bu ekranın TL kalması tutarsız olurdu).
+- **Hareketler listesindeki geçmiş kayıtlar bilinçli olarak TL bırakıldı**: o satır "o tarihte gerçekte
+  ne ödendiği"nin TL kaydı; bugünün kuruyla USD'ye çevirmek yanıltıcı bir yaklaşık değer üretirdi
+  (doğru çevrim için işlem tarihindeki kur gerekir, bu kapsam dışında bırakıldı).
+
+### Alt görevler
+| # | İş |
+|---|---|
+| M26.1 | `AlimFormu.kt`: `abd` → `usd`, `AlimFormDurumu(usdModu=)` başlangıç parametresi |
+| M26.2 | `EkleEkrani.kt`: `usdDogal = ABD veya KRIPTO`, form varsayılan USD, önerilen fiyat USD'ye çevriliyor |
+| M26.3 | `VarlikYonetimViewModel.kt`: `kurGuncelle()` eklendi |
+| M26.4 | `VarlikYonetimEkrani.kt`: üç diyalog (`AlimDuzenleDialog`, iki `HareketDialog`) + `Ozet` composable'ı USD'ye bağlandı |
+
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-09):** Ekle → Kripto → BTC açıldığında "Fiyatı USD
+olarak gir" anahtarı **varsayılan açık**, "Alış fiyatı (USD)" canlı fiyatla dolu geliyor; aynı davranış
+ABD'de de var. Gerçek bir BTC alımı (0,01 adet) eklenince Portföy'de Kripto satırı "816,72 USD"
+gösterdi; varlık ekranına girince "+ Ekle" diyaloğu da varsayılan USD; üst özet (değer, getiri,
+ortalama maliyet, güncel fiyat, toplam maliyet) hepsi USD. Test kaydı silindi, çökme yok.
+
+**Boyut:** S — mevcut USD altyapısının (M19/M23/M25) ABD'den Kripto'ya ve ikinci bir ekrana genişlemesi.
 
 ---
 

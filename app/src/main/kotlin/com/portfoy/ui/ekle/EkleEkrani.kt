@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.portfoy.calc.format.TrFormat
 import com.portfoy.calc.parseDecimal
+import com.portfoy.calc.tryToUsd
 import com.portfoy.data.repository.SearchHit
 import com.portfoy.di.UygulamaZamanDilimi
 import com.portfoy.model.Asset
@@ -275,18 +276,25 @@ private fun FormGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
     val secili = ekran.secili ?: return
     val varlik = secili.varlik
     val bugun = remember { LocalDate.now(UygulamaZamanDilimi) }
-    val durum = remember(varlik.id) { AlimFormDurumu(tarih = bugun) }
+    // M26 — ABD ve Kripto'nun doğal para birimi dolar: form USD giriş moduyla açılır.
+    val usdDogal = varlik.category == Category.ABD || varlik.category == Category.KRIPTO
+    val durum = remember(varlik.id) { AlimFormDurumu(tarih = bugun, usdModu = usdDogal) }
     val nakit = varlik.category == Category.NAKIT
 
-    // ABD varlığında USD fiyat, alış tarihindeki kurla çevrilir: tarih değişince kur yeniden bulunur.
+    // ABD/Kripto varlığında USD fiyat, alış tarihindeki kurla çevrilir: tarih değişince kur yeniden bulunur.
     LaunchedEffect(durum.tarih, varlik.id) {
-        if (varlik.category == Category.ABD) vm.kurGuncelle(durum.tarih)
+        if (usdDogal) vm.kurGuncelle(durum.tarih)
     }
 
-    // Taze fiyat gelince, kullanıcı henüz yazmadıysa alış fiyatı olarak önerilir.
-    LaunchedEffect(secili.onerilenFiyat) {
-        val oneri = secili.onerilenFiyat
-        if (oneri != null && durum.fiyat.isBlank()) {
+    // Taze fiyat gelince, kullanıcı henüz yazmadıysa alış fiyatı olarak önerilir (TL ya da USD moduna göre).
+    LaunchedEffect(secili.onerilenFiyat, ekran.kur) {
+        val oneri = secili.onerilenFiyat ?: return@LaunchedEffect
+        if (durum.usdModu) {
+            val kur = ekran.kur
+            if (durum.usdFiyat.isBlank() && kur != null && kur.signum() > 0) {
+                durum.usdFiyat = tryToUsd(oneri, kur).setScale(2, java.math.RoundingMode.HALF_UP).toPlainString().replace('.', ',')
+            }
+        } else if (durum.fiyat.isBlank()) {
             durum.fiyat = oneri.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString().replace('.', ',')
         }
     }
@@ -306,7 +314,7 @@ private fun FormGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
             AlimFormAlanlari(
                 durum,
                 varlik.unitType,
-                abd = varlik.category == Category.ABD,
+                usd = usdDogal,
                 kur = ekran.kur,
                 bugun = bugun,
                 birimAdi = varlik.birimEtiketi(),

@@ -47,6 +47,8 @@ class AlimFormDurumu(
     komisyon: String = "",
     not: String = "",
     tarih: LocalDate,
+    /** M26 — doğal para birimi dolar olan varlıklarda (ABD, Kripto) varsayılan olarak açık. */
+    usdModu: Boolean = false,
 ) {
     var fiyat by mutableStateOf(fiyat)
     var adet by mutableStateOf(adet)
@@ -54,8 +56,8 @@ class AlimFormDurumu(
     var not by mutableStateOf(not)
     var tarih by mutableStateOf(tarih)
 
-    /** ABD varlıklarında fiyat USD girilip alış tarihindeki kurla TL'ye çevrilebilir. */
-    var usdModu by mutableStateOf(false)
+    /** ABD/Kripto varlıklarında fiyat USD girilip alış tarihindeki kurla TL'ye çevrilebilir. */
+    var usdModu by mutableStateOf(usdModu)
     var usdFiyat by mutableStateOf("")
 
     /** Kaydet'e basıldıktan sonra hatalar gösterilir. */
@@ -84,7 +86,8 @@ class AlimFormDurumu(
 fun AlimFormAlanlari(
     durum: AlimFormDurumu,
     birim: UnitType,
-    abd: Boolean,
+    /** M26 — doğal para birimi dolar olan varlıklarda (ABD, Kripto) USD giriş anahtarı gösterilir. */
+    usd: Boolean,
     kur: BigDecimal?,
     bugun: LocalDate,
     modifier: Modifier = Modifier,
@@ -102,7 +105,7 @@ fun AlimFormAlanlari(
         TarihSecici(durum.tarih, bugun, hatalar?.tarih, etiket = "$fiyatSozcugu tarihi") { durum.tarih = it }
 
         if (!nakit) {
-            if (abd) {
+            if (usd) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Fiyatı USD olarak gir", style = MaterialTheme.typography.bodyMedium)

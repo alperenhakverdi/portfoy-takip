@@ -35,6 +35,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,9 @@ import com.portfoy.ui.bilesenler.AlimFormDurumu
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.tr
+import com.portfoy.ui.para.ParaBirimiTercihi
+import com.portfoy.ui.para.cevrilmisTutar
+import com.portfoy.ui.para.usdDogalMi
 import com.portfoy.ui.tema.getiriRengi
 import java.math.BigDecimal
 import java.time.Instant
@@ -77,6 +81,7 @@ fun VarlikYonetimEkrani(
     vm: VarlikYonetimViewModel = hiltViewModel(),
 ) {
     val ekran by vm.ekran.collectAsState()
+    val kur by vm.kur.collectAsState()
     val scope = rememberCoroutineScope()
     val bugun = remember { LocalDate.now(UygulamaZamanDilimi) }
 
@@ -118,7 +123,7 @@ fun VarlikYonetimEkrani(
 
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
             item {
-                Ozet(sonuc, ekran.elleFiyat, ekran.elleFiyatZamani) { fiyatGirDialogAcik = true }
+                Ozet(sonuc, ekran.elleFiyat, ekran.elleFiyatZamani, ekran.usdTryRate) { fiyatGirDialogAcik = true }
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(onClick = { ekleDialogAcik = true }, modifier = Modifier.padding(0.dp)) {
@@ -148,6 +153,9 @@ fun VarlikYonetimEkrani(
             islem = islem,
             birim = sonuc?.asset?.unitType,
             birimAdi = sonuc?.asset?.birimEtiketi(),
+            usdDogal = sonuc?.asset?.category?.let { it == Category.ABD || it == Category.KRIPTO } == true,
+            kur = kur,
+            kurGuncelle = vm::kurGuncelle,
             bugun = bugun,
             onKaydet = { vm.alimGuncelle(it); duzenlenen = null },
             onIptal = { duzenlenen = null },
@@ -168,6 +176,9 @@ fun VarlikYonetimEkrani(
                 baslik = "Ekle",
                 birim = sonuc.asset.unitType,
                 birimAdi = sonuc.asset.birimEtiketi(),
+                usdDogal = sonuc.asset.category == Category.ABD || sonuc.asset.category == Category.KRIPTO,
+                kur = kur,
+                kurGuncelle = vm::kurGuncelle,
                 bugun = bugun,
                 komisyonGoster = true,
                 tur = TransactionType.ALIS,
@@ -182,6 +193,9 @@ fun VarlikYonetimEkrani(
                 baslik = "Azalt",
                 birim = sonuc.asset.unitType,
                 birimAdi = sonuc.asset.birimEtiketi(),
+                usdDogal = sonuc.asset.category == Category.ABD || sonuc.asset.category == Category.KRIPTO,
+                kur = kur,
+                kurGuncelle = vm::kurGuncelle,
                 bugun = bugun,
                 komisyonGoster = false,
                 tur = TransactionType.AZALTMA,
@@ -194,24 +208,31 @@ fun VarlikYonetimEkrani(
 }
 
 @Composable
-private fun Ozet(sonuc: AssetResult?, elleFiyat: Boolean, elleFiyatZamani: Instant?, fiyatGir: () -> Unit) {
+private fun Ozet(sonuc: AssetResult?, elleFiyat: Boolean, elleFiyatZamani: Instant?, usdTryRate: BigDecimal?, fiyatGir: () -> Unit) {
     if (sonuc == null) {
         Text("Bu varlık artık portföyde yok (adet sıfırlandı). Aşağıdan tekrar ekleyebilirsin.", style = MaterialTheme.typography.bodyMedium)
         return
     }
     val nakit = sonuc.asset.category == Category.NAKIT
+    // M26 — ABD/Kripto'nun doğal para birimi dolar: bu ekrandaki rakamlar da USD gösterilir.
+    val usd = usdDogalMi(sonuc.asset.category)
+    val (deger, birim) = if (usd) cevrilmisTutar(sonuc.currentValue, ParaBirimiTercihi.USD, usdTryRate) else sonuc.currentValue to "₺"
+    val (kazanc, _) = if (usd) cevrilmisTutar(sonuc.profitLoss, ParaBirimiTercihi.USD, usdTryRate) else sonuc.profitLoss to "₺"
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(TrFormat.money(sonuc.currentValue), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+        Text(TrFormat.money(deger, birim), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
         if (!nakit) {
             Text(
-                "${TrFormat.signedPercent(sonuc.returnPercent)}   ${TrFormat.signedMoney(sonuc.profitLoss)}",
+                "${TrFormat.signedPercent(sonuc.returnPercent)}   ${TrFormat.signedMoney(kazanc, birim)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = getiriRengi(sonuc.returnPercent),
             )
             Spacer(Modifier.height(6.dp))
-            SatirBilgi("Ağırlıklı ortalama maliyet", TrFormat.money(sonuc.unitCost))
-            SatirBilgi("Güncel fiyat", TrFormat.money(sonuc.currentPriceTl))
-            SatirBilgi("Toplam maliyet", TrFormat.money(sonuc.totalCost))
+            val birimMaliyet = sonuc.unitCost?.let { if (usd) cevrilmisTutar(it, ParaBirimiTercihi.USD, usdTryRate).first else it }
+            val (guncelFiyat, _) = if (usd) cevrilmisTutar(sonuc.currentPriceTl, ParaBirimiTercihi.USD, usdTryRate) else sonuc.currentPriceTl to "₺"
+            val (toplamMaliyet, _) = if (usd) cevrilmisTutar(sonuc.totalCost, ParaBirimiTercihi.USD, usdTryRate) else sonuc.totalCost to "₺"
+            SatirBilgi("Ağırlıklı ortalama maliyet", TrFormat.money(birimMaliyet, birim))
+            SatirBilgi("Güncel fiyat", TrFormat.money(guncelFiyat, birim))
+            SatirBilgi("Toplam maliyet", TrFormat.money(toplamMaliyet, birim))
             if (sonuc.priceMissing) Text("fiyat alınamadı", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
             if (elleFiyat) {
                 val eski = elleFiyatZamani != null && Tazelik.elleFiyatEskiMi(elleFiyatZamani, Instant.now())
@@ -259,11 +280,16 @@ private fun AlimDuzenleDialog(
     islem: Transaction,
     birim: UnitType?,
     birimAdi: String?,
+    usdDogal: Boolean,
+    kur: BigDecimal?,
+    kurGuncelle: (LocalDate) -> Unit,
     bugun: LocalDate,
     onKaydet: (Transaction) -> Unit,
     onIptal: () -> Unit,
 ) {
     val nakit = birim == UnitType.TL
+    // Düzenlemede kayıtlı değer zaten TL; USD doğal varlıklarda da TL fiyatıyla başlanır (yeniden USD'ye
+    // çevirmeye gerek yok, kullanıcı isterse USD moduna geçip yeni bir USD değeri girebilir).
     val durum = remember(islem.id) {
         AlimFormDurumu(
             fiyat = islem.unitPriceTl.metin(),
@@ -273,18 +299,19 @@ private fun AlimDuzenleDialog(
             tarih = islem.tradeDate,
         )
     }
+    LaunchedEffect(durum.tarih) { if (usdDogal) kurGuncelle(durum.tarih) }
     AlertDialog(
         onDismissRequest = onIptal,
         title = { Text(if (islem.type == TransactionType.AZALTMA) "Azaltma kaydını düzenle" else "Alım kaydını düzenle") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                AlimFormAlanlari(durum, birim ?: UnitType.ADET, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi, tur = islem.type)
+                AlimFormAlanlari(durum, birim ?: UnitType.ADET, usd = usdDogal, kur = kur, bugun = bugun, birimAdi = birimAdi, tur = islem.type)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 durum.denendi = true
-                val sonuc = durum.dogrula(bugun, nakit, null)
+                val sonuc = durum.dogrula(bugun, nakit, kur)
                 sonuc.degerler?.let { d ->
                     onKaydet(
                         islem.copy(
@@ -347,6 +374,9 @@ private fun HareketDialog(
     baslik: String,
     birim: UnitType,
     birimAdi: String?,
+    usdDogal: Boolean,
+    kur: BigDecimal?,
+    kurGuncelle: (LocalDate) -> Unit,
     bugun: LocalDate,
     komisyonGoster: Boolean,
     tur: TransactionType,
@@ -355,7 +385,8 @@ private fun HareketDialog(
     onIptal: () -> Unit,
 ) {
     val nakit = birim == UnitType.TL
-    val durum = remember { AlimFormDurumu(tarih = bugun) }
+    val durum = remember { AlimFormDurumu(tarih = bugun, usdModu = usdDogal) }
+    LaunchedEffect(durum.tarih) { if (usdDogal) kurGuncelle(durum.tarih) }
     AlertDialog(
         onDismissRequest = onIptal,
         title = { Text(baslik) },
@@ -369,13 +400,13 @@ private fun HareketDialog(
                     )
                     Spacer(Modifier.height(8.dp))
                 }
-                AlimFormAlanlari(durum, birim, abd = false, kur = null, bugun = bugun, birimAdi = birimAdi, tur = tur)
+                AlimFormAlanlari(durum, birim, usd = usdDogal, kur = kur, bugun = bugun, birimAdi = birimAdi, tur = tur)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 durum.denendi = true
-                val sonuc = durum.dogrula(bugun, nakit, null)
+                val sonuc = durum.dogrula(bugun, nakit, kur)
                 sonuc.degerler?.let { d ->
                     onKaydet(d.adet, d.fiyat, if (komisyonGoster) d.komisyon else BigDecimal.ZERO, d.tarih, durum.not.takeIf { it.isNotBlank() })
                 }
