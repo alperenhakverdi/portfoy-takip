@@ -38,6 +38,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M29 | Dağılım yerleşimi: saf fonksiyonlara çıkarılıp birim testlendi | ✅ Bitti | 17 test: gerçek senaryo, aşırı eşitsizlik, 7 kategori, taşma — "büyüklükler değişince de doğru" artık kanıtlı |
 | M30 | Ekle listesi ABD/Kripto USD, Nakit TL çerçevesi kaldırıldı | ✅ Bitti | Liste artık formla aynı fiyatı gösteriyor; kategori satırları birbirine eşit görünüyor |
 | M31 | Bugün alınan varlıkta kâr/zarar ana ekranda 0,00/— görünüyordu | ✅ Bitti | `kazanc()`/`yuzde()` tek-günlük seride değer-maliyet farkına düşüyor; toplam/kategori/varlık hepsinde aynı anda düzeldi |
+| M32 | "Veriler güncel değil" uyarısı ve "en az iki günlük veri gerekir" mesajı yumuşatıldı | ✅ Bitti | Gereksiz alarm metni kaldırıldı; tek günlük grafik durumu artık hata gibi görünmüyor |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1497,6 +1498,35 @@ yaşanmıyor. Çökme yok.
 
 **Boyut:** S — iki saf fonksiyonda özel durum + bir regresyon testi; kök neden analizi (iki yanlış
 hipotez elendi) asıl zaman alan kısımdı.
+
+---
+
+## M32 — "Veriler güncel değil" uyarısı ve tek günlük grafik mesajı yumuşatıldı (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**Sorun (iki parça).** (1) Ana ekranda "son güncelleme: SS:DD" satırının altında, herhangi bir fiyat
+sorunu varsa kalın "veriler güncel değil" satırı da çıkıyordu; kullanıcı buna gerek olmadığını,
+saatin zaten yeterli olduğunu belirtti. (2) Grafik ekranında bugün alınan bir varlık için "Grafik
+için en az iki günlük veri gerekir." metni bir hata/sorun gibi görünüyordu — oysa bu M31'de
+açıklanan yapısal bir durum (tek günlük Dietz serisinden çizgi çizilemez) ve üstteki anlık getiri
+rakamı zaten doğru.
+
+**Karar:**
+- `PortfoyEkrani.kt` `GuncellemeBilgisi()`: `eski` bayrağı ve bağlı "veriler güncel değil" `Text`
+  bloğu tamamen kaldırıldı; artık yalnızca son güncelleme saati gösteriliyor. Kullanılmayan `ekran`
+  parametresi de kaldırıldı.
+- `GrafikEkrani.kt`: tek günlük durumdaki mesaj "Bu dönemde henüz tek günlük veri var; grafik
+  yarından sonra çizilmeye başlar. Getiri yukarıda güncel." olarak değiştirildi — bir sorun değil,
+  beklenen bir durum olarak anlatılıyor.
+
+**Kabul kriteri:** Tüm test paketi (`core:calc`, `core:data`, `app`) `BUILD SUCCESSFUL`. Release APK
+derlendi, emülatöre kuruldu, UI akışları (Ekle formu, Kripto listesi, Portföy boş durumu) çökmeden
+çalıştı. Bu oturumda emülatörün ağ katmanında SSL sertifika doğrulama sorunu vardı (sanal ortamın
+kendi ağ kısıtlaması — TRUNCGIL/TCMB canlı fiyat ve kur çekimi başarısız oldu), bu yüzden gerçek
+veriyle uçtan uca görsel doğrulama bu oturumda yapılamadı; kullanıcının fiziksel telefonunda (gerçek
+ağ bağlantısıyla) daha önce doğrulanan veri çekimi bu değişiklikten etkilenmedi (yalnızca UI metni
+değişti, veri çekim kodu dokunulmadı).
+
+**Boyut:** XS — iki ekranda metin/koşul değişikliği.
 
 ---
 
