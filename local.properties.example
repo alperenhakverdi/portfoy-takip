@@ -1,0 +1,14 @@
+sdk.dir=/path/to/Android/Sdk
+
+# https://evds2.tcmb.gov.tr/
+EVDS_API_KEY=
+# https://finnhub.io/
+FINNHUB_API_KEY=
+# https://twelvedata.com/
+TWELVEDATA_API_KEY=
+
+# Release imzalama (isteğe bağlı; yalnızca `assembleRelease` için gerekir)
+# RELEASE_STORE_FILE=keystore/benim-anahtarim.jks
+# RELEASE_STORE_PASSWORD=
+# RELEASE_KEY_ALIAS=
+# RELEASE_KEY_PASSWORD=
