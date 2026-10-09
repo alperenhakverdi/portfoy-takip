@@ -315,6 +315,21 @@ class GecmisVeGrafikTest {
     }
 
     @Test
+    fun `canli fiyati olan ama gecmis serisi henuz dolmamis yeni varlikta donem getirisi aninda hesaplanir (M31)`() = runBlocking {
+        // Varlık bugün alındı, fiyatı canlı çekildi (price_quote) ama geçmiş seri (price_history)
+        // henüz ağdan dolmadı — tam olarak M31'de düzeltilen senaryo.
+        val v = varlik("BTC", Category.KRIPTO)
+        alim(v, 10, "1", "100")
+        canli(v, "110", "2026-09-10T10:00:00Z")
+
+        val veri = grafik().hesapla(Donem.BIR_AY, gun(10))!!
+
+        assertNotNull("geçmiş seri boş olsa da getiri hesaplanabilmeli", veri.toplamYuzde)
+        assertEquals(0, BigDecimal("10.00").compareTo(veri.toplamYuzde!!.setScale(2, RoundingMode.HALF_UP)))
+        assertEquals(0, BigDecimal("10.00").compareTo(veri.toplamTl.setScale(2, RoundingMode.HALF_UP)))
+    }
+
+    @Test
     fun `elle girilen fiyatlar seri olusturur`() = runBlocking {
         val v = varlik("YENI", Category.BIST)
         alim(v, 1, "10", "100")

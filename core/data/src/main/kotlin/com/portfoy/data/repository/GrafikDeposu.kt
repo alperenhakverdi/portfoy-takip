@@ -8,6 +8,7 @@ import com.portfoy.calc.HistoricalPurchase
 import com.portfoy.calc.chartWindow
 import com.portfoy.calc.periodReturn
 import com.portfoy.calc.portfolioSeries
+import com.portfoy.calc.returnPercent
 import com.portfoy.calc.returnSeries
 import com.portfoy.data.db.AssetDao
 import com.portfoy.data.db.PriceHistoryDao
@@ -150,14 +151,23 @@ class GrafikDeposu(
     private fun katkilar(alimlar: List<HistoricalPurchase>, donemBasi: LocalDate) =
         alimlar.filter { it.date.isAfter(donemBasi) }.map { Contribution(it.date, it.costTl) }
 
+    /**
+     * M31 — bir varlık dönem içinde alınıp o gün hâlâ elimizdeyse (ör. bugün alınan, günlük/haftalık
+     * getiriye bakılan bir varlık), [portfolioSeries] o güne ait **tek** gün üretir: alış tarihinden
+     * önce varlık portföyde yok (katkı yok, hiç gün üretilmez), alış gününden sonrası da henüz yok.
+     * Bu durumda "dönem başı / dönem sonu" karşılaştırması anlamsızdır — tek günün kendi içinde
+     * değer-maliyet farkına bakılır (varlık ekranındaki anlık getiriyle aynı yöntem, aynı sayı).
+     */
     private fun kazanc(noktalar: List<DailyPoint>, katkilar: List<Contribution>): BigDecimal {
-        if (noktalar.size < 2) return BigDecimal.ZERO
+        if (noktalar.isEmpty()) return BigDecimal.ZERO
+        if (noktalar.size == 1) return noktalar[0].valueTl - noktalar[0].costTl
         val eklenen = katkilar.fold(BigDecimal.ZERO) { a, k -> a + k.amount }
         return noktalar.last().valueTl - noktalar.first().valueTl - eklenen
     }
 
     private fun yuzde(noktalar: List<DailyPoint>, katkilar: List<Contribution>): BigDecimal? {
-        if (noktalar.size < 2) return null
+        if (noktalar.isEmpty()) return null
+        if (noktalar.size == 1) return returnPercent(noktalar[0].valueTl, noktalar[0].costTl)
         return periodReturn(noktalar.first().valueTl, noktalar.last().valueTl, katkilar, noktalar.first().date, noktalar.last().date)
     }
 
