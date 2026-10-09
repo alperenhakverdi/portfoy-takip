@@ -37,6 +37,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M28 | Dağılım grafiği: kılavuz çizgileri kesişmiyor | ✅ Bitti | Üç parçalı yönlendirme (kol → yatay → dikey), sütun dengeleme sonrası çaprazlaşma gitti |
 | M29 | Dağılım yerleşimi: saf fonksiyonlara çıkarılıp birim testlendi | ✅ Bitti | 17 test: gerçek senaryo, aşırı eşitsizlik, 7 kategori, taşma — "büyüklükler değişince de doğru" artık kanıtlı |
 | M30 | Ekle listesi ABD/Kripto USD, Nakit TL çerçevesi kaldırıldı | ✅ Bitti | Liste artık formla aynı fiyatı gösteriyor; kategori satırları birbirine eşit görünüyor |
+| M31 | Bugün alınan varlıkta kâr/zarar ana ekranda 0,00/— görünüyordu | ✅ Bitti | `kazanc()`/`yuzde()` tek-günlük seride değer-maliyet farkına düşüyor; toplam/kategori/varlık hepsinde aynı anda düzeldi |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1459,6 +1460,43 @@ tutarsızlık yaratıyordu). Nakit TL satırı diğerleriyle aynı, kalın çer�
 kaynağının bilinen, yedekli JSON ayrıştırma uyarısı dışında).
 
 **Boyut:** XS — mevcut USD altyapısının (M23/M25/M26) bir ekran daha kapsaması + bir stil kaldırma.
+
+---
+
+## M31 — Bugün alınan varlıkta ana ekran kâr/zararı "0,00 (—)" gösteriyordu (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**Sorun.** Kullanıcı bir BTC alımı yaptıktan sonra Portföy ekranındaki Kripto satırı "H" (haftalık)
+dönemde "0,00 USD (—)" gösterdi; aynı anda varlık detay ekranı doğru değeri ("▼%0,51 ▼0,10 USD")
+gösteriyordu. İlk şüphe geçmiş fiyat dolumunun (arka plan `GecmisYoneticisi.tamamla()`) henüz
+bitmemiş olmasıydı (kullanıcı da "kapatıp açınca güncellendi" diyerek bunu işaret etti), ama bu bir
+kırmızı balık çıktı.
+
+**Gerçek kök neden.** `PortfolioHistory.portfolioSeries()` her gün için bir `DailyPoint` üretir, ama
+yalnızca o gün toplam maliyet > 0 olan günlerde — alım tarihinden önceki günler hiç üretilmez. Bugün
+alınan bir varlık için bu, dönem penceresi içinde **tam olarak tek** gün üretilmesi demek (geçmiş
+fiyat serisi ne kadar dolu olursa olsun). `GrafikDeposu`'nun `kazanc()`/`yuzde()` fonksiyonları ise
+`noktalar.size >= 2` gerektiriyordu (basit Dietz: dönem başı vs dönem sonu karşılaştırması) — tek
+noktalı seride anlamlı bir "başı/sonu" yok, fonksiyonlar `null`/`ZERO` döndürüyordu. Bu üç seviyede de
+aynı fonksiyonlar kullanıldığından (toplam, kategori, varlık) sorun hepsini aynı anda etkiliyordu.
+
+**Karar:**
+- `kazanc()`/`yuzde()`'ye `noktalar.size == 1` özel durumu eklendi: bu durumda basit Dietz yerine
+  tek günün kendi içindeki değer-maliyet farkına bakılıyor (`returnPercent()`, varlık detay
+  ekranındaki anlık getiriyle **aynı** yöntem, aynı sayı).
+- İlk denemede (`yukle()`'de senkronik mum ekleme) iki mevcut test kırıldı ve yeni regresyon testi
+  bile geçmedi — gerçek kısıt `portfolioSeries()`'in gün-bazlı yapısındaydı, seri ekleme değil. Bu
+  deneme tamamen geri alındı; düzeltme doğrudan `kazanc()`/`yuzde()`'ye taşındı.
+
+**Kabul kriteri (doğrulandı):** Yeni birim testi (`GecmisVeGrafikTest`, M31) — canlı fiyatı olan ama
+geçmiş serisi henüz dolmamış bugün alınan varlıkta toplam getiri anında hesaplanıyor (%10,00,
+10,00 TL). Tüm test paketi `BUILD SUCCESSFUL`. Emülatörde gerçek BTC alımı ile doğrulandı: Kripto
+satırı kayıttan **hemen sonra** "▲3,92 USD (%0,48)" gösterdi (bekleme yok), TÜM/G/H dönem
+düğmeleri arasında tutarlı kaldı. Bu doğrulama sırasında Yahoo geçmiş veri çekimi SSL hatasıyla
+tamamen başarısız oldu, ama düzeltme yine de doğru çalıştı — arka plan dolumu hiç bitmese de sorun
+yaşanmıyor. Çökme yok.
+
+**Boyut:** S — iki saf fonksiyonda özel durum + bir regresyon testi; kök neden analizi (iki yanlış
+hipotez elendi) asıl zaman alan kısımdı.
 
 ---
 
