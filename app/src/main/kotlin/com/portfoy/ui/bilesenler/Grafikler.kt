@@ -40,14 +40,14 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.portfoy.calc.AllocationSlice
+import com.portfoy.calc.donutCakismaGider
+import com.portfoy.calc.donutOrtaAcilari
+import com.portfoy.calc.donutSutunDengele
 import com.portfoy.calc.format.TrFormat
 import com.portfoy.ui.tema.AppTema
 import com.portfoy.ui.tema.LocalReducedMotion
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -92,30 +92,11 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
     Canvas(modifier.semantics { contentDescription = "Portföy dağılımı: $aciklama" }) {
         if (dilimler.isEmpty()) return@Canvas
 
-        // 1) Dilim orta açıları. Animasyondan bağımsız, son hâline göre: etiketler yerinde durur,
-        // animasyon boyunca yalnızca belirir.
-        var aci = -90f
-        val acilar = dilimler.map { dilim ->
-            val orta = aci + dilim.percent.toFloat() / 100f * 360f / 2f
-            aci += dilim.percent.toFloat() / 100f * 360f
-            orta
-        }
-
-        // 2) Hangi etiket hangi sütuna düşecek. Yalnız yarım daireye bakmak yetmiyor: küçük dilimler
-        // yan yana olduğunda hepsi aynı sütuna yığılıp kılavuz çizgileri uzuyor ve iç içe geçiyor.
-        // Bu yüzden sütunlar eşitlenir; taşan taraftan, dikey eksene en yakın (yatayda en az yer
-        // kaplayan) etiket karşı sütuna geçer.
-        val sagda = BooleanArray(dilimler.size) { cos(acilar[it] * PI.toFloat() / 180f) >= 0f }
-        while (true) {
-            val sag = sagda.count { it }
-            val sol = sagda.size - sag
-            if (abs(sag - sol) <= 1) break
-            val solKalabalik = sol > sag
-            val aday = sagda.indices
-                .filter { sagda[it] != solKalabalik }
-                .minByOrNull { abs(cos(acilar[it] * PI.toFloat() / 180f)) } ?: break
-            sagda[aday] = solKalabalik
-        }
+        // 1) Dilim orta açıları ve hangi etiketin hangi sütuna (sağ/sol) düşeceği — saf, birim testli
+        // matematik ([DonutYerlesimi.kt], M29): yüzdeler değiştikçe de (yeni kategori, aşırı eşitsiz
+        // dağılım) doğru kaldığı burada değil, çok sayıda senaryoyla orada doğrulanıyor.
+        val acilar = donutOrtaAcilari(dilimler.map { it.percent.toFloat() })
+        val sagda = donutSutunDengele(acilar)
 
         val yerlesim = dilimler.mapIndexed { i, dilim ->
             val sag = sagda[i]
@@ -166,24 +147,17 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
         }
 
         // 3) Etiketlerin doğal dikey yeri dilimin orta açısıdır; aynı taraftakiler üst üste binmesin
-        // diye önce yukarıdan aşağı itilir, alta taşarsa geri yukarı çekilir.
-        yerlesim.forEach { it.merkezY = merkez.y + sin(it.ortaAci * PI.toFloat() / 180f) * disYaricap }
-        val aralik = 4.dp.toPx()
-        listOf(true, false).forEach { taraf ->
-            val sutun = yerlesim.filter { it.sagda == taraf }.sortedBy { it.merkezY }
-            var ustSinir = 0f
-            sutun.forEach {
-                val yarim = it.olcum.size.height / 2f
-                it.merkezY = max(it.merkezY, ustSinir + yarim)
-                ustSinir = it.merkezY + yarim + aralik
-            }
-            var altSinir = size.height
-            sutun.asReversed().forEach {
-                val yarim = it.olcum.size.height / 2f
-                it.merkezY = min(it.merkezY, altSinir - yarim)
-                altSinir = it.merkezY - yarim - aralik
-            }
-        }
+        // diye ayrıştırılır (saf fonksiyon, [DonutYerlesimi.kt] — M29, M28 regresyon testiyle kilitli).
+        val dogalY = yerlesim.map { merkez.y + sin(it.ortaAci * PI.toFloat() / 180f) * disYaricap }
+        val ayristirilmisY = donutCakismaGider(
+            dogalY = dogalY,
+            yukseklikler = yerlesim.map { it.olcum.size.height.toFloat() },
+            sagda = yerlesim.map { it.sagda },
+            aralik = 4.dp.toPx(),
+            ustSinir = 0f,
+            altSinir = size.height,
+        )
+        yerlesim.forEachIndexed { i, e -> e.merkezY = ayristirilmisY[i] }
 
         // 4) Kılavuz çizgisi: dilimden kısa bir kol çıkar, sonra yatay olarak atandığı sütuna gider.
         // Kolun yüksekliği dilimin KENDİ açısı değil, az önce çakışmasın diye ayrıştırılmış [merkezY]

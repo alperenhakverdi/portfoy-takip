@@ -35,6 +35,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M26 | USD girişi Kripto'ya genişledi, varlık ekranı USD gösteriyor | ✅ Bitti | Ekle/Düzenle formları varsayılan USD; "+ Ekle" diyaloğundaki eski tutarsızlık da düzeltildi |
 | M27 | Özet kartının dönemi kategorilere yayılıyor | ✅ Bitti | Üstteki G/H/TÜM değişince hepsi senkronlanır; tek tek dokunmak yine bağımsız |
 | M28 | Dağılım grafiği: kılavuz çizgileri kesişmiyor | ✅ Bitti | Üç parçalı yönlendirme (kol → yatay → dikey), sütun dengeleme sonrası çaprazlaşma gitti |
+| M29 | Dağılım yerleşimi: saf fonksiyonlara çıkarılıp birim testlendi | ✅ Bitti | 17 test: gerçek senaryo, aşırı eşitsizlik, 7 kategori, taşma — "büyüklükler değişince de doğru" artık kanıtlı |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1403,6 +1404,33 @@ paralel hat olarak gidiyor — ne kesişiyor ne üst üste biniyor. Hem koyu hem
 Çökme yok.
 
 **Boyut:** XS — tek bir çizim bloğu, geometri düzeltmesi (iki turda tamamlandı).
+
+---
+
+## M29 — Dağılım grafiği yerleşimi: saf fonksiyonlara çıkarılıp birim testlendi (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**Soru.** M24/M28'de dağılım grafiğinin kenar etiketleri birkaç turda düzeltildi (sütun dengeleme,
+çakışma giderme, kılavuz çizgisi yönlendirmesi) ama her seferinde yalnızca **o anki** örnek portföyün
+(6 kategori, belirli yüzdeler) ekran görüntüsüyle doğrulandı. Kullanıcı haklı bir soru sordu: "büyüklükler
+değiştiğinde yine doğru olacak mı emin miyiz?" — başka bir deyişle, bu güvence tek bir veri noktasına mı
+dayanıyor, yoksa genel olarak mı doğru?
+
+**Karar.** Yerleşim matematiğinin üç parçası (orta açı hesabı, sağ/sol sütun dengeleme, dikey çakışma
+giderme) `Canvas`/`TextMeasurer`'dan bağımsız, saf Kotlin fonksiyonları olarak `core/calc/DonutYerlesimi.kt`'ye
+çıkarıldı; `Grafikler.kt` artık kendi kopyasını tutmuyor, doğrudan bunları çağırıyor — yani test edilen
+kod ile ekranda çalışan kod **aynı**, paralel bir yeniden-uygulama değil. 17 birim testi şunları
+kapsıyor: bugüne kadarki gerçek regresyon senaryosu (ekrandaki tam dağılım, 3-3 dengeyi ve Fon/Döviz'in
+ayrıştığını doğrudan sabitler), aşırı eşitsiz dağılım (70/10/8/6/4/2), Kripto eklenince 7 kategori, tek
+kategori, iki kategoride doğal simetri, birbirine neredeyse özdeş açılı 10 dilim (döngü güvenle
+sonlanıyor mu), taşma durumunda bile minimum aralığın korunduğu, ve dokuz farklı dağılımı tek seferde
+tarayan bir "büyüklükler değişince de fark hep ≤1 kalır" testi.
+
+**Kabul kriteri (doğrulandı, 2026-10-09):** `./gradlew :core:calc:test` 17/17 yeşil. `Grafikler.kt`
+çakışma/sütun kodunu tamamen bu fonksiyonlara devretti, derleme temiz. Emülatörde (koyu tema) görsel
+sonuç refactor öncesiyle birebir aynı — davranış değişmedi, yalnızca artık regresyon testiyle kilitli.
+Çökme yok.
+
+**Boyut:** S — davranış değişikliği yok, mevcut mantığın çıkarılması + test.
 
 ---
 
