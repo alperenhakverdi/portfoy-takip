@@ -60,7 +60,11 @@ import com.portfoy.ui.bilesenler.Kutu
 import com.portfoy.ui.bilesenler.KategoriIkonu
 import com.portfoy.ui.bilesenler.birimEtiketi
 import com.portfoy.ui.bilesenler.etiket
+import com.portfoy.ui.para.ParaBirimiTercihi
+import com.portfoy.ui.para.cevrilmisTutar
+import com.portfoy.ui.para.usdDogalMi
 import com.portfoy.ui.tema.getiriRengi
+import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -122,10 +126,7 @@ private fun KategoriGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
             Text("Ne eklemek istiyorsun?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
         items(KATEGORILER, key = { "kategori-$it" }) { kategori ->
-            Kutu(
-                Modifier.clickable { vm.kategoriSec(kategori) },
-                kalinCerceve = kategori == Category.NAKIT,
-            ) {
+            Kutu(Modifier.clickable { vm.kategoriSec(kategori) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     KategoriIkonu(kategori, Modifier.size(28.dp))
                     Spacer(Modifier.width(10.dp))
@@ -151,6 +152,7 @@ private fun KategoriGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
 @Composable
 private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
     val kategori = ekran.kategori ?: return
+    val usdDogal = usdDogalMi(kategori)
     val odak = remember { FocusRequester() }
     // Klavye yalnızca aramanın zorunlu olduğu kategorilerde (ABD, fon) kendiliğinden açılır.
     LaunchedEffect(kategori, ekran.aramaGerekli) { if (ekran.aramaGerekli) odak.requestFocus() }
@@ -201,7 +203,9 @@ private fun AramaGorunumu(ekran: EkleEkranVerisi, vm: EkleViewModel) {
                         item { AramaGerekliKutusu() }
                         item { BolumBasligi("Öne çıkanlar") }
                     }
-                    items(liste, key = { "varlik-${it.asset.id}" }) { SonucSatiri(it) { vm.sec(it.asset) } }
+                    items(liste, key = { "varlik-${it.asset.id}" }) {
+                        SonucSatiri(it, usdDogal, ekran.kur) { vm.sec(it.asset) }
+                    }
                 }
 
                 ekran.aramaAktif -> item {
@@ -252,7 +256,9 @@ private fun AramaGerekliKutusu() {
  * o günkü değişim yüzdesi (fiyat henüz çekilmediyse ya da kaynak vermediyse gösterilmez).
  */
 @Composable
-private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
+private fun SonucSatiri(sonuc: SearchHit, usdDogal: Boolean, kur: BigDecimal?, sec: () -> Unit) {
+    val birim = if (usdDogal && kur != null && kur.signum() > 0) "USD" else "₺"
+    val deger = sonuc.lastPriceTl?.let { if (usdDogal) cevrilmisTutar(it, ParaBirimiTercihi.USD, kur).first else it }
     Kutu(Modifier.clickable(onClick = sec)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -261,7 +267,7 @@ private fun SonucSatiri(sonuc: SearchHit, sec: () -> Unit) {
             }
             Spacer(Modifier.width(12.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text(TrFormat.money(sonuc.lastPriceTl), style = MaterialTheme.typography.bodyMedium)
+                Text(TrFormat.money(deger, birim), style = MaterialTheme.typography.bodyMedium)
                 sonuc.dailyChangePercent?.let {
                     Text(TrFormat.signedPercent(it), style = MaterialTheme.typography.labelSmall, color = getiriRengi(it))
                 }

@@ -152,6 +152,8 @@ class EkleViewModel @Inject constructor(
             return
         }
         ic.update { it.copy(kategori = kategori, sorgu = "") }
+        // M30 — ABD/Kripto liste satırları da USD gösterir; kur burada da lazım (yalnız form açılınca değil).
+        viewModelScope.launch { ic.update { it.copy(kur = depo.latestUsdTry()) } }
         tazeleKategoriGorunumu(kategori)
     }
 

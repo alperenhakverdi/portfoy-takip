@@ -36,6 +36,7 @@ Durum: **son hâli.** Dokümandaki çelişki ve eksikler karara bağlandı; kara
 | M27 | Özet kartının dönemi kategorilere yayılıyor | ✅ Bitti | Üstteki G/H/TÜM değişince hepsi senkronlanır; tek tek dokunmak yine bağımsız |
 | M28 | Dağılım grafiği: kılavuz çizgileri kesişmiyor | ✅ Bitti | Üç parçalı yönlendirme (kol → yatay → dikey), sütun dengeleme sonrası çaprazlaşma gitti |
 | M29 | Dağılım yerleşimi: saf fonksiyonlara çıkarılıp birim testlendi | ✅ Bitti | 17 test: gerçek senaryo, aşırı eşitsizlik, 7 kategori, taşma — "büyüklükler değişince de doğru" artık kanıtlı |
+| M30 | Ekle listesi ABD/Kripto USD, Nakit TL çerçevesi kaldırıldı | ✅ Bitti | Liste artık formla aynı fiyatı gösteriyor; kategori satırları birbirine eşit görünüyor |
 
 Plan (M0–M12) tamamlandı. Kalan işler **isteğe bağlı, gelecek planlar** — bkz. bölüm 6. Ayrıntılar
 aşağıdaki ilgili bölümlerde; kararların gerekçesi [KARARLAR.md](KARARLAR.md)'de.
@@ -1431,6 +1432,33 @@ sonuç refactor öncesiyle birebir aynı — davranış değişmedi, yalnızca a
 Çökme yok.
 
 **Boyut:** S — davranış değişikliği yok, mevcut mantığın çıkarılması + test.
+
+---
+
+## M30 — Ekle listesinde ABD/Kripto fiyatları USD, Nakit TL kalın çerçevesi kaldırıldı (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
+
+**Sorun (iki parça).** (1) M26 yalnızca Ekle formundaki (bir varlığa dokununca açılan) fiyat alanını
+USD'ye bağlamıştı; kategori açılınca gelen **liste** (ör. "AAPL 16.797 TL") hâlâ TL gösteriyordu —
+kullanıcı bunu daha önce istemişti ama liste gözden kaçmıştı. (2) Ekle ekranındaki kategori listesinde
+"Nakit TL" satırı kalın beyaz çerçeveyle diğerlerinden ayrı duruyordu; kullanıcı hepsinin aynı
+görünmesini istedi.
+
+**Karar:**
+- `EkleViewModel.kategoriSec()`: kategori açılınca kur da çekiliyor (`depo.latestUsdTry()`) — önceden
+  yalnızca bir varlık seçilince (`sec()`) çekiliyordu, liste aşamasında `kur` hep `null` kalıyordu.
+- `EkleEkrani.kt` `SonucSatiri`: `usdDogalMi(kategori)` true ise (ABD, Kripto) fiyat `cevrilmisTutar()`
+  ile USD'ye çevriliyor; "öne çıkanlar" ve arama sonuçları aynı bileşeni kullandığı için tek değişiklik
+  ikisini de kapsıyor.
+- `KategoriGorunumu`: Nakit TL satırındaki `kalinCerceve = kategori == Category.NAKIT` kaldırıldı,
+  artık diğer altı kategoriyle birebir aynı görünüyor.
+
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-09):** ABD listesinde AAPL "337,42 USD", MSFT/GOOGL/AMZN
+aynı şekilde USD; Kripto listesinde BTC "82.474,92 USD", ETH "2.490,50 USD". Bir varlığa dokununca
+açılan form ile liste artık **aynı** fiyatı gösteriyor (önceden liste TL, form USD gösterip
+tutarsızlık yaratıyordu). Nakit TL satırı diğerleriyle aynı, kalın çerçeve yok. Çökme yok (TRUNCGIL
+kaynağının bilinen, yedekli JSON ayrıştırma uyarısı dışında).
+
+**Boyut:** XS — mevcut USD altyapısının (M23/M25/M26) bir ekran daha kapsaması + bir stil kaldırma.
 
 ---
 
