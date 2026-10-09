@@ -1382,24 +1382,27 @@ senkronize oluyor. Çökme yok.
 
 ## M28 — Dağılım grafiği: kılavuz çizgileri artık kesişmiyor (kullanıcı geri bildirimi, 2026-10-09) — ✅ Bitti
 
-**Sorun.** M24'teki sütun dengeleme (büyükten küçüğe sıralı dilimlerin 5-1 yerine 3-3 dağılması) bir
-dilimi doğal yönünün tersi tarafa atadığında, kılavuz çizgisi hâlâ dilimin **gerçek açısında** dışarı
-çıkıp doğrudan (tek çapraz çizgiyle) karşı taraftaki metne gidiyordu. Fon ve Döviz ikisi de üstte,
-ikisi de sağa atanınca, iki çapraz çizgi birbirini kesiyor ve çok keskin bir dönüş oluşturuyordu.
+**Sorun (iki aşamada ortaya çıktı).** M24'teki sütun dengeleme (büyükten küçüğe sıralı dilimlerin 5-1
+yerine 3-3 dağılması) bir dilimi doğal yönünün tersi tarafa atadığında, kılavuz çizgisi hâlâ dilimin
+**gerçek açısında** dışarı çıkıp doğrudan (tek çapraz çizgiyle) karşı taraftaki metne gidiyordu. Fon ve
+Döviz ikisi de üstte, ikisi de sağa atanınca, iki çapraz çizgi birbirini kesiyordu (1. düzeltme: kolu
+dilimin kendi açısında tutup yatay/dikey olarak sütuna yönlendirdim). Ama Fon ve Döviz'in açıları
+birbirine o kadar yakın (ikisi de tepeye yakın) ki kolun "dilimin doğal yüksekliği" hâlâ neredeyse
+aynı çıkıyor, iki paralel çizgi görsel olarak tek çizgiymiş gibi üst üste biniyordu — kullanıcı bunu
+ikinci turda fark etti.
 
-**Karar:** Kılavuz çizgisi tek çapraz segment yerine üç parçaya bölündü: (1) dilimden gerçek açısında
-kısa bir kol çıkar, (2) oradan **kendi doğal yüksekliğinde tamamen yatay** olarak atandığı sütuna
-gider, (3) sütunda kısa bir dikey adımla üst üste binmeyi önleyen son satırına oturur. Yatay parça
-halkanın dışında (yarıçap + kol boyu) sabit kaldığı için halkayı hiç kesmez; iki dilim karşı tarafa
-atansa bile farklı yüksekliklerdeki yatay parçalar birbirine paralel kalır, kesişmez. Bunun için
-önceki "dirsekBoyu" (tepe/dip dilimlerde kol uzatma) geçici çözümü artık gereksiz, kaldırıldı — sabit
-kol boyu yeterli çünkü yeni yönlendirme zaten halkayı sıyırma riskini ortadan kaldırıyor.
+**Son karar:** Kolun yüksekliği artık dilimin **kendi açısı** değil, çakışmayı önlemek için zaten
+ayrıştırılmış **[merkezY]** (metnin düştüğü son satır). Fon ve Döviz'in açıları ne kadar yakın olursa
+olsun, satırları (dolayısıyla kolları) her zaman en az bir metin yüksekliği + boşluk kadar ayrık —
+iki kol asla aynı satıra düşmez, çizgiler net şekilde ayrı iki paralel hat olarak görünür. Kol artık
+tam radyal değil (dilimin gerçek açısından metnin satırına doğru hafif eğik) ama bu fark gözle fark
+edilmeyecek kadar küçük ve pasta grafiği kütüphanelerinde (ör. Highcharts) standart bir teknik.
 
-**Kabul kriteri (doğrulandı, emülatör, 2026-10-09):** Fon ve Döviz'in çizgileri artık paralel iki
-yatay hat olarak gidiyor, kesişmiyor; keskin çapraz dönüş yok. Hem koyu hem açık temada doğrulandı.
+**Kabul kriteri (doğrulandı, emülatör, 2026-10-09):** Fon ve Döviz'in çizgileri artık **net ayrı iki**
+paralel hat olarak gidiyor — ne kesişiyor ne üst üste biniyor. Hem koyu hem açık temada doğrulandı.
 Çökme yok.
 
-**Boyut:** XS — tek bir çizim bloğu, geometri düzeltmesi.
+**Boyut:** XS — tek bir çizim bloğu, geometri düzeltmesi (iki turda tamamlandı).
 
 ---
 

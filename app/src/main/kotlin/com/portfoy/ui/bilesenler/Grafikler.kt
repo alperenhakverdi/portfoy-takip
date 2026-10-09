@@ -185,19 +185,15 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
             }
         }
 
-        // 4) Kılavuz çizgisi: üç parça — dilimden gerçek açısında kısa bir kol çıkar, sonra KENDİ
-        // yüksekliğinde yatay olarak atandığı sütuna gider, en son kısa bir dikey adımla etiketin
-        // satırına oturur. Yatay parça hep dilimin doğal yüksekliğinde (halkanın dışında) kaldığı için
-        // halkayı asla kesmez; sütun dengeleme bir dilimi karşı tarafa attığında bile (iki parça artık
-        // birbirinden bağımsız yönde ilerlediği için) çizgiler çaprazlaşmaz — ilk sürümde kol da karşı
-        // sütuna doğrudan çapraz gidiyordu, bitişik küçük dilimlerde (Fon, Döviz) kesişiyordu.
+        // 4) Kılavuz çizgisi: dilimden kısa bir kol çıkar, sonra yatay olarak atandığı sütuna gider.
+        // Kolun yüksekliği dilimin KENDİ açısı değil, az önce çakışmasın diye ayrıştırılmış [merkezY]
+        // — iki bitişik dilim (ör. Fon, Döviz) neredeyse aynı açıdaysa bile kolları farklı satırlara
+        // düştüğü için asla üst üste binmez. (Önceki sürüm kolu dilimin gerçek açısında tutuyordu;
+        // tepeye yakın bitişik dilimlerde açı farkı çizgiyi ayırt edilemeyecek kadar küçük kalıyordu.)
         yerlesim.forEach { e ->
             val radyan = e.ortaAci * PI.toFloat() / 180f
             val kenar = Offset(merkez.x + cos(radyan) * disYaricap, merkez.y + sin(radyan) * disYaricap)
-            val kirilma = Offset(
-                merkez.x + cos(radyan) * (disYaricap + dirsek),
-                merkez.y + sin(radyan) * (disYaricap + dirsek),
-            )
+            val kolX = merkez.x + cos(radyan) * (disYaricap + dirsek)
             val sutunKenari = if (e.sagda) merkez.x + disYaricap + pay else merkez.x - disYaricap - pay
             val metinX = if (e.sagda) sutunKenari else sutunKenari - e.olcum.size.width
             val cizgiUcu = if (e.sagda) metinX - kuyruk / 2f else metinX + e.olcum.size.width + kuyruk / 2f
@@ -205,8 +201,7 @@ fun DonutGrafik(dilimler: List<AllocationSlice>, modifier: Modifier = Modifier) 
             drawPath(
                 Path().apply {
                     moveTo(kenar.x, kenar.y)
-                    lineTo(kirilma.x, kirilma.y)
-                    lineTo(cizgiUcu, kirilma.y)
+                    lineTo(kolX, e.merkezY)
                     lineTo(cizgiUcu, e.merkezY)
                 },
                 color = e.renk,
